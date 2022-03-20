@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    <title>Perl REgexp vs Oracle - Lee Lindley Scratchpad</title>
+    <meta name="author" content="Lee Lindley" />
+    <meta name="description" content="Perl REgexp vs Oracle" />
+    <meta name="keywords" content="Perl REgexp vs Oracle, Lee Lindley Scratchpad, oracle, plsql" />
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+    <meta content="" property="fb:app_id">
+    <meta content="Lee Lindley Scratchpad" property="og:site_name">
+
+    
+
+    
+      <meta content="Perl REgexp vs Oracle" property="og:title">
+      <meta content="article" property="og:type">
+    
+
+    
+      <meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description">
+    
+
+    
+      <meta content="http://localhost:4000/oracle/plsql/2021/12/26/Perl-Regexp-vs-Oracle.html" property="og:url">
+    
+
+    
+      <meta content="2021-12-26T10:30:00-05:00" property="article:published_time">
+      <meta content="http://localhost:4000/about/" property="article:author">
+    
+
+    
+
+    
+      
+        <meta content="oracle" property="article:section">
+      
+    
+
+    
+      
+        <meta content="oracle" property="article:tag">
+      
+        <meta content="plsql" property="article:tag">
+      
+    
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@">
+    <meta name="twitter:creator" content="@">
+
+    
+      <meta name="twitter:title" content="Perl REgexp vs Oracle">
+    
+
+    
+      <meta name="twitter:url" content="http://localhost:4000/oracle/plsql/2021/12/26/Perl-Regexp-vs-Oracle.html">
+    
+
+    
+      <meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux">
+    
+
+    
+
+    <!-- Font awesome icons -->
+    <link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <!-- syntax highlighting CSS -->
+    <link rel="stylesheet" href="/static/css/syntax.css">
+    <!-- Bootstrap core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/super-search.css">
+    <link rel="stylesheet" href="/static/css/thickbox.css">
+    <link rel="stylesheet" href="/static/css/projects.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-sm-3">
+        <div class="fixed-condition">
+          <h1 class="author-name"><a href="/">Lee Lindley</a></h1>
+          
+            <div class="profile-about">
+              I'm Just Another Perl Hacker who wound up in a big Oracle Database playground
+            </div>
+          
+          <div class="social">
+            <ul>
+              
+                <li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+              
+                <li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></li>
+              
+            </ul>
+          </div>
+          <div class="search" id="js-search">
+            <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input">
+            <ul class="search__results" id="js-search__results"></ul>
+          </div>
+          <hr />
+          <ul class="sidebar-nav">
+            <strong>Navigation</strong>
+            <li><a href="/">Home</a></li>
+            
+              <li><a class="about" href="/about/">About Me</a></li>
+            
+              <li><a class="about" href="/projects/">My Projects</a></li>
+            
+              <li><a class="about" href="/feed.xml">XML Feed</a></li>
+            
+          </ul>
+        </div>
+        <!-- end /.fixed-condition -->
+      </div>
+      <div class="col-sm-8 col-offset-1 main-layout">
+        <header class="post-header">
+  <h1 class="post-title">Perl REgexp vs Oracle</h1>
+</header>
+
+<span class="time">26 Dec 2021</span>
+
+  <span class="categories">
+    &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>
+  </span>
+
+
+<div class="content">
+  <div class="post"><h1 id="writing-regular-expressions-for-oracle-as-if-you-were-in-a-perl-script">Writing Regular Expressions for Oracle As If You Were in a Perl Script</h1>
+
+<p>I am accustomed to writing regular expressions for Perl. It has gotten to the point
+where I’m super annoyed when I write regular expressions for Oracle because of both how strings
+are handled and lack of comment support in the RE itself. I prefer building the
+regular expression in small pieces with assembler style comments on the right side to remind
+myself what it does. I also favor using ‘\n’ and ‘\t’ to represent newline and tab rather than
+having to hardcode these values in the regexp string. Having a newline in the middle
+of an Oracle regular expression is particularly disconcerting.</p>
+
+<p>Likewise building the RE by concatentating quoted string pieces and having regular SQL comments
+out on the right is less than satisfying. It gets ugly with all of the “||’ whatever’”, especially
+with embedded newlines or even concatenating a constant that contains a newline.
+These may seem trivial concerns, but I’m not changing.</p>
+
+<p>The following Function transforms a regular expression in a manner similar to the way
+Perl would treat the ‘x’ modifier stripping comments and whitespace, plus allowing
+us to use ‘\n’, ‘\r’ and ‘\t’ as character representations that are not stripped as whitespace.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">FUNCTION</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">p_re</span> <span class="n">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
+    <span class="k">IS</span>
+        <span class="cm">/*
+            strip comment blocks that start with at least one blank, then
+            '--' or '#', then everything to end of line or string
+        */</span>
+        <span class="n">c_strip_comments_regexp</span> <span class="n">CONSTANT</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'[[:blank:]](--|#).*($|
+)'</span><span class="p">;</span>
+    <span class="k">BEGIN</span>
+    <span class="c1">-- note that \n, \r and \t will be replaced if not preceded by a \</span>
+    <span class="c1">-- \\n and \\t will not be replaced. Unfortunately, neither will \\\n or \\\t.</span>
+    <span class="c1">-- If you need \\\n, use \\ \n since the space will be removed.</span>
+    <span class="c1">-- We are not parsing into tokens, so this is as close as we can get cheaply</span>
+      <span class="k">RETURN</span> 
+        <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
+          <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
+            <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
+              <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
+                <span class="n">REGEXP_REPLACE</span><span class="p">(</span><span class="n">p_re</span><span class="p">,</span> <span class="n">c_strip_comments_regexp</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">'m'</span><span class="p">)</span> <span class="c1">-- strip comments</span>
+                <span class="p">,</span> <span class="s1">'</span><span class="se">\s</span><span class="s1">+'</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>                 <span class="c1">-- strip spaces and newlines too like 'x' modifier</span>
+              <span class="p">)</span> 
+              <span class="p">,</span> <span class="s1">'(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">t'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\1</span><span class="s1">'</span><span class="o">||</span><span class="n">CHR</span><span class="p">(</span><span class="mi">9</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>    <span class="c1">-- replace \t with tab character value so it works like in perl</span>
+            <span class="p">)</span> 
+            <span class="p">,</span> <span class="s1">'(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">n'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\1</span><span class="s1">'</span><span class="o">||</span><span class="n">CHR</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>       <span class="c1">-- replace \n with newline character value so it works like in perl</span>
+          <span class="p">)</span>
+          <span class="p">,</span> <span class="s1">'(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">r'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\1</span><span class="s1">'</span><span class="o">||</span><span class="n">CHR</span><span class="p">(</span><span class="mi">13</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>         <span class="c1">-- replace \r with CR character value so it works like in perl</span>
+        <span class="p">)</span> 
+
+      <span class="p">;</span>
+
+    <span class="k">END</span><span class="p">;</span>
+</code></pre></div></div>
+<p>The function <em>transform_perl_regexp</em> is distributed in 
+a <a href="https://github.com/lee-lindley/plsql_utilities#transform_perl_regexp">utility libray I support</a>. 
+You can use it without attribution.</p>
+
+<p>Below is an example of writing a somewhat convoluted regular expression to parse a multi-line CLOB
+that contains CSV “records” that may contain embedded newlines with quoting as described 
+in <a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000323.shtml">RFC4180</a>.</p>
+
+<p>I have more about that in the
+<em>plsql_utilities</em> library if it interests you, but the main point is to show the regular expression
+presentation in the Perl style and how it is transformed.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DECLARE</span>
+    <span class="n">v_lines</span>     <span class="k">CLOB</span> <span class="p">:</span><span class="o">=</span> 
+<span class="c1">------------------------</span>
+<span class="s1">'23, "this contains a comma (,)", 06/30/2021
+47, "this contains a newline (
+)", 01/01/2022
+
+73, and we can have backwacked comma (</span><span class="se">\,</span><span class="s1">), 12/25/2021
+92, what about backwacked dquote &gt;</span><span class="se">\"</span><span class="s1">&lt;?, 12/28/2021'</span>
+<span class="p">;</span>
+<span class="c1">------------------------</span>
+
+    <span class="c1">-- beware this is using Perl-like regexp so we have to apply a transform</span>
+    <span class="n">v_regexp</span>    <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'
+(                               # capture in </span><span class="se">\1</span><span class="s1">
+  (                             # going to group 0 or more of these things
+    [^"</span><span class="se">\n\\</span><span class="s1">]+                   # any number of chars that are not dquote, backwack or newline
+    |
+    (                           # just grouping for repeat
+        </span><span class="se">\\</span><span class="s1"> </span><span class="se">\n</span><span class="s1">                   # or a backwacked </span><span class="se">\n</span><span class="s1"> but put space between them so gets transformed correctly
+    )+                          # one or more protected newlines (as if they were in dquoted string)
+    |
+    (                           # just grouping for repeat
+        </span><span class="se">\\</span><span class="s1">"                     # or a backwacked "
+    )+                          # one or more protected "
+    |
+    "                           # double quoted string start
+        (                       # just grouping. Order of the next set of things matters. Longest first
+            ""                  # literal "" which is a quoted dquoute within dquote string
+            |
+            </span><span class="se">\\</span><span class="s1">"                 # a backwacked dquote 
+            |
+            [^"]                # any single character not the above two multi-char constructs, or a dquote
+                                #     Important! This can be embedded newlines too!
+        )*                      # zero or more of those chars or constructs 
+    "                           # closing dquote
+    |                           
+    </span><span class="se">\\</span><span class="s1">                          # or a backwack, but do this last as it is the smallest and we do not want
+                                #   to consume the backwack before a newline or a dquote
+  )*                            # zero or more strings on a single "line" that could include newline in dquotes
+                                # or even a backwacked newline
+)                               # end capture </span><span class="se">\1</span><span class="s1">
+(                               # just grouping 
+    $|</span><span class="se">\n</span><span class="s1">                        # require match newline or string end 
+)                               # close grouping
+'</span><span class="p">;</span>
+    <span class="n">v_line</span>      <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">);</span>
+    <span class="n">v_i</span>         <span class="n">BINARY_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="n">v_cnt</span>       <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+    <span class="n">v_regexp</span> <span class="p">:</span><span class="o">=</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">v_regexp</span><span class="p">);</span>
+    <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'preprocessed regexp: &gt;'</span><span class="o">||</span><span class="n">v_regexp</span><span class="o">||</span><span class="s1">'&lt;'</span><span class="p">);</span>
+    <span class="c1">--</span>
+    <span class="n">v_cnt</span> <span class="p">:</span><span class="o">=</span> <span class="n">REGEXP_COUNT</span><span class="p">(</span><span class="n">v_lines</span><span class="p">,</span> <span class="n">v_regexp</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>   <span class="c1">-- get number of times regexp will match less match on $</span>
+    <span class="k">FOR</span> <span class="n">v_i</span> <span class="k">IN</span> <span class="mi">1</span> <span class="p">..</span><span class="n">v_cnt</span>                            <span class="c1">-- for each time we know it will match including NULL match values</span>
+    <span class="n">LOOP</span>
+        <span class="n">v_line</span> <span class="p">:</span><span class="o">=</span> <span class="n">REGEXP_SUBSTR</span><span class="p">(</span><span class="n">v_lines</span><span class="p">,</span> <span class="n">v_regexp</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">v_i</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+        <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'line '</span><span class="o">||</span><span class="n">TO_CHAR</span><span class="p">(</span><span class="n">v_i</span><span class="p">)</span><span class="o">||</span><span class="s1">' is &gt;'</span><span class="o">||</span><span class="n">v_line</span><span class="o">||</span><span class="s1">'&lt;'</span><span class="p">);</span>
+    <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="o">/</span>
+</code></pre></div></div>
+<p>Output:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>preprocessed regexp: &gt;(([^"
+\\]+|(\\\n)+|(\\")+|"(""|\\"|[^"])*"|\\)*)($|
+)&lt;
+line 1 is &gt;23, "this contains a comma (,)", 06/30/2021&lt;
+line 2 is &gt;47, "this contains a newline (
+)", 01/01/2022&lt;
+line 3 is &gt;&lt;
+line 4 is &gt;73, and we can have backwacked comma (\,), 12/25/2021&lt;
+line 5 is &gt;92, what about backwacked dquote &gt;\"&lt;?, 12/28/2021&lt;
+</code></pre></div></div>
+
+<p><em>transform_perl_regexp</em> is NOT a sophisticated parser. 
+If you want to have the strings ‘ –’ (space dash dash)
+or ‘ #’ (space hash) appear in your regular expression, you will have to get creative or not use it.
+(HINT: you can put one of the characters in character class brackets).
+Likewise when looking for the ‘\n’ and friends, we are not actually
+parsing anything, so it gets messy. I’ve protected ‘\\n’, but not dealt with ‘\\\n’. These are
+easier though because you can separate ‘\’ from ‘\n’ with a space that is going to be stripped.
+It works the way I expect most of the time.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>Regular expressions, even those you wrote last week, take signficant effort for your brain to parse.
+It is worthwhile to have them well documented in the code. A way to do that in Perl has been established
+and is used by many serious practitioners. I much prefer it and can now use it in Oracle SQL and PL/SQL
+programs.</p>
+</div>
+</div>
+
+
+  
+    
+      
+        
+          
+            
+            <div class="panel-body">
+              <h4>Related Posts</h4>
+              <ul>
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+  
+  </ul>
+</div>
+
+
+<div class="PageNavigation">
+  
+    <a class="prev" href="/oracle/sql/plsql/2021/12/18/sqlplus-blob.html">&laquo; Extracting BLOB from Oracle with Sqlplus</a>
+  
+  
+    <a class="next" href="/oracle/sql/plsql/2021/12/27/PTF-Hard-Coding-Data.html">Polymorphic Table Function to the Rescue? &raquo;</a>
+  
+</div>
+
+<div class="disqus-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    /* <![CDATA[ */
+    var disqus_shortname = "leelindleyscratchpad";
+    var disqus_identifier = "http://localhost:4000_Perl REgexp vs Oracle";
+    var disqus_title = "Perl REgexp vs Oracle";
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    /* ]]> */
+  </script>
+</div>
+
+        <footer>
+          &copy; Lee Lindley
+          
+            - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.
+          
+          <div class="btn-github" style="float:right;">
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+          </div>
+        </footer>
+      </div>
+      <!-- end /.col-sm-8 -->
+    </div>
+    <!-- end /.container -->
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/super-search.js"></script>
+    <script src="/static/js/thickbox-compressed.js"></script>
+    <script src="/static/js/projects.js"></script>
+  </body>
+</html>
+

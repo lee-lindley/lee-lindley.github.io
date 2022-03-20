@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    <title>Perl Like Operations in PL/SQL - Lee Lindley Scratchpad</title>
+    <meta name="author" content="Lee Lindley" />
+    <meta name="description" content="Perl Like Operations in PL/SQL" />
+    <meta name="keywords" content="Perl Like Operations in PL/SQL, Lee Lindley Scratchpad, oracle, plsql, perl" />
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+    <meta content="" property="fb:app_id">
+    <meta content="Lee Lindley Scratchpad" property="og:site_name">
+
+    
+
+    
+      <meta content="Perl Like Operations in PL/SQL" property="og:title">
+      <meta content="article" property="og:type">
+    
+
+    
+      <meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description">
+    
+
+    
+      <meta content="http://localhost:4000/oracle/plsql/perl/2022/01/02/Perl-Like-Operations-PLSQL.html" property="og:url">
+    
+
+    
+      <meta content="2022-01-02T10:30:00-05:00" property="article:published_time">
+      <meta content="http://localhost:4000/about/" property="article:author">
+    
+
+    
+
+    
+      
+        <meta content="oracle" property="article:section">
+      
+    
+
+    
+      
+        <meta content="oracle" property="article:tag">
+      
+        <meta content="plsql" property="article:tag">
+      
+        <meta content="perl" property="article:tag">
+      
+        <meta content="regexp" property="article:tag">
+      
+    
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@">
+    <meta name="twitter:creator" content="@">
+
+    
+      <meta name="twitter:title" content="Perl Like Operations in PL/SQL">
+    
+
+    
+      <meta name="twitter:url" content="http://localhost:4000/oracle/plsql/perl/2022/01/02/Perl-Like-Operations-PLSQL.html">
+    
+
+    
+      <meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux">
+    
+
+    
+
+    <!-- Font awesome icons -->
+    <link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <!-- syntax highlighting CSS -->
+    <link rel="stylesheet" href="/static/css/syntax.css">
+    <!-- Bootstrap core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/super-search.css">
+    <link rel="stylesheet" href="/static/css/thickbox.css">
+    <link rel="stylesheet" href="/static/css/projects.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-sm-3">
+        <div class="fixed-condition">
+          <h1 class="author-name"><a href="/">Lee Lindley</a></h1>
+          
+            <div class="profile-about">
+              I'm Just Another Perl Hacker who wound up in a big Oracle Database playground
+            </div>
+          
+          <div class="social">
+            <ul>
+              
+                <li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+              
+                <li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></li>
+              
+            </ul>
+          </div>
+          <div class="search" id="js-search">
+            <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input">
+            <ul class="search__results" id="js-search__results"></ul>
+          </div>
+          <hr />
+          <ul class="sidebar-nav">
+            <strong>Navigation</strong>
+            <li><a href="/">Home</a></li>
+            
+              <li><a class="about" href="/about/">About Me</a></li>
+            
+              <li><a class="about" href="/projects/">My Projects</a></li>
+            
+              <li><a class="about" href="/feed.xml">XML Feed</a></li>
+            
+          </ul>
+        </div>
+        <!-- end /.fixed-condition -->
+      </div>
+      <div class="col-sm-8 col-offset-1 main-layout">
+        <header class="post-header">
+  <h1 class="post-title">Perl Like Operations in PL/SQL</h1>
+</header>
+
+<span class="time">02 Jan 2022</span>
+
+  <span class="categories">
+    &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>
+  </span>
+
+
+<div class="content">
+  <div class="post"><h1 id="the-problem-needs-string-hacking">The Problem Needs String Hacking</h1>
+
+<p>I was writing a PL/SQL function to generate a MERGE sql statement from input data, the name of a table, 
+a list of columns in the input data,
+and either a list of join columns or if not provided, getting them from the primary key constraint.
+This is something I’ve done in Perl before relatively easily, and I wanted to turn my hand to
+doing it in PL/SQL.</p>
+
+<p>My first effort let me down the road of creating a Polymorphic Table Function to parse the CSV data.
+It was a nice exercise and I produced a workable PTF implementation to parse a clob and generate
+Oracle column data, but it is too complex for this relatively simple use case.</p>
+
+<p>Next I turned towards doing it all in a set of inline PL/SQL WITH functions where I intended to have
+it generate the UNION ALL set of rows for the data for the MERGE USING clause. I don’t need to deploy
+any code in the database that my team may or may not be able to support. It winds up being
+a script I use to generate deployment code.</p>
+
+<p>Man, what a grind.
+PL/SQL is very good for database things. It sucks badly for text processing like this.
+I found myself pining away for Perl operations like <em>split</em>, <em>map</em> and <em>join</em>. I’m not even going to complain
+about lack of variable interpolation in PL/SQL strings and how you must concatentate everything with hideous syntax
+because it is what it is. Yet some things we can do something about.</p>
+
+<p>Consider needing to take a nested table of column names and generate the list that goes
+with the INSERT(…) clause of the MERGE.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="n">v_s</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">WHEN NOT MATCHED THEN INSERT(</span><span class="o">'||</span><span class="n">v_arr_cols</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">2.</span><span class="p">.</span><span class="n">v_arr_cols</span><span class="p">.</span><span class="nf">COUNT</span>
+    <span class="kr">LOOP</span>
+        <span class="n">v_s</span> <span class="o">:=</span> <span class="n">v_s</span><span class="o">||'</span><span class="s1">, </span><span class="o">'||</span><span class="n">v_arr_cols</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+    <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+    <span class="n">v_s</span> <span class="o">:=</span> <span class="n">v_s</span><span class="o">||'</span><span class="s1">)</span><span class="o">'</span><span class="p">;</span>
+
+    <span class="n">v_s</span> <span class="o">:=</span> <span class="nf">REGEXP_SUBSTR</span><span class="p">(</span><span class="n">v_s</span><span class="p">,</span> <span class="o">'</span><span class="s1">match</span><span class="o">'</span><span class="p">);</span>
+</code></pre></div></div>
+<p>Phew, that is ugly. Or how about the MERGE UPDATE clause? We need to write:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>WHEN MATCHED THEN UPDATE SET
+    t.col1 = q.col1,
+    t.col2 = q.col2
+</code></pre></div></div>
+
+<p>I started off writing a custom <em>join</em> function that also took a template string as an argument.
+It was sort of a meld between the Perl <em>join</em> and <em>map</em> methods.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">FUNCTION</span> <span class="n">join</span><span class="p">(</span>
+        <span class="n">p_arr</span>           <span class="n">sys</span><span class="p">.</span><span class="n">ku$_vcnt</span>
+        <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span> <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">, </span><span class="o">'</span>
+        <span class="p">,</span><span class="n">p_template</span>     <span class="kt">VARCHAR2</span> <span class="kr">DEFAULT</span> <span class="kr">NULL</span>
+    <span class="p">)</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+    <span class="kr">IS</span>
+        <span class="o">"</span><span class="nv">l_x</span><span class="o">"</span> <span class="kt">number</span><span class="o">:=</span><span class="mf">123.34e-3</span><span class="p">;</span>
+        <span class="c1">-- single line comment -- and more</span>
+        <span class="cm">/* multi
+        line comment /*
+        */</span>
+        <span class="n">l_s</span>     <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span> <span class="o">:=</span> <span class="o">q'!</span><span class="sx">This is a string on one line with a ! </span><span class="o">!'</span>
+        <span class="o">||q'^</span><span class="sx"> and a caret ^ </span><span class="o">^'||q'%</span><span class="sx"> and a percent % </span><span class="o">%'||q'#</span><span class="sx"> and a hash # </span><span class="o">#'||q'+</span><span class="sx"> and a plus + </span><span class="o">+'</span>
+            <span class="o">||q'[</span><span class="sx">this one ]
+is multipline</span><span class="o">]'</span>
+            <span class="o">||q'(</span><span class="sx">and another )
+on 2 lines</span><span class="o">)'</span>
+            <span class="o">||q'{</span><span class="sx">one more }
+on 3
+lines</span><span class="o">}'</span>
+            <span class="p">;</span>
+        <span class="kr">FUNCTION</span> <span class="n">apply_template</span><span class="p">(</span>
+            <span class="n">p_val</span>   <span class="kt">VARCHAR2</span>
+        <span class="p">)</span>
+        <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+        <span class="kr">IS</span>
+            <span class="n">l_t</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">);</span>
+        <span class="k">BEGIN</span>
+            <span class="k">IF</span> <span class="n">p_template</span> <span class="kr">IS</span> <span class="kr">NULL</span> <span class="kr">THEN</span>
+                <span class="n">l_t</span> <span class="o">:=</span> <span class="n">p_val</span><span class="p">;</span>
+            <span class="kr">ELSE</span> 
+                <span class="n">l_t</span> <span class="o">:=</span> <span class="nf">REPLACE</span><span class="p">(</span><span class="n">p_template</span><span class="p">,</span> <span class="o">'</span><span class="s1">__PLACEHOLDER__</span><span class="o">'</span><span class="p">,</span> <span class="n">p_val</span><span class="p">);</span>
+            <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+            <span class="k">RETURN</span> <span class="n">l_t</span><span class="p">;</span>
+        <span class="k">END</span><span class="p">;</span>
+    <span class="k">BEGIN</span>
+        <span class="k">IF</span> <span class="n">p_arr</span><span class="p">.</span><span class="nf">COUNT</span> <span class="o">=</span> <span class="mi">0</span> <span class="kr">THEN</span>
+            <span class="k">RETURN</span> <span class="kr">NULL</span><span class="p">;</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+        <span class="n">l_s</span> <span class="o">:=</span> <span class="n">apply_template</span><span class="p">(</span><span class="n">p_arr</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">2.</span><span class="p">.</span><span class="n">p_arr</span><span class="p">.</span><span class="nf">COUNT</span>
+        <span class="kr">LOOP</span>
+            <span class="n">l_s</span> <span class="o">:=</span> <span class="n">l_s</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="n">apply_template</span><span class="p">(</span><span class="n">p_arr</span><span class="p">(</span><span class="n">i</span><span class="p">));</span>
+        <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+        <span class="k">RETURN</span> <span class="n">l_s</span><span class="p">;</span>
+    <span class="k">END</span> <span class="c1">-- join</span>
+    <span class="p">;</span>
+</code></pre></div></div>
+
+<p>Now to write the UPDATE portion I have</p>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="n">v_s</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">WHEN MATCHED THEN UPDATE SET</span><span class="o">'</span>
+        <span class="o">||</span><span class="k">join</span><span class="p">(</span><span class="n">v_arr_non_pk_cols</span><span class="p">,</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">,
+    </span><span class="o">'</span>
+                <span class="p">,</span><span class="n">p_template</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">t.__PLACEHOLDER__ = q.__PLACEHOLDER__</span><span class="o">'</span><span class="p">)</span>
+    <span class="p">;</span>
+</code></pre></div></div>
+<p>It did not make me happy though. It was a little too customized.</p>
+
+<p>I also had some utility methods as standalone functions (<em>split_csv</em> and <em>transform_perl_regexp</em>) that
+really needed a package or user defined type home. I wound up creating a new User Defined Type
+to hold my Perlish methods. I called it <em>japh_util_udt</em> originally, which comes from the phrase “I’m just another perl hacker.”
+Most people don’t get that, so I renamed it to <em>perlish_util_udt</em>.</p>
+
+<h1 id="perlish-utility-user-defined-type">Perlish Utility User Defined Type</h1>
+
+<p>You can find it in 
+my <a href="https://github.com/lee-lindley/plsql_utilities">plsql_utilities github repository</a>.</p>
+
+<p>From the REAMDE.md in the repository:</p>
+
+<h2 id="perlish_util_udt">perlish_util_udt</h2>
+
+<p>It isn’t Perl, but it makes some Perlish things a bit easier in PL/SQL. We also get
+handy methods for splitting Comma Separated Value (CSV) text into lines and fields,
+which you can use independent of the Perlish methods, and even one that turns a CSV
+clob into a private temporary table.</p>
+
+<blockquote>
+  <p>There is valid argument
+that when you are programming in a language you should use the facilities of that language, 
+and that attempting to layer the techniques of another language upon it is a bad idea. I see the logic
+and partially agree. I expect those who later must support my work that uses this utility will curse me. Yet
+PL/SQL really sucks at some string and list related things. This uses valid PL/SQL object techniques
+to manipulate strings and lists in a way that is familiar to Perl hackers.</p>
+</blockquote>
+
+<p>A <em>perlish_util_udt</em> object instance holds an <em>arr_varchar2_udt</em> collection attribute which you will use when employing the following member methods;</p>
+
+<ul>
+  <li>map</li>
+  <li>join</li>
+  <li>sort</li>
+  <li>get</li>
+  <li>combine</li>
+</ul>
+
+<p>All member methods except <em>get</em> have static alternatives using <em>arr_varchar2_udt</em> parameters and return types, so you
+are not forced to use the Object Oriented syntax.</p>
+
+<p>It has static method <em>split_csv</em> (returns <em>arr_varchar2_udt</em>) that 
+formerly lived as a standalone function in the plsql_utilities library as <em>split</em>.
+We have a static method <em>split_clob_to_lines</em> that returns an <em>arr_varchar2_udt</em> collection
+of “records” from what is assumed to be a CSV file. It parses for CSV syntax when splitting the lines
+which means there can be embedded newlines in text fields in a “record”.</p>
+
+<p>There is a static procedure <em>create_ptt_csv</em> that consumes a CLOB containing lines of CSV data
+and turns it into a private temporary table for your session. The PTT has column names from the
+first line in the CLOB.</p>
+
+<p>It also has a static method named <em>transform_perl_regexp</em> that has nothing to do with arrays/lists, but is Perlish.</p>
+
+<p>Most of the member methods are chainable which is handy when you are doing a series of operations.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>I will work on a full demonstration to generate that deployable MERGE I described
+in the introduction. Seeing it in real action rather than the contrived cases
+of the documentation examples will show why I’m excited about it. Maybe PL/SQL
+can suck a little less for hacking strings and lists.</p>
+</div>
+</div>
+
+
+  
+    
+      
+        
+          
+            
+            <div class="panel-body">
+              <h4>Related Posts</h4>
+              <ul>
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+  
+  </ul>
+</div>
+
+
+<div class="PageNavigation">
+  
+    <a class="prev" href="/oracle/sql/plsql/2021/12/31/Polymorphic-Table-Functions-3.html">&laquo; Polymorphic Table Function (PTF) for CSV (take 3)</a>
+  
+  
+    <a class="next" href="/oracle/sql/plsql/perl/2022/01/09/More-CSV-Fun.html">More CSV Fun - Turn CSV into SQL Resultset &raquo;</a>
+  
+</div>
+
+<div class="disqus-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    /* <![CDATA[ */
+    var disqus_shortname = "leelindleyscratchpad";
+    var disqus_identifier = "http://localhost:4000_Perl Like Operations in PL/SQL";
+    var disqus_title = "Perl Like Operations in PL/SQL";
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    /* ]]> */
+  </script>
+</div>
+
+        <footer>
+          &copy; Lee Lindley
+          
+            - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.
+          
+          <div class="btn-github" style="float:right;">
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+          </div>
+        </footer>
+      </div>
+      <!-- end /.col-sm-8 -->
+    </div>
+    <!-- end /.container -->
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/super-search.js"></script>
+    <script src="/static/js/thickbox-compressed.js"></script>
+    <script src="/static/js/projects.js"></script>
+  </body>
+</html>
+

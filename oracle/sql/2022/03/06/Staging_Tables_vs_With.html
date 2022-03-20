@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    <title>Staging Tables vs Single SQL - Lee Lindley Scratchpad</title>
+    <meta name="author" content="Lee Lindley" />
+    <meta name="description" content="Staging Tables vs Single SQL" />
+    <meta name="keywords" content="Staging Tables vs Single SQL, Lee Lindley Scratchpad, oracle, sql" />
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+    <meta content="" property="fb:app_id">
+    <meta content="Lee Lindley Scratchpad" property="og:site_name">
+
+    
+
+    
+      <meta content="Staging Tables vs Single SQL" property="og:title">
+      <meta content="article" property="og:type">
+    
+
+    
+      <meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description">
+    
+
+    
+      <meta content="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html" property="og:url">
+    
+
+    
+      <meta content="2022-03-06T10:30:00-05:00" property="article:published_time">
+      <meta content="http://localhost:4000/about/" property="article:author">
+    
+
+    
+
+    
+      
+        <meta content="oracle" property="article:section">
+      
+    
+
+    
+      
+        <meta content="oracle" property="article:tag">
+      
+        <meta content="sql" property="article:tag">
+      
+        <meta content="tuning" property="article:tag">
+      
+    
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@">
+    <meta name="twitter:creator" content="@">
+
+    
+      <meta name="twitter:title" content="Staging Tables vs Single SQL">
+    
+
+    
+      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">
+    
+
+    
+      <meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux">
+    
+
+    
+
+    <!-- Font awesome icons -->
+    <link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <!-- syntax highlighting CSS -->
+    <link rel="stylesheet" href="/static/css/syntax.css">
+    <!-- Bootstrap core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/super-search.css">
+    <link rel="stylesheet" href="/static/css/thickbox.css">
+    <link rel="stylesheet" href="/static/css/projects.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-sm-3">
+        <div class="fixed-condition">
+          <h1 class="author-name"><a href="/">Lee Lindley</a></h1>
+          
+            <div class="profile-about">
+              I'm Just Another Perl Hacker who wound up in a big Oracle Database playground
+            </div>
+          
+          <div class="social">
+            <ul>
+              
+                <li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+              
+                <li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></li>
+              
+            </ul>
+          </div>
+          <div class="search" id="js-search">
+            <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input">
+            <ul class="search__results" id="js-search__results"></ul>
+          </div>
+          <hr />
+          <ul class="sidebar-nav">
+            <strong>Navigation</strong>
+            <li><a href="/">Home</a></li>
+            
+              <li><a class="about" href="/about/">About Me</a></li>
+            
+              <li><a class="about" href="/projects/">My Projects</a></li>
+            
+              <li><a class="about" href="/feed.xml">XML Feed</a></li>
+            
+          </ul>
+        </div>
+        <!-- end /.fixed-condition -->
+      </div>
+      <div class="col-sm-8 col-offset-1 main-layout">
+        <header class="post-header">
+  <h1 class="post-title">Staging Tables vs Single SQL</h1>
+</header>
+
+<span class="time">06 Mar 2022</span>
+
+  <span class="categories">
+    &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>
+  </span>
+
+
+<div class="content">
+  <div class="post"><h1 id="introduction">Introduction</h1>
+
+<p>A batch technique I often encounter creates staging tables for intermediate results, then breaks a problem
+down into multiple smaller steps, each one populating (and sometimes updating!) staging tables before
+consolidating into a final result. The argument is that breaking down the problem into smaller,
+more easily understood steps is a good programming practice,
+which on its face is true. There is also an advantage in being able to 
+inspect the intermediate results while doing development and QA (and perhaps in production support).</p>
+
+<table class="img-table-centered">
+  <thead>
+    <tr>
+      <th style="text-align: center"><em>Small Steps Using Staging Tables</em></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: center"><img src="/images/with2_staging_tables.gif" alt="with2_staging_tables" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Assuming the developer’s code is optimized as
+well as the Oracle optimizer would if given the entire problem, the only extra cost is the instantiation
+of intermediate results. Generally, I have not found the assumption to be true, but let’s give practitioners
+of this pattern the benefit of the doubt. Most of the time one can achieve reasonable performance
+using this technique.</p>
+
+<p>Yet the overhead in <em>undo/redo</em> logging for these staging tables is not free. The total run-time
+will be longer using this technique, sometimes substantially. The DBA
+is probably gathering statistics in a job that will process your staging tables needlessly. In addition,
+we are bloating the undo and redo logs, plus these tables get backed up and take up room on “disk”.</p>
+
+<blockquote>
+  <p>If you would like
+a refresher course on <em>undo</em> and <em>redo</em>, my personal favorite is from Tom Kyte’s 
+book <em>Expert Oracle Architecture</em>.</p>
+</blockquote>
+
+<p>For our purposes just know those staging tables are not free, even if you use direct path load.</p>
+
+<p>Furthermore, practitioners often employ UPDATEs and DELETEs which are much more expensive 
+in Oracle than INSERTs. If you can gather the information you need while doing the INSERT, it is
+difficult to justify doing so after the fact with an UPDATE even to simplify your understanding
+of the solution. If you find yourself adding indexes to your staging table to facilitate subsequent
+operations, you might want to rethink
+your approach. (Of course, there are exceptions where the cost of creating an index on a staging table
+and using it to perform updates/deletes is the best answer, but it is extremely rare.)</p>
+
+<h1 id="using-with-subquery-factoring-alternative">Using WITH Subquery Factoring Alternative</h1>
+
+<h2 id="multiple-small-steps">Multiple Small Steps</h2>
+
+<p>We can write the same task in a single SQL statement using the <em>WITH</em> syntax to create
+multiple sequential views, aka Common Table Expressions (CTE).
+This retains the advantage
+of breaking the problem into multiple smaller steps while not paying the undo/redo cost of the staging tables.
+Instead, the execution plan allows the database engine to merrily pipeline results 
+from join to join without ever writing out the intermediate
+resultsets. (Well, technically it can buffer intermediate resultsets in the temp tablespace 
+between operations, and some of that may write
+to disk if there is not enough memory, but from a logical
+standpoint nothing is written to the database).</p>
+
+<p>Not only that, but the optimizer can merge the views into the main query when it finds 
+a better plan than the one you envisioned when you designed the program and broke it down into parts.
+Letting Oracle do the entire set of work in a single statement is almost always the most
+efficient and fastest solution.</p>
+
+<p>From the developer’s point of view, we have broken down the problem into
+smaller, understandable chunks as CTE’s. It is the Oracle optimizer that is taking on the complexity, not the developer.
+Granted, your explain plan is going to be bigger and take some effort to relate to your code, but
+it should be in the wheelhouse for any serious Oracle practitioner to understand what
+the Optimizer does with your query.</p>
+
+<h2 id="intermediate-resultsets">Intermediate Resultsets</h2>
+
+<p>As for being able to see intermediate resultsets, at least during development and performance testing you can
+easily alter the query to stop after any given CTE, then select from that CTE. You can select the entire resultset
+or use a where clause or even analytic.  For example:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">step1</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="p">...</span>
+<span class="p">),</span> <span class="n">step2</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="p">...</span>
+<span class="p">),</span> <span class="n">step3</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="p">...</span>
+<span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="n">step</span> <span class="mi">3</span>
+<span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">step2</span>
+    <span class="k">ON</span> <span class="p">...</span>
+</code></pre></div></div>
+
+<p>You make a copy and interject your debug select like so:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">step1</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="p">...</span>
+<span class="p">),</span> <span class="n">step2</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="p">...</span>
+</code></pre></div></div>
+<p><strong>) select mycollist from step2 where xyz = ‘mykey’;<br />
+– remainder of quuery does not run</strong></p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">),</span> <span class="n">step3</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="p">...</span>
+<span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="n">step</span> <span class="mi">3</span>
+<span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">step2</span>
+    <span class="k">ON</span> <span class="p">...</span>
+</code></pre></div></div>
+<p>It can also be helpful to do this if you want to look at the Explain Plan for the smaller subset of the
+query.</p>
+
+<p>When you want to resume going through the query and looking at parts, you can put dash-dash in front of that line
+and continue going down the query testing each part. That way you can come back to it for further analysis.</p>
+
+<h2 id="cte-used-multiple-times">CTE Used Multiple Times</h2>
+
+<p>If you use a CTE within the full query more than once, then Oracle must instantiate it. This will appear as
+<em>Temp Table Transformation</em> with a <em>Load As Select</em> below it near the start of the Explain Plan. 
+For all practical purposes this is the same as populating a global temporary table. It uses
+the default temporary tablespace. As far as I can tell, this is effectively a direct path load of the 
+transient global temporary table that does not generate much undo (and by default creating undo also
+generates redo for that undo). This addresses another stated purpose for using
+staging tables – to be able to use them more than once.</p>
+
+<p>In this scenario when you have a large resultset, it is still going to be almost as expensive to instantiate
+it in Temporary space as it would be to do a direct path load into a staging table (except for the redo logging).
+The only way around that is to figure out how to avoid reusing the CTE. You may
+surprise yourself and find that you can.</p>
+
+<h2 id="cardinality-and-statistics">Cardinality and Statistics</h2>
+
+<p>Using WITH/CTE technique rather than staging tables, the optimizer has an advantage of knowing how each 
+intermediate result was gathered. It can estimate
+the cardinality. When using staging tables, you must either gather statistics on the staging table or provide
+a cardinality hint to the using query. Gathering statistics can be even more expensive than the redo logging.</p>
+
+<h1 id="discoveries-from-refactoring-staging-tables-to-a-single-sql">Discoveries from Refactoring Staging Tables to a Single SQL</h1>
+
+<h2 id="no_merge-hint">NO_MERGE Hint</h2>
+
+<p>The optimizer will sometime merge subqueries together that you can prove via experimentation is a bad idea.
+Purists will tell you that you just don’t have your statistics right. I don’t argue. I just hint the damn thing.</p>
+
+<p>For the example below,
+Oracle will almost always merge the view named <em>keys</em> into the main select and do a single HASH UNIQUE.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">keys</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="k">DISTINCT</span> <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">key3</span>
+    <span class="k">FROM</span> <span class="n">key_source</span>
+<span class="p">)</span> <span class="k">SELECT</span> <span class="k">DISTINCT</span> <span class="n">resultfieldlist</span>
+<span class="k">FROM</span> <span class="n">keys</span> <span class="n">k</span>
+<span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">sourcetable</span> <span class="n">s</span>
+    <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
+</code></pre></div></div>
+<p>I can prove that in case of the query I was tuning, we are better off gathering a DISTINCT set of keys 
+before joining to <em>sourcetable</em>.
+The optimizer flat out refuses and merges the “set of keys” view into the join query so that it only has to do a single
+HASH UNIQUE after the join. Yet the duplication of the keys between those two sources is multiplicative. If we let Oracle have
+its way, the result set going into the single HASH UNIQUE the optimizer is so proud of is ginormous.
+I know from trial and error for this
+particular set of inputs, we are better off with two separate HASH UNIQUE operations.</p>
+
+<p>In this scenario you can force Oracle to do two separate HASH UNIQUE operations by using the NO_MERGE hint:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">keys</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="cm">/*+ NO_MERGE */</span> <span class="k">DISTINCT</span> 
+        <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">key3</span>
+    <span class="k">FROM</span> <span class="n">key_source</span>
+<span class="p">)</span> <span class="k">SELECT</span> <span class="k">DISTINCT</span> <span class="n">resultfieldlist</span>
+<span class="k">FROM</span> <span class="n">keys</span> <span class="n">k</span>
+<span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">sourcetable</span> <span class="n">s</span>
+    <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
+</code></pre></div></div>
+
+<p>I’ve also seen cases where Oracle chooses to merge in a subquery containing an analytic, doing the join first
+and then the analytic and the filter using the analytic column that was supposed to be applied before doing the join.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">keys</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="p">...</span>
+        <span class="p">,</span><span class="n">ROW_NUMBER</span><span class="p">()</span> <span class="n">OVER</span> <span class="p">(</span><span class="n">PARTITION</span> <span class="k">BY</span> <span class="n">xyz</span> <span class="k">ORDER</span> <span class="k">by</span> <span class="n">last_modified_dt</span> <span class="k">DESC</span><span class="p">)</span> <span class="k">AS</span> <span class="n">rn</span>
+    <span class="k">FROM</span> <span class="n">key_source</span>
+<span class="p">)</span> <span class="k">SELECT</span> <span class="n">resultfieldlist</span>
+<span class="k">FROM</span> <span class="n">keys</span> <span class="n">k</span>
+<span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">sourcetable</span> <span class="n">s</span>
+    <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
+<span class="k">WHERE</span> <span class="n">k</span><span class="p">.</span><span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
+</code></pre></div></div>
+<p>The optimizer has determined that it can reduce the resultset better by doing the join first, shrinking the number
+of rows from key_source, then doing the analytic sort and filter. 
+Maybe the optimizer is right. 
+When it is wrong, you will notice a humongous hash join taking forever in order to save a little
+bit on that sort. That is when you can try making it do the sort first using NO_MERGE:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">keys</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="cm">/*+ NO_MERGE */</span> <span class="p">...</span>
+        <span class="p">,</span><span class="n">ROW_NUMBER</span><span class="p">()</span> <span class="n">OVER</span> <span class="p">(</span><span class="n">PARTITION</span> <span class="k">BY</span> <span class="n">xyz</span> <span class="k">ORDER</span> <span class="k">by</span> <span class="n">last_modified_dt</span> <span class="k">DESC</span><span class="p">)</span> <span class="k">AS</span> <span class="n">rn</span>
+    <span class="k">FROM</span> <span class="n">key_source</span>
+<span class="p">)</span> <span class="k">SELECT</span> <span class="n">resultfieldlist</span>
+<span class="k">FROM</span> <span class="n">keys</span> <span class="n">k</span>
+<span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">sourcetable</span> <span class="n">s</span>
+    <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
+<span class="k">WHERE</span> <span class="n">k</span><span class="p">.</span><span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
+</code></pre></div></div>
+
+<p>I do not advise reaching for the NO_MERGE hint until you suspect a problem, and even then you should try
+it both ways. Need for the hint in these scenarios is the exception, as most of the time the optimizer is right.
+Yet the optimizer relies on rules of thumb and guesses that do not necessarily match your data. Even with
+good statistics with histograms available, much of the optimizer logic is based on probabilities and rules of thumb.
+It is not always right. Figuring out how to give the optimizer enough information to come up with the right answer,
+as one school of purists advocate, is not practical.</p>
+
+<h2 id="fat-resultset-and-big-joins">Fat Resultset and Big Joins</h2>
+
+<p>When we get into very large joins when one or both of the input datasets are very fat (lots of columns/big fat records),
+there is a technique from the staging table school of thought you might want to employ.
+The technique is to grab only the join keys from one of your sources (likely your target record that you are
+joining additional fields into) and use those keys to gather the data from the other table, then once
+you have the values you need, join them back into the main query.</p>
+
+<p>Why do the join twice? Consider that the table you are reading is very large with many more rows than the one
+you are joining into. The proper way to do this is hash the one with less rows and probe it from the new
+table; yet, because it is so fat, hashing the entire thing overflows our available PGA memory pushing us off
+into a onepass or multipass hash join. In this scenario we could be better off just hashing the distinct set
+of join keys while we probe it from the large source table until we have only the data we need.</p>
+
+<p>Eventually we still have to join to our big fat target resultset, but now we have a smaller footprint of
+data to do it with. We can reverse which resultset is hashed to the one that fits in memory.</p>
+
+<p>I still am likely to use WITH subqueries to do it but have at times found a separate staging table
+is a faster answer. I have not completely grasped the reason, but suspect it revolves around the PGA
+size and the amount of memory paged to disk for our reuse
+of our main resultset.</p>
+
+<h2 id="sometimes-an-update-really-is-faster">Sometimes an Update Really is Faster</h2>
+
+<p>We have a very large and fat resultest,
+and need to update values in a very small number of rows.
+We need to make a full table scan pass through our data to select candidate rows (or the keys
+from candidate rows) and join them to our source. We cannot avoid that first full scan.
+If we have a staging table, we can bring the <em>ROWID</em> along, 
+then use that for the MERGE ON clause join back into the staging table.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">MERGE</span> <span class="k">INTO</span> <span class="n">staging_table</span> <span class="n">t</span>
+<span class="k">USING</span> <span class="p">(</span>
+    <span class="k">WITH</span> <span class="n">lkup_value</span> <span class="k">AS</span> <span class="p">(</span>
+        <span class="k">SELECT</span> <span class="n">s</span><span class="p">.</span><span class="n">rowid</span> <span class="k">AS</span> <span class="n">s_rowid</span><span class="p">,</span> <span class="n">lk</span><span class="p">.</span><span class="n">update_value</span>
+            <span class="n">ROW_NUMBER</span><span class="p">()</span> <span class="n">OVER</span> <span class="p">(</span><span class="n">PARTITION</span> <span class="k">BY</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span> <span class="k">DESC</span><span class="p">)</span> <span class="k">AS</span> <span class="n">rn</span>
+        <span class="k">FROM</span> <span class="n">staging_table</span> <span class="n">s</span>
+        <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">lookup_table</span> <span class="n">lk</span>
+            <span class="k">ON</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">lk</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span><span class="p">...</span>
+                <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">create_dt</span> <span class="o">&gt;=</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span>
+    <span class="p">)</span> <span class="k">SELECT</span> <span class="n">s_rowid</span><span class="p">,</span> <span class="n">update_value</span>
+    <span class="k">FROM</span> <span class="n">lkup_value</span>
+    <span class="k">WHERE</span> <span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">)</span> <span class="n">q</span>
+<span class="k">ON</span> <span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">rowid</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">s_rowid</span><span class="p">)</span>
+<span class="k">WHEN</span> <span class="n">MATCHED</span> <span class="k">THEN</span> <span class="k">UPDATE</span> <span class="k">SET</span>
+    <span class="n">update_value</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">update_value</span>
+</code></pre></div></div>
+
+<p>Consider how we would do this in a series of steps using WITH clause CTEs in a single INSERT without the staging
+table:</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">staging_table</span>
+<span class="k">WITH</span> <span class="n">x</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="p">...</span>
+<span class="p">),</span> <span class="n">lkup_value_1</span> <span class="k">AS</span> <span class="p">(</span>
+        <span class="k">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span><span class="p">,</span> <span class="n">lk</span><span class="p">.</span><span class="n">update_value</span>
+            <span class="n">ROW_NUMBER</span><span class="p">()</span> <span class="n">OVER</span> <span class="p">(</span><span class="n">PARTITION</span> <span class="k">BY</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span> <span class="k">DESC</span><span class="p">)</span> <span class="k">AS</span> <span class="n">rn</span>
+        <span class="k">FROM</span> <span class="n">x</span>
+        <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">lookup_table</span> <span class="n">lk</span>
+            <span class="k">ON</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">lk</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span><span class="p">...</span>
+                <span class="k">AND</span> <span class="n">x</span><span class="p">.</span><span class="n">create_dt</span> <span class="o">&gt;=</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span>
+<span class="p">),</span> <span class="n">lkup_value</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">update_value</span>
+    <span class="k">FROM</span> <span class="n">lkup_value_1</span>
+    <span class="k">WHERE</span> <span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">),</span> <span class="n">y</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">field1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">field2</span><span class="p">...</span>
+        <span class="p">,</span><span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="k">IS</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">THEN</span> <span class="n">lk</span><span class="p">.</span><span class="n">update_value</span> <span class="k">ELSE</span> <span class="n">x</span><span class="p">.</span><span class="n">update_value</span> <span class="k">END</span> <span class="k">AS</span> <span class="n">update_value</span>
+    <span class="k">FROM</span> <span class="n">x</span>
+    <span class="k">LEFT</span> <span class="k">OUTER</span> <span class="k">JOIN</span> <span class="n">lkup_value</span> <span class="n">lk</span>
+        <span class="k">ON</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">lk</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span>
+<span class="p">)...</span>
+</code></pre></div></div>
+
+<p>Even though we are only changing a few rows with clause ‘y’, we must run all of the rows from ‘x’ through
+this join with lkup_value clause. I have observed situations where keeping a staging table and
+doing the MERGE as shown above is superior to doing everything in a single query. This surprised me. I started
+the task with the expectation that I could eliminate all of the staging tables.
+It was not the answer I wanted, but it was the answer I found.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>To break a database problem into small, understandable chunks you can use the WITH clause Common Table Expressions (CTE)
+instead of staging tables. There are more benefits than downside to this technique, but there are some
+exceptional circumstances where using intermediate staging tables is the best approach. Understand how the optimizer
+processes what you have designed as sequential steps (most of which are pipelined), and use hints when absolutely 
+necessary to guide the
+optimizer away from suboptimal plans. A detailed understanding of the memory involved with HASH joins can
+help you design non-obvious solutions for very large dataset operations.</p>
+
+</div>
+</div>
+
+
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+            <div class="panel-body">
+              <h4>Related Posts</h4>
+              <ul>
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/09/More-CSV-Fun.html">More CSV Fun - Turn CSV into SQL Resultset</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+  
+  </ul>
+</div>
+
+
+<div class="PageNavigation">
+  
+    <a class="prev" href="/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">&laquo; Inline External Tables for CSV Load</a>
+  
+  
+</div>
+
+<div class="disqus-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    /* <![CDATA[ */
+    var disqus_shortname = "leelindleyscratchpad";
+    var disqus_identifier = "http://localhost:4000_Staging Tables vs Single SQL";
+    var disqus_title = "Staging Tables vs Single SQL";
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    /* ]]> */
+  </script>
+</div>
+
+        <footer>
+          &copy; Lee Lindley
+          
+            - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.
+          
+          <div class="btn-github" style="float:right;">
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+          </div>
+        </footer>
+      </div>
+      <!-- end /.col-sm-8 -->
+    </div>
+    <!-- end /.container -->
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/super-search.js"></script>
+    <script src="/static/js/thickbox-compressed.js"></script>
+    <script src="/static/js/projects.js"></script>
+  </body>
+</html>
+

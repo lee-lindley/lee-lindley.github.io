@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    <title>Extracting BLOB from Oracle with Sqlplus - Lee Lindley Scratchpad</title>
+    <meta name="author" content="Lee Lindley" />
+    <meta name="description" content="Extracting BLOB from Oracle with Sqlplus" />
+    <meta name="keywords" content="Extracting BLOB from Oracle with Sqlplus, Lee Lindley Scratchpad, oracle, sql, plsql" />
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+    <meta content="" property="fb:app_id">
+    <meta content="Lee Lindley Scratchpad" property="og:site_name">
+
+    
+
+    
+      <meta content="Extracting BLOB from Oracle with Sqlplus" property="og:title">
+      <meta content="article" property="og:type">
+    
+
+    
+      <meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description">
+    
+
+    
+      <meta content="http://localhost:4000/oracle/sql/plsql/2021/12/18/sqlplus-blob.html" property="og:url">
+    
+
+    
+      <meta content="2021-12-18T10:30:00-05:00" property="article:published_time">
+      <meta content="http://localhost:4000/about/" property="article:author">
+    
+
+    
+
+    
+      
+        <meta content="oracle" property="article:section">
+      
+    
+
+    
+      
+        <meta content="oracle" property="article:tag">
+      
+        <meta content="sql" property="article:tag">
+      
+        <meta content="plsql" property="article:tag">
+      
+        <meta content="blob" property="article:tag">
+      
+        <meta content="sqlplus" property="article:tag">
+      
+    
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@">
+    <meta name="twitter:creator" content="@">
+
+    
+      <meta name="twitter:title" content="Extracting BLOB from Oracle with Sqlplus">
+    
+
+    
+      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/2021/12/18/sqlplus-blob.html">
+    
+
+    
+      <meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux">
+    
+
+    
+
+    <!-- Font awesome icons -->
+    <link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <!-- syntax highlighting CSS -->
+    <link rel="stylesheet" href="/static/css/syntax.css">
+    <!-- Bootstrap core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/super-search.css">
+    <link rel="stylesheet" href="/static/css/thickbox.css">
+    <link rel="stylesheet" href="/static/css/projects.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-sm-3">
+        <div class="fixed-condition">
+          <h1 class="author-name"><a href="/">Lee Lindley</a></h1>
+          
+            <div class="profile-about">
+              I'm Just Another Perl Hacker who wound up in a big Oracle Database playground
+            </div>
+          
+          <div class="social">
+            <ul>
+              
+                <li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+              
+                <li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></li>
+              
+            </ul>
+          </div>
+          <div class="search" id="js-search">
+            <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input">
+            <ul class="search__results" id="js-search__results"></ul>
+          </div>
+          <hr />
+          <ul class="sidebar-nav">
+            <strong>Navigation</strong>
+            <li><a href="/">Home</a></li>
+            
+              <li><a class="about" href="/about/">About Me</a></li>
+            
+              <li><a class="about" href="/projects/">My Projects</a></li>
+            
+              <li><a class="about" href="/feed.xml">XML Feed</a></li>
+            
+          </ul>
+        </div>
+        <!-- end /.fixed-condition -->
+      </div>
+      <div class="col-sm-8 col-offset-1 main-layout">
+        <header class="post-header">
+  <h1 class="post-title">Extracting BLOB from Oracle with Sqlplus</h1>
+</header>
+
+<span class="time">18 Dec 2021</span>
+
+  <span class="categories">
+    &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>
+  </span>
+
+
+<div class="content">
+  <div class="post"><h1 id="how-do-we-get-a-blob-from-the-database-to-a-client-file">How do we get a BLOB from the database to a client file?</h1>
+
+<p>I wrote about using a WITH clause function for various purposes
+<a href="https://lee-lindley.github.io/oracle/sql/plsql/2021/09/25/Inline-PLSQL-Methods.html">Why do I need Inline PL/SQL Methods?</a>, 
+one example of which was
+extracting a BLOB that contained an XLSX file.
+In that article I blithely waved my hands and said use Toad or SqlDeveloper to then extract the output into a file.</p>
+
+<p>What do we do if we want to script this? There are options. 
+You can send email from inside
+the database and attach the blob (see <a href="https://github.com/lee-lindley/html_email">html_email</a>), but if your goal is to
+automatically deliver it to a shared drive or other file destination, email is not a good option.</p>
+
+<p>You can use pretty much any language that supports
+a robust Oracle database interface to do it from a client ETL server. Pro-C, Java, Perl DBI::DBD::Oracle, 
+and I presume Python all
+have the capability to extract a BLOB from the database and write to the local filesystem. I also assume
+the big commercial ETL packages like Ab-initio and Informatica will do it, but I haven’t looked.</p>
+
+<p>Maybe you do not have access to or expertise in these tools.  The Oracle client library has SQLcl, which can be
+scripted to download a BLOB as mentioned in this article 
+<a href="https://www.thatjeffsmith.com/archive/2020/07/using-sqlcl-to-write-out-blobs-to-files-in-20-lines-of-js/">Using SQLcl to write out BLOBs to files in 20 lines of js</a>. But it turns out that you don’t always have sqlcl or even Java
+installed on an ETL server. I know that seems odd, but I’ve seen it enough I’m no longer surprised.</p>
+
+<p>I wanted to do it with <em>sqlplus</em> because it is almost universally available at every client and on every ETL
+server. Unfortunately <em>sqlplus</em> does not support BLOB data type as a local variable for binding. Drat. When 
+I searched I hit the article <a href="https://ogobrecht.com/posts/2020-01-01-download-blobs-with-sqlplus/">Download BLOBs with SQLPlus</a>
+by Ottmar Gobrect. He spreads plenty of credit around for the idea. The crux of the solution is to convert
+from BLOB, which <em>sqlplus</em> does not support, to CLOB which it does. How, you ask? The same way we do it when we attach
+a binary file to an email. We base64 encode it. Clever!</p>
+
+<h1 id="extracting-a-blob-with-sqlplus">Extracting a BLOB with Sqlplus</h1>
+
+<p>Reusing my spreadsheet example from the article mentioned at the top, and a base64encode function
+published by Tim Hall we have a sqlplus script that generates and extracts a BLOB
+to a file as base64 encoded text.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">-- 16mb should be plenty for most spreadsheets.</span>
+<span class="k">set</span> <span class="n">long</span> <span class="mi">16777216</span>
+<span class="k">set</span> <span class="n">longchunksize</span> <span class="mi">32767</span>
+<span class="k">set</span> <span class="n">heading</span> <span class="k">off</span>
+<span class="k">set</span> <span class="n">verify</span> <span class="k">off</span> 
+<span class="k">set</span> <span class="n">feedback</span> <span class="k">off</span> 
+<span class="k">set</span> <span class="n">trimout</span> <span class="k">on</span> 
+<span class="k">set</span> <span class="n">trimspool</span> <span class="k">on</span> 
+<span class="k">set</span> <span class="n">pagesize</span> <span class="mi">0</span> 
+<span class="k">set</span> <span class="n">linesize</span> <span class="mi">1000</span> 
+<span class="k">whenever</span> <span class="k">sqlerror</span> <span class="n">exit</span> <span class="n">failure</span>
+<span class="c1">-- sqlplus supports clob variables but not blob</span>
+<span class="k">variable</span> <span class="n">vo_clob</span> <span class="k">clob</span>
+<span class="c1">--</span>
+<span class="k">DECLARE</span>
+    <span class="k">c</span> <span class="n">SYS_REFCURSOR</span><span class="p">;</span>
+
+    <span class="k">FUNCTION</span> <span class="n">base64encode</span><span class="p">(</span><span class="n">p_blob</span> <span class="k">IN</span> <span class="nb">BLOB</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="k">CLOB</span>
+    <span class="c1">-- -----------------------------------------------------------------------------------</span>
+    <span class="c1">-- File Name    : https://oracle-base.com/dba/miscellaneous/base64encode.sql</span>
+    <span class="c1">-- Author       : Tim Hall</span>
+    <span class="c1">-- Description  : Encodes a BLOB into a Base64 CLOB.</span>
+    <span class="c1">-- Last Modified: 09/11/2011</span>
+    <span class="c1">-- -----------------------------------------------------------------------------------</span>
+    <span class="k">IS</span>
+        <span class="n">l_clob</span> <span class="k">CLOB</span><span class="p">;</span>
+        <span class="n">l_step</span> <span class="n">PLS_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">12000</span><span class="p">;</span> <span class="c1">-- make sure you set a multiple of 3 not higher than 24573</span>
+    <span class="k">BEGIN</span>
+        <span class="k">FOR</span> <span class="n">i</span> <span class="k">IN</span> <span class="mi">0</span> <span class="p">..</span> <span class="n">TRUNC</span><span class="p">((</span><span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">getlength</span><span class="p">(</span><span class="n">p_blob</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span><span class="o">/</span><span class="n">l_step</span><span class="p">)</span> <span class="n">LOOP</span>
+            <span class="n">l_clob</span> <span class="p">:</span><span class="o">=</span> <span class="n">l_clob</span> <span class="o">||</span> <span class="n">UTL_RAW</span><span class="p">.</span><span class="n">cast_to_varchar2</span><span class="p">(</span><span class="n">UTL_ENCODE</span><span class="p">.</span><span class="n">base64_encode</span><span class="p">(</span><span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">substr</span><span class="p">(</span><span class="n">p_blob</span><span class="p">,</span> <span class="n">l_step</span><span class="p">,</span> <span class="n">i</span> <span class="o">*</span> <span class="n">l_step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)));</span>
+        <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
+        <span class="k">RETURN</span> <span class="n">l_clob</span><span class="p">;</span>
+    <span class="k">END</span><span class="p">;</span>
+
+    <span class="k">FUNCTION</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="n">p_src</span> <span class="n">SYS_REFCURSOR</span><span class="p">)</span> 
+    <span class="k">RETURN</span> <span class="k">CLOB</span> <span class="k">AS</span>
+        <span class="n">v_blob</span>          <span class="nb">BLOB</span><span class="p">;</span>
+        <span class="n">v_ctxId</span>         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">ctxHandle</span><span class="p">;</span>
+        <span class="n">v_sheetHandle</span>   <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+    <span class="k">BEGIN</span>
+        <span class="n">v_ctxId</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">createContext</span><span class="p">();</span>
+        <span class="n">v_sheetHandle</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addSheetFromCursor</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="s1">'Employee Salaries'</span><span class="p">,</span> <span class="n">p_src</span><span class="p">,</span> <span class="n">p_sheetIndex</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">);</span>
+        <span class="c1">-- freeze the top row with the column headers</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setHeader</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="n">v_sheetHandle</span><span class="p">,</span> <span class="n">p_frozen</span> <span class="o">=&gt;</span> <span class="k">TRUE</span><span class="p">);</span>
+        <span class="c1">-- style with alternating colors on each row. </span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableFormat</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="n">v_sheetHandle</span><span class="p">,</span> <span class="s1">'TableStyleLight11'</span><span class="p">);</span>
+        <span class="c1">-- single column format on the salary column. The ID column keeps default format</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setColumnFormat</span><span class="p">(</span>
+            <span class="n">p_ctxId</span>     <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+            <span class="p">,</span><span class="n">p_sheetId</span>  <span class="o">=&gt;</span> <span class="n">v_sheetHandle</span>
+            <span class="p">,</span><span class="n">p_columnId</span> <span class="o">=&gt;</span> <span class="mi">5</span>        <span class="c1">-- the salary column</span>
+            <span class="p">,</span><span class="n">p_format</span>   <span class="o">=&gt;</span> <span class="s1">'$#,##0.00'</span>
+        <span class="p">);</span>
+        <span class="n">v_blob</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">getFileContent</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">closeContext</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
+        <span class="k">RETURN</span> <span class="n">base64encode</span><span class="p">(</span><span class="n">v_blob</span><span class="p">);</span>
+    <span class="k">END</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+
+    <span class="k">OPEN</span> <span class="k">c</span> <span class="k">FOR</span> <span class="k">WITH</span> <span class="n">add_bilbo</span> <span class="k">AS</span> <span class="p">(</span>
+            <span class="k">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span> <span class="k">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">salary</span>
+            <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
+            <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> <span class="n">d</span>
+                <span class="k">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
+            <span class="k">UNION</span> <span class="k">ALL</span>
+            <span class="k">SELECT</span> <span class="mi">999</span> <span class="k">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="s1">'Baggins'</span> <span class="k">As</span> <span class="n">last_name</span><span class="p">,</span> <span class="s1">'Bilbo'</span> <span class="k">as</span> <span class="n">first_name</span><span class="p">,</span> <span class="s1">'Sales'</span> <span class="k">AS</span> <span class="n">department_name</span>
+                <span class="p">,</span><span class="mi">123</span><span class="p">.</span><span class="mi">45</span> <span class="k">AS</span> <span class="n">salary</span>
+            <span class="k">FROM</span> <span class="n">dual</span>
+        <span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">add_bilbo</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">last_name</span><span class="p">,</span> <span class="n">first_name</span>
+    <span class="p">;</span>
+    <span class="c1">-- assign the uuencoded clob data to the sqlplus bind variable</span>
+    <span class="p">:</span><span class="n">vo_clob</span> <span class="p">:</span><span class="o">=</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="k">c</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="o">/</span>
+<span class="c1">-- spool out the encoded clob</span>
+<span class="k">set</span> <span class="n">termout</span> <span class="k">off</span>
+<span class="n">spool</span> <span class="nv">"x.xlsx.base64"</span>
+<span class="n">print</span> <span class="n">vo_clob</span>
+<span class="n">spool</span> <span class="k">off</span>
+<span class="k">set</span> <span class="n">termout</span> <span class="k">on</span>
+<span class="c1">--  base64 -d -i x.xlsx.base64 &gt;x.xlsx &amp;&amp; rm x.xlsx.base64</span>
+<span class="c1">-- OR on windows</span>
+<span class="c1">-- certutil -decode x.xlsx.base64 x.xlsx</span>
+<span class="c1">-- del x.xlsx.base64</span>
+</code></pre></div></div>
+
+<p>On my windows machine I can run the following command in cygwin. I assume it works fine in Linux.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>base64 -d -i spool_file_name &gt; spreadsheet_name.xlsx
+</code></pre></div></div>
+
+<p>If you fail to included the -i option, it may complain about invalid input. Turns out my cygwin
+version was not forgiving of the carriage return characters (\015) sqlplus put into the file. It
+was fine with the linefeeds (\012). The -i option makes it ignore them. It may not be necessary
+on a true Unix machine or if there is an option to turn off carriage returns in sqlplus on Windows.
+I didn’t try to find out.</p>
+
+<p>On windows the following command works just fine.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>certutil -decode spool_file_name spreadsheet_name.xlsx
+</code></pre></div></div>
+
+<p>In my small example the encoding added around 25% to the file size. I’m not claiming that is the
+amount you will get, but it should be in that ballpark. It isn’t enough to break the bank.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>If you are looking to get a BLOB out of Oracle and you don’t have access to a better scripting
+language or tool, knowing you can at least do it with sqlplus is a nice option to have in your
+back pocket.</p>
+</div>
+</div>
+
+
+  
+    
+      
+        
+          
+            
+            <div class="panel-body">
+              <h4>Related Posts</h4>
+              <ul>
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+  
+  </ul>
+</div>
+
+
+<div class="PageNavigation">
+  
+    <a class="prev" href="/oracle/sql/plsql/2021/10/17/Use-Case-SQL-Tuning.html">&laquo; Sql Tuning for Multiple Use Cases</a>
+  
+  
+    <a class="next" href="/oracle/plsql/2021/12/26/Perl-Regexp-vs-Oracle.html">Perl REgexp vs Oracle &raquo;</a>
+  
+</div>
+
+<div class="disqus-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    /* <![CDATA[ */
+    var disqus_shortname = "leelindleyscratchpad";
+    var disqus_identifier = "http://localhost:4000_Extracting BLOB from Oracle with Sqlplus";
+    var disqus_title = "Extracting BLOB from Oracle with Sqlplus";
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    /* ]]> */
+  </script>
+</div>
+
+        <footer>
+          &copy; Lee Lindley
+          
+            - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.
+          
+          <div class="btn-github" style="float:right;">
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+          </div>
+        </footer>
+      </div>
+      <!-- end /.col-sm-8 -->
+    </div>
+    <!-- end /.container -->
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/super-search.js"></script>
+    <script src="/static/js/thickbox-compressed.js"></script>
+    <script src="/static/js/projects.js"></script>
+  </body>
+</html>
+

@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    <title>Polymorphic Table Function to the Rescue? - Lee Lindley Scratchpad</title>
+    <meta name="author" content="Lee Lindley" />
+    <meta name="description" content="Polymorphic Table Function to the Rescue?" />
+    <meta name="keywords" content="Polymorphic Table Function to the Rescue?, Lee Lindley Scratchpad, oracle, sql, plsql" />
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+    <meta content="" property="fb:app_id">
+    <meta content="Lee Lindley Scratchpad" property="og:site_name">
+
+    
+
+    
+      <meta content="Polymorphic Table Function to the Rescue?" property="og:title">
+      <meta content="article" property="og:type">
+    
+
+    
+      <meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description">
+    
+
+    
+      <meta content="http://localhost:4000/oracle/sql/plsql/2021/12/27/PTF-Hard-Coding-Data.html" property="og:url">
+    
+
+    
+      <meta content="2021-12-27T10:30:00-05:00" property="article:published_time">
+      <meta content="http://localhost:4000/about/" property="article:author">
+    
+
+    
+
+    
+      
+        <meta content="oracle" property="article:section">
+      
+    
+
+    
+      
+        <meta content="oracle" property="article:tag">
+      
+        <meta content="sql" property="article:tag">
+      
+        <meta content="plsql" property="article:tag">
+      
+    
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@">
+    <meta name="twitter:creator" content="@">
+
+    
+      <meta name="twitter:title" content="Polymorphic Table Function to the Rescue?">
+    
+
+    
+      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/2021/12/27/PTF-Hard-Coding-Data.html">
+    
+
+    
+      <meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux">
+    
+
+    
+
+    <!-- Font awesome icons -->
+    <link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <!-- syntax highlighting CSS -->
+    <link rel="stylesheet" href="/static/css/syntax.css">
+    <!-- Bootstrap core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/super-search.css">
+    <link rel="stylesheet" href="/static/css/thickbox.css">
+    <link rel="stylesheet" href="/static/css/projects.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-sm-3">
+        <div class="fixed-condition">
+          <h1 class="author-name"><a href="/">Lee Lindley</a></h1>
+          
+            <div class="profile-about">
+              I'm Just Another Perl Hacker who wound up in a big Oracle Database playground
+            </div>
+          
+          <div class="social">
+            <ul>
+              
+                <li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+              
+                <li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></li>
+              
+            </ul>
+          </div>
+          <div class="search" id="js-search">
+            <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input">
+            <ul class="search__results" id="js-search__results"></ul>
+          </div>
+          <hr />
+          <ul class="sidebar-nav">
+            <strong>Navigation</strong>
+            <li><a href="/">Home</a></li>
+            
+              <li><a class="about" href="/about/">About Me</a></li>
+            
+              <li><a class="about" href="/projects/">My Projects</a></li>
+            
+              <li><a class="about" href="/feed.xml">XML Feed</a></li>
+            
+          </ul>
+        </div>
+        <!-- end /.fixed-condition -->
+      </div>
+      <div class="col-sm-8 col-offset-1 main-layout">
+        <header class="post-header">
+  <h1 class="post-title">Polymorphic Table Function to the Rescue?</h1>
+</header>
+
+<span class="time">27 Dec 2021</span>
+
+  <span class="categories">
+    &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>
+  </span>
+
+
+<div class="content">
+  <div class="post"><h1 id="hard-coding-data-in-sql-and-plsql">Hard Coding Data in SQL and PL/SQL</h1>
+
+<h2 id="use-case---populate-a-configuration-table-with-multiple-entries-during-deployment">Use Case - Populate a configuration table with multiple entries during deployment</h2>
+
+<p>One method is to write a set of single insert statements with <em>values</em> clause. Example:</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">util_config</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">created_by</span><span class="p">,</span> <span class="n">created_dt</span><span class="p">)</span>
+    <span class="k">VALUES</span><span class="p">(</span><span class="s1">'My App'</span><span class="p">,</span> <span class="s1">'email_address'</span><span class="p">,</span> <span class="s1">'bogus@mycompany.com'</span><span class="p">,</span> <span class="k">USER</span><span class="p">,</span> <span class="n">SYSDATE</span><span class="p">)</span>
+<span class="p">;</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">util_config</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">created_by</span><span class="p">,</span> <span class="n">created_dt</span><span class="p">)</span>
+    <span class="k">VALUES</span><span class="p">(</span><span class="s1">'My App'</span><span class="p">,</span> <span class="s1">'debug_level'</span><span class="p">,</span> <span class="s1">'0'</span><span class="p">,</span> <span class="k">USER</span><span class="p">,</span> <span class="n">SYSDATE</span><span class="p">)</span>
+<span class="p">;</span>
+<span class="k">COMMIT</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Of course you can only run that once in any region so it makes testing your deployment difficult.
+It also doesn’t handle changing your mind about a value. You could do a DELETE first and that is
+a fine answer for our deployment task, but I prefer a MERGE.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">MERGE</span> <span class="k">INTO</span> <span class="n">util_config</span> <span class="k">c</span>
+<span class="k">USING</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="s1">'My App'</span> <span class="k">AS</span> <span class="n">app_name</span><span class="p">,</span> <span class="s1">'email_address'</span> <span class="k">AS</span> <span class="n">param_name</span><span class="p">,</span> <span class="s1">'bogus@mycompany.com'</span> <span class="k">AS</span> <span class="n">param_value</span> <span class="k">FROM</span> <span class="n">DUAL</span>
+    <span class="k">UNION</span> <span class="k">ALL</span>
+    <span class="k">SELECT</span> <span class="s1">'My App'</span> <span class="k">AS</span> <span class="n">app_name</span><span class="p">,</span> <span class="s1">'debug_level'</span> <span class="k">AS</span> <span class="n">param_name</span><span class="p">,</span> <span class="s1">'0'</span> <span class="k">AS</span> <span class="n">param_value</span> <span class="k">FROM</span> <span class="n">DUAL</span>
+<span class="p">)</span> <span class="n">q</span>
+<span class="k">ON</span> <span class="p">(</span><span class="k">c</span><span class="p">.</span><span class="n">app_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">app_name</span> <span class="k">AND</span> <span class="k">c</span><span class="p">.</span><span class="n">param_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">)</span>
+<span class="k">WHEN</span> <span class="k">NOT</span> <span class="n">MATCHED</span> <span class="k">THEN</span> <span class="k">INSERT</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">created_by</span><span class="p">,</span> <span class="n">created_dt</span><span class="p">)</span>
+    <span class="k">VALUES</span><span class="p">(</span><span class="n">q</span><span class="p">.</span><span class="n">app_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span><span class="p">,</span> <span class="k">USER</span><span class="p">,</span> <span class="n">SYSDATE</span><span class="p">)</span>
+<span class="k">WHEN</span> <span class="n">MATCHED</span> <span class="k">THEN</span> <span class="k">UPDATE</span> <span class="k">SET</span>
+        <span class="n">param_value</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span>
+        <span class="p">,</span><span class="n">updated_by</span> <span class="o">=</span> <span class="k">USER</span>
+        <span class="p">,</span><span class="n">update_DT</span> <span class="o">=</span> <span class="n">sysdate</span>
+    <span class="k">WHERE</span> <span class="n">DECODE</span><span class="p">(</span><span class="k">c</span><span class="p">.</span><span class="n">param_value</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="c1">-- compares NULLs too</span>
+<span class="p">;</span>
+<span class="k">COMMIT</span><span class="p">;</span>
+</code></pre></div></div>
+<p>All of that is quite messy though. I dislike having to write all that code just to deploy 
+configuration table values. Sure, much of it is copy and paste after the first one, but still…
+In the past I have written Perl scripts that generate that code for me, but my clients are 
+often not Perl people. It is time to scratch this itch with some PL/SQL.</p>
+
+<p>I would like to have something where I can provide the table values in a CLOB, give it a set
+of column names and have it generate and execute the MERGE like so:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DECLARE</span>
+    <span class="n">v_lines</span> <span class="k">CLOB</span> <span class="p">:</span><span class="o">=</span> 
+<span class="s1">'My App,email_address,"bogus@mycompany.com"
+My App,debug_level,0'</span>
+<span class="p">;</span>
+    <span class="n">v_column_names</span> <span class="k">CLOB</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'app_name, param_name, param_value'</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+    <span class="n">_merge_my_config_</span><span class="p">(</span><span class="s1">'util_config'</span><span class="p">,</span> <span class="n">v_cloumn_names</span><span class="p">,</span> <span class="n">v_lines</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+</code></pre></div></div>
+<p>We will leave aside the <em>created_by</em>, <em>created_dt</em>, <em>updated_by</em>, and <em>updated_dt</em> columns for the
+moment. They are common enough that they might require special treatment. I would hope most
+would have triggers to populate them, or insert/update/merge procedures for populating tables that
+employ this pattern, but we can add logic for it later.</p>
+
+<h2 id="parsing-a-csv-clob">Parsing a CSV CLOB</h2>
+
+<p>There are many ways to load a CSV file into the database. You can use sqlldr or an external table. SQLcl, SqlDeveloper
+and Toad all provide ways to do it; however, when we are deploying code and data via a continuous improvement process,
+we typically can only use sqlplus scripts. That is the state of CI at the moment.</p>
+
+<p>I need to parse that clob with my CSV rows and have that data available for a multi-row MERGE or INSERT statement. 
+Let’s try using <em>Polymorphic Table Function</em> capability that was added in Oracle 18.</p>
+
+<p>I have a single clob input and want table data output. When you read the PTF documentation and look at the
+examples it is clearly geared toward reading a table, not so much for writing to one. In my case I want
+a single CLOB as input and I want multi-row table column data as output. This is backwards from the common PTF model.</p>
+
+<p>The closest I found was this <a href="https://livesql.oracle.com/apex/livesql/file/content_F99JG73Z169WENDTTQFDQ0J09.html">Dynamic CSV to Columns Converter: Polymorphic Table Function Example</a>
+by Chris Saxon. It assumes the input is a table of CSV rows though, not a single clob. That turns
+out to be important because the PTF model is one row of output for every row of input (or a multiple
+of the number of rows of input).</p>
+
+<p>I started off providing an input TABLE consisting of:</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">a</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="k">CAST</span><span class="p">(</span><span class="s1">'my data'</span> <span class="k">AS</span> <span class="k">CLOB</span><span class="p">)</span> <span class="k">AS</span> <span class="k">c</span> <span class="k">FROM</span> <span class="n">dual</span>
+<span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">my_ptf_function</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>
+</code></pre></div></div>
+<p>but quickly ran afoul of the fact that CLOB is not a first class citizen in SQL. We can change to VARCHAR2,
+but then we may need more than one input row and we run into an issue figuring out the <em>replication_factor</em> to be able 
+to have more output rows than input rows. It got ugly.</p>
+
+<p>I finally abandonded doing anything of significance with the TABLE input parameter to the PTF. I just feed it <em>dual</em>
+as the table name and basically ignore it. All of the action happens with the other parameters to the PTF function.
+You may ask “well why are you using a PTF then?” The answer is that I still need that run time described field
+list for the output. Without that we have to define an object type or have a package type to match whatever we are doing.
+The PTF allows us to provide any field list and types at run time.</p>
+
+<h2 id="ptf-package-specification-and-example-use">PTF Package Specification and Example Use</h2>
+
+<p>Here is the package specification. I include the PTF function inside the package even though it can be standalone.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="n">PACKAGE</span> <span class="n">csv_to_table_pkg</span> 
+<span class="n">AUTHID</span> <span class="k">CURRENT_USER</span>
+<span class="k">AS</span>
+    <span class="k">FUNCTION</span> <span class="n">t</span><span class="p">(</span>
+        <span class="n">p_tab</span>           <span class="k">TABLE</span>
+        <span class="p">,</span><span class="n">p_table_name</span>   <span class="n">VARCHAR2</span>
+        <span class="p">,</span><span class="n">p_columns</span>      <span class="n">VARCHAR2</span> <span class="c1">-- csv list</span>
+        <span class="p">,</span><span class="n">p_clob</span>         <span class="k">CLOB</span>
+        <span class="p">,</span><span class="n">p_date_fmt</span>     <span class="n">VARCHAR2</span> <span class="k">DEFAULT</span> <span class="k">NULL</span> <span class="c1">-- uses nls_date_format if null</span>
+    <span class="p">)</span> <span class="k">RETURN</span> <span class="k">TABLE</span>
+    <span class="n">PIPELINED</span> <span class="k">ROW</span> <span class="n">POLYMORPHIC</span> <span class="k">USING</span> <span class="n">csv_to_table_pkg</span>
+    <span class="p">;</span>
+
+    <span class="k">FUNCTION</span> <span class="k">describe</span><span class="p">(</span>
+        <span class="n">p_tab</span> <span class="k">IN</span> <span class="k">OUT</span>    <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
+        <span class="p">,</span><span class="n">p_table_name</span>   <span class="n">VARCHAR2</span>
+        <span class="p">,</span><span class="n">p_columns</span>      <span class="n">VARCHAR2</span> <span class="c1">-- csv list</span>
+        <span class="p">,</span><span class="n">p_clob</span>         <span class="k">CLOB</span>
+        <span class="p">,</span><span class="n">p_date_fmt</span>     <span class="n">VARCHAR2</span> <span class="k">DEFAULT</span> <span class="k">NULL</span> <span class="c1">-- uses nls_date_format if null</span>
+    <span class="p">)</span> <span class="k">RETURN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">DESCRIBE_T</span>
+    <span class="p">;</span>
+    <span class="k">PROCEDURE</span> <span class="n">fetch_rows</span><span class="p">(</span>
+         <span class="n">p_table_name</span>   <span class="n">VARCHAR2</span>
+        <span class="p">,</span><span class="n">p_columns</span>      <span class="n">VARCHAR2</span> <span class="c1">-- csv list</span>
+        <span class="p">,</span><span class="n">p_clob</span>         <span class="k">CLOB</span>
+        <span class="p">,</span><span class="n">p_date_fmt</span>     <span class="n">VARCHAR2</span> <span class="k">DEFAULT</span> <span class="k">NULL</span> <span class="c1">-- uses nls_date_format if null</span>
+    <span class="p">)</span>
+    <span class="p">;</span>
+<span class="k">END</span> <span class="n">csv_to_table_pkg</span><span class="p">;</span>
+<span class="o">/</span>
+<span class="k">show</span> <span class="n">errors</span>
+</code></pre></div></div>
+
+<p>You would call it like this:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">create</span> <span class="k">TABLE</span> <span class="n">my_table_name</span><span class="p">(</span><span class="n">id</span> <span class="n">number</span><span class="p">,</span> <span class="n">msg</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">1024</span><span class="p">),</span> <span class="n">dt</span> <span class="nb">DATE</span><span class="p">);</span>
+<span class="c1">--</span>
+<span class="k">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="o">*</span>
+<span class="k">FROM</span> <span class="n">csv_to_table_pkg</span><span class="p">.</span><span class="n">t</span><span class="p">(</span>
+                      <span class="n">p_tab</span>         <span class="o">=&gt;</span> <span class="n">dual</span>
+                    <span class="p">,</span> <span class="n">p_table_name</span>  <span class="o">=&gt;</span> <span class="s1">'my_table_name'</span>
+                    <span class="p">,</span> <span class="n">p_columns</span>     <span class="o">=&gt;</span> <span class="s1">'id, msg, dt'</span>
+                    <span class="p">,</span><span class="n">p_date_fmt</span>     <span class="o">=&gt;</span> <span class="s1">'MM/DD/YYYY'</span>
+                    <span class="p">,</span><span class="n">p_clob</span>         <span class="o">=&gt;</span> <span class="s1">'
+23, "this contains a comma (,)", 06/30/2021
+47, "this contains a newline (
+)", 01/01/2022
+73, and we can have backwacked comma (</span><span class="se">\,</span><span class="s1">), 12/25/2021
+92, what about backwacked dquote &gt;</span><span class="se">\"</span><span class="s1">&lt;?, 12/28/2021
+'</span>
+<span class="p">)</span> <span class="n">x</span><span class="p">;</span>
+<span class="k">DROP</span> <span class="k">TABLE</span> <span class="n">my_table_name</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>and the output looks as I expect. I export the resultset in JSON format from sqldeveloper to demonstrate that
+the data in the select list is SQL data types, not just strings. Note that the JSON formatter changed
+the embeded newline I threw in to the ‘\n’ representation. Cool.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{
+  "results" : [
+    {
+      "columns" : [
+        {
+          "name" : "ID",
+          "type" : "NUMBER"
+        },
+        {
+          "name" : "MSG",
+          "type" : "VARCHAR2"
+        },
+        {
+          "name" : "DT",
+          "type" : "DATE"
+        }
+      ],
+      "items" : [
+        {
+          "id" : 23,
+          "msg" : "this contains a comma (,)",
+          "dt" : "06/30/2021"
+        },
+        {
+          "id" : 47,
+          "msg" : "this contains a newline (\n)",
+          "dt" : "01/01/2022"
+        },
+        {
+          "id" : 73,
+          "msg" : "and we can have backwacked comma (,)",
+          "dt" : "12/25/2021"
+        },
+        {
+          "id" : 92,
+          "msg" : "what about backwacked dquote &gt;\\\"&lt;?",
+          "dt" : "12/28/2021"
+        }
+      ]
+    }
+  ]
+}
+</code></pre></div></div>
+
+<h3 id="p_tab">p_tab</h3>
+
+<p>We expect the table to provide a single row (and only 1 row!) and do not care what is in it. The simplest
+thing to do is provide the name <em>dual</em> for p_tab.</p>
+
+<h3 id="p_table_name">p_table_name</h3>
+
+<p>Provide the name of a table that we expect to find in <em>all_tab_columns</em>. The
+column names should match what is in <em>p_columns</em> list (after it is UPPER cased).
+We do not do anything to the table. We merely use it to find the column data
+types. The expectation is that you want rows from the CSV that look like they
+came from or belong in that table.</p>
+
+<h3 id="p_columns">p_columns</h3>
+
+<p>Provide a CSV separated string with a list of column names from that table.
+The CSV input rows must have a matching
+number of columns and be in the same order as that column list (which need not
+match the table definition order). Our
+output column list will be in that order by default as well.</p>
+
+<h3 id="p_clob">p_clob</h3>
+
+<p>Provide the CSV data rows as a clob. You can use a text literal. If it exceeds
+32767 characters, simply concatenate another literal until you have it all.</p>
+
+<h3 id="p_date_fmt">p_date_fmt</h3>
+
+<p>If your target field list contains DATE data types, the CSV values will
+need to be converted. If you are certain of the NLS_DATE_FORMAT in play
+in your session and your data matches that, you can leave it NULL. You can
+also alter your session to set NLS_DATE_FORMAT before calling the PTF.
+I would provide a date format. There are too many times I’ve stumbled
+upon something that changes the NLS_DATE_FORMAT of my session out from
+under me.</p>
+
+<p>Note that this version does not support BLOB or INTERVAL data types.</p>
+
+<h2 id="ptf-package-body">PTF Package Body</h2>
+
+<p>The functions <em>split</em> and <em>transform_perl_regexp</em> are embedded here as
+package private functions. I also 
+publish them separately as part of a <a href="https://github.com/lee-lindley/plsql_utilities">library of plsql utilities</a>
+that I support.</p>
+
+<p>I wrote a <a href="https://leelindley.blogspot.com/2021/12/perl-regexp-vs-oracle.html">blog post</a> about
+<em>transform_perl_regexp</em>.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="n">PACKAGE</span> <span class="n">BODY</span> <span class="n">csv_to_table_pkg</span> <span class="k">AS</span>
+
+    <span class="n">g_rows_regexp</span>   <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">);</span>
+    <span class="c1">-- defined at the end of the package</span>
+    <span class="k">FUNCTION</span> <span class="n">split</span> <span class="p">(</span>
+        <span class="n">p_s</span>            <span class="n">VARCHAR2</span>
+        <span class="p">,</span><span class="n">p_separator</span>    <span class="n">VARCHAR2</span>    <span class="k">DEFAULT</span> <span class="s1">','</span>
+        <span class="p">,</span><span class="n">p_keep_nulls</span>   <span class="n">VARCHAR2</span>    <span class="k">DEFAULT</span> <span class="s1">'N'</span>
+        <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="n">VARCHAR2</span>    <span class="k">DEFAULT</span> <span class="s1">'Y'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
+    <span class="p">)</span> <span class="k">RETURN</span> <span class="n">arr_varchar2_udt</span> <span class="k">DETERMINISTIC</span>
+    <span class="p">;</span>
+
+    <span class="k">FUNCTION</span> <span class="k">describe</span><span class="p">(</span>
+        <span class="n">p_tab</span> <span class="k">IN</span> <span class="k">OUT</span>    <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
+        <span class="p">,</span><span class="n">p_table_name</span>   <span class="n">VARCHAR2</span>
+        <span class="p">,</span><span class="n">p_columns</span>      <span class="n">VARCHAR2</span> <span class="c1">-- csv list</span>
+        <span class="p">,</span><span class="n">p_clob</span>         <span class="k">CLOB</span>
+        <span class="p">,</span><span class="n">p_date_fmt</span>     <span class="n">VARCHAR2</span> <span class="k">DEFAULT</span> <span class="k">NULL</span> <span class="c1">-- uses nls_date_format if null</span>
+    <span class="p">)</span> <span class="k">RETURN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">DESCRIBE_T</span>
+    <span class="k">AS</span>
+        <span class="n">v_new_cols</span>  <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">columns_new_t</span><span class="p">;</span>
+        <span class="n">v_col_names</span> <span class="n">arr_varchar2_udt</span><span class="p">;</span>
+
+        <span class="k">TYPE</span> <span class="n">t_col_order</span> <span class="k">IS</span> <span class="k">TABLE</span> <span class="k">OF</span> <span class="n">BINARY_INTEGER</span> <span class="k">INDEX</span> <span class="k">BY</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">);</span>
+        <span class="n">v_col_order</span> <span class="n">t_col_order</span><span class="p">;</span>
+    <span class="k">BEGIN</span>
+        <span class="n">IF</span> <span class="n">p_tab</span><span class="p">.</span><span class="k">column</span><span class="p">.</span><span class="k">COUNT</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span> 
+        <span class="k">THEN</span>
+            <span class="n">RAISE_APPLICATION_ERROR</span><span class="p">(</span><span class="o">-</span><span class="mi">20000</span><span class="p">,</span><span class="s1">'Input table to csv_to_table_pkg.t should be table DUAL'</span><span class="p">);</span>
+        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+        <span class="n">p_tab</span><span class="p">.</span><span class="k">column</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="n">pass_through</span> <span class="p">:</span><span class="o">=</span> <span class="k">FALSE</span><span class="p">;</span>
+        <span class="n">p_tab</span><span class="p">.</span><span class="k">column</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="n">for_read</span> <span class="p">:</span><span class="o">=</span> <span class="k">TRUE</span><span class="p">;</span>
+
+        <span class="n">v_col_names</span> <span class="p">:</span><span class="o">=</span> <span class="n">split</span><span class="p">(</span><span class="k">UPPER</span><span class="p">(</span><span class="n">p_columns</span><span class="p">));</span>
+        <span class="c1">-- we need a hash to get from the column name to the index for both input csv order and output field order</span>
+        <span class="k">FOR</span> <span class="n">i</span> <span class="k">IN</span> <span class="mi">1</span><span class="p">..</span><span class="n">v_col_names</span><span class="p">.</span><span class="k">COUNT</span>
+        <span class="n">LOOP</span>
+            <span class="n">v_col_order</span><span class="p">(</span><span class="n">v_col_names</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="p">:</span><span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+        <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
+
+        <span class="k">FOR</span> <span class="n">r</span> <span class="k">IN</span> <span class="p">(</span>
+            <span class="k">SELECT</span> <span class="k">c</span><span class="p">.</span><span class="n">column_value</span> <span class="k">AS</span> <span class="k">column_name</span>
+                <span class="p">,</span><span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">a</span><span class="p">.</span><span class="n">data_type</span> <span class="k">LIKE</span> <span class="s1">'TIMESTAMP%'</span> <span class="k">THEN</span> <span class="s1">'TIMESTAMP'</span> <span class="k">ELSE</span> <span class="n">a</span><span class="p">.</span><span class="n">data_type</span> <span class="k">END</span> <span class="k">AS</span> <span class="n">data_type</span>
+            <span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">v_col_names</span><span class="p">)</span> <span class="k">c</span>
+            <span class="k">LEFT</span> <span class="k">OUTER</span> <span class="k">JOIN</span> <span class="n">all_tab_columns</span> <span class="n">a</span>
+                <span class="k">ON</span> <span class="n">a</span><span class="p">.</span><span class="k">table_name</span> <span class="o">=</span> <span class="k">UPPER</span><span class="p">(</span><span class="n">p_table_name</span><span class="p">)</span>
+                    <span class="k">AND</span> <span class="n">a</span><span class="p">.</span><span class="k">column_name</span> <span class="o">=</span> <span class="k">c</span><span class="p">.</span><span class="n">column_value</span>
+        <span class="p">)</span> <span class="n">LOOP</span>
+            <span class="n">IF</span> <span class="n">r</span><span class="p">.</span><span class="n">data_type</span> <span class="k">IS</span> <span class="k">NULL</span> <span class="k">THEN</span>
+                <span class="n">RAISE_APPLICATION_ERROR</span><span class="p">(</span><span class="o">-</span><span class="mi">20001</span><span class="p">,</span><span class="s1">'table: '</span><span class="o">||</span><span class="n">p_table_name</span><span class="o">||</span><span class="s1">' does not have a column named '</span><span class="o">||</span><span class="n">r</span><span class="p">.</span><span class="k">column_name</span><span class="p">);</span>
+            <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+            <span class="n">IF</span> <span class="n">r</span><span class="p">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="s1">'BLOB'</span> <span class="k">OR</span> <span class="n">r</span><span class="p">.</span><span class="n">data_type</span> <span class="k">LIKE</span> <span class="s1">'INTERVAL%'</span> <span class="k">THEN</span>
+                <span class="n">RAISE_APPLICATION_ERROR</span><span class="p">(</span><span class="o">-</span><span class="mi">20002</span><span class="p">,</span><span class="s1">'table: '</span><span class="o">||</span><span class="n">p_table_name</span><span class="o">||</span><span class="s1">' column '</span><span class="o">||</span><span class="n">r</span><span class="p">.</span><span class="k">column_name</span><span class="o">||</span><span class="s1">' is unsupported data type '</span><span class="o">||</span><span class="n">r</span><span class="p">.</span><span class="n">data_type</span><span class="p">);</span>
+            <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+            <span class="c1">-- we create these in any order, but they must be in the right location in the array</span>
+            <span class="n">v_new_cols</span><span class="p">(</span><span class="n">v_col_order</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="k">column_name</span><span class="p">))</span> <span class="p">:</span><span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">column_metadata_t</span><span class="p">(</span>
+                                        <span class="n">name</span>    <span class="o">=&gt;</span> <span class="n">r</span><span class="p">.</span><span class="k">column_name</span>
+                                        <span class="p">,</span><span class="k">type</span>   <span class="o">=&gt;</span> <span class="k">CASE</span> <span class="n">r</span><span class="p">.</span><span class="n">data_type</span>
+                                                    <span class="k">WHEN</span> <span class="s1">'TIMESTAMP'</span>        <span class="k">THEN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_timestamp</span>
+                                                    <span class="k">WHEN</span> <span class="s1">'BINARY_DOUBLE'</span>    <span class="k">THEN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_binary_double</span>
+                                                    <span class="k">WHEN</span> <span class="s1">'BINARY_FLOAT'</span>     <span class="k">THEN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_binary_float</span>
+                                                    <span class="c1">--WHEN 'BLOB'             THEN DBMS_TF.type_blob</span>
+                                                    <span class="k">WHEN</span> <span class="s1">'CHAR'</span>             <span class="k">THEN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_char</span>
+                                                    <span class="k">WHEN</span> <span class="s1">'CLOB'</span>             <span class="k">THEN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_clob</span>
+                                                    <span class="k">WHEN</span> <span class="s1">'DATE'</span>             <span class="k">THEN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_date</span>
+                                                    <span class="k">WHEN</span> <span class="s1">'NUMBER'</span>           <span class="k">THEN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_number</span>
+                                                    <span class="k">ELSE</span>                         <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_varchar2</span>
+                                                   <span class="k">END</span>
+                                    <span class="p">);</span>
+        <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
+
+        <span class="c1">-- we have 1 input row and MANY output rows, so replication is true</span>
+        <span class="k">RETURN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">describe_t</span><span class="p">(</span><span class="n">new_columns</span> <span class="o">=&gt;</span> <span class="n">v_new_cols</span><span class="p">,</span> <span class="n">row_replication</span> <span class="o">=&gt;</span> <span class="k">TRUE</span><span class="p">);</span>
+    <span class="k">END</span> <span class="k">describe</span>
+    <span class="p">;</span>
+
+    <span class="k">PROCEDURE</span> <span class="n">fetch_rows</span><span class="p">(</span>
+         <span class="n">p_table_name</span>   <span class="n">VARCHAR2</span>
+        <span class="p">,</span><span class="n">p_columns</span>      <span class="n">VARCHAR2</span> <span class="c1">-- csv list</span>
+        <span class="p">,</span><span class="n">p_clob</span>         <span class="k">CLOB</span>
+        <span class="p">,</span><span class="n">p_date_fmt</span>     <span class="n">VARCHAR2</span> <span class="k">DEFAULT</span> <span class="k">NULL</span> <span class="c1">-- uses nls_date_format if null</span>
+    <span class="p">)</span> <span class="k">AS</span>
+        <span class="n">v_env</span>               <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">env_t</span> <span class="p">:</span><span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">get_env</span><span class="p">();</span> <span class="c1">-- put_columns.count</span>
+        <span class="n">v_rowset</span>            <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">row_set_t</span><span class="p">;</span>
+        <span class="n">v_in_row_count</span>      <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+        <span class="c1">--</span>
+        <span class="n">v_rowset_out</span>        <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">row_set_t</span><span class="p">;</span>
+        <span class="n">v_col_out_cnt</span>       <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+        <span class="n">v_output_col_type</span>   <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+        <span class="c1">--</span>
+        <span class="n">v_row</span>               <span class="k">CLOB</span><span class="p">;</span>
+        <span class="n">v_row_cnt</span>           <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+        <span class="n">v_col_strings</span>       <span class="n">arr_varchar2_udt</span><span class="p">;</span>
+
+        <span class="c1">-- input row numbers including blank lines that can be skipped</span>
+        <span class="n">g_row_num</span>           <span class="n">NUMBER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">v_rows_out</span>          <span class="n">BINARY_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">BEGIN</span>
+        <span class="c1">-- the number of columns in our output rows should match number of csv fields</span>
+        <span class="n">v_col_out_cnt</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_env</span><span class="p">.</span><span class="n">put_columns</span><span class="p">.</span><span class="k">COUNT</span><span class="p">();</span>
+
+        <span class="c1">-- in case FETCH is called more than once (unlikely)</span>
+        <span class="c1">-- get does not change value if not found in store so starts with our default 0</span>
+        <span class="c1">--DBMS_TF.xstore_get('g_row_num', g_row_num); </span>
+
+        <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">get_row_set</span><span class="p">(</span><span class="n">v_rowset</span><span class="p">,</span> <span class="k">row_count</span> <span class="o">=&gt;</span> <span class="n">v_in_row_count</span><span class="p">);</span>
+        <span class="n">IF</span> <span class="n">v_in_row_count</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">THEN</span>
+            <span class="n">RAISE_APPLICATION_ERROR</span><span class="p">(</span><span class="o">-</span><span class="mi">20007</span><span class="p">,</span><span class="s1">'input table should only have 1 placeholder row. Use DUAL'</span><span class="p">);</span>
+        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+        <span class="c1">-- we need to use count because our regexp will match an empty row. We will skip</span>
+        <span class="c1">-- the empty row but we need to line number to help with debug error message</span>
+        <span class="n">v_row_cnt</span> <span class="p">:</span><span class="o">=</span> <span class="n">REGEXP_COUNT</span><span class="p">(</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">g_rows_regexp</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="c1">-- one extra matches on $</span>
+<span class="c1">--dbms_output.put_line('got '||v_row_cnt||' rows from clob');</span>
+        <span class="c1">-- loop over the rows split from the input string</span>
+        <span class="k">FOR</span> <span class="n">i</span> <span class="k">IN</span> <span class="mi">1</span><span class="p">..</span><span class="n">v_row_cnt</span>
+        <span class="n">LOOP</span>
+            <span class="n">g_row_num</span> <span class="p">:</span><span class="o">=</span> <span class="n">g_row_num</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="c1">-- pull a line out of the text input (sans newline)</span>
+            <span class="n">v_row</span> <span class="p">:</span><span class="o">=</span> <span class="n">REGEXP_SUBSTR</span><span class="p">(</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">g_rows_regexp</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+<span class="c1">--dbms_output.put_line('row '||g_row_num||' : '||v_row);</span>
+            <span class="c1">-- split the row into csv fields stripping dquotes and unquoting chars inside dquotes</span>
+            <span class="n">v_col_strings</span> <span class="p">:</span><span class="o">=</span> <span class="n">split</span><span class="p">(</span><span class="n">v_row</span><span class="p">);</span>
+            <span class="n">IF</span> <span class="n">v_col_strings</span><span class="p">.</span><span class="k">COUNT</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">THEN</span>
+                <span class="c1">-- just skip empty rows now that we captured the rownumber</span>
+<span class="c1">--dbms_output.put_line('row '||g_row_num||' had 0 csv columns');</span>
+                <span class="k">CONTINUE</span><span class="p">;</span>
+            <span class="n">ELSIF</span> <span class="n">v_col_strings</span><span class="p">.</span><span class="k">COUNT</span> <span class="o">!=</span> <span class="n">v_col_out_cnt</span> <span class="k">THEN</span>
+                <span class="n">RAISE_APPLICATION_ERROR</span><span class="p">(</span><span class="o">-</span><span class="mi">20003</span><span class="p">,</span><span class="s1">'row '</span><span class="o">||</span><span class="n">g_row_num</span><span class="o">||</span><span class="s1">' has cnt='</span><span class="o">||</span><span class="n">v_col_strings</span><span class="p">.</span><span class="k">COUNT</span><span class="o">||</span><span class="s1">' csv fields, but we need '</span><span class="o">||</span><span class="n">v_col_out_cnt</span><span class="o">||</span><span class="s1">' columns
+ROW: '</span><span class="o">||</span><span class="n">v_row</span><span class="p">);</span>
+            <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+<span class="c1">--dbms_output.put_line('row '||g_row_num||' had '||v_col_strings.COUNT||' csv columns');</span>
+            <span class="c1">-- populate the output rowset column tables for this row</span>
+            <span class="n">v_rows_out</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_rows_out</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="k">FOR</span> <span class="n">j</span> <span class="k">IN</span> <span class="mi">1</span><span class="p">..</span><span class="n">v_col_out_cnt</span>
+            <span class="n">LOOP</span>
+                <span class="n">v_output_col_type</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_env</span><span class="p">.</span><span class="n">put_columns</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="k">TYPE</span><span class="p">;</span>
+                <span class="n">IF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_timestamp</span> <span class="k">THEN</span>
+                    <span class="c1">-- better set nls value yourself because we just shoving the string in with default conversion</span>
+                    <span class="c1">-- likely not to ever be used</span>
+                    <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_timestamp</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+                <span class="n">ELSIF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_binary_double</span> <span class="k">THEN</span>
+                    <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_binary_double</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+				<span class="n">ELSIF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_binary_float</span> <span class="k">THEN</span>
+                    <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_binary_float</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+				<span class="n">ELSIF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_char</span> <span class="k">THEN</span>
+                    <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_char</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+				<span class="n">ELSIF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_clob</span> <span class="k">THEN</span>
+                    <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_clob</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+				<span class="n">ELSIF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_date</span> <span class="k">THEN</span>
+                    <span class="n">IF</span> <span class="n">p_date_fmt</span> <span class="k">IS</span> <span class="k">NULL</span> <span class="k">THEN</span>
+                        <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_date</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">);</span> <span class="c1">-- default to nls_date_fmt</span>
+                    <span class="k">ELSE</span>
+                        <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_date</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">TO_DATE</span><span class="p">(</span><span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">p_date_fmt</span><span class="p">);</span>
+                    <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+				<span class="n">ELSIF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_number</span> <span class="k">THEN</span>
+                    <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_number</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+                <span class="k">ELSE</span> <span class="c1">-- in describe we made sure the only thing left is varchar2</span>
+                    <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_varchar2</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+                <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+            <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span> <span class="c1">-- end loop on columns</span>
+        <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span> <span class="c1">-- end loop on newline separated rows in clob</span>
+
+        <span class="c1">--DBMS_TF.xstore_set('g_row_num', g_row_num);</span>
+        <span class="c1">-- we got a single row of input, but are now writing v_rows_out records output.</span>
+        <span class="c1">-- The only way to do that is with the funky replication_factor. It was not designed</span>
+        <span class="c1">-- for this, but it works.</span>
+        <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">put_row_set</span><span class="p">(</span><span class="n">v_rowset_out</span><span class="p">,</span> <span class="n">replication_factor</span> <span class="o">=&gt;</span> <span class="n">v_rows_out</span><span class="p">);</span>
+    <span class="k">END</span> <span class="n">fetch_rows</span><span class="p">;</span>
+
+    <span class="k">FUNCTION</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">p_re</span> <span class="n">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
+    <span class="k">DETERMINISTIC</span>
+    <span class="k">IS</span>
+        <span class="cm">/*
+            strip comment blocks that start with at least one blank, then
+            '--' or '#', then everything to end of line or string
+        */</span>
+        <span class="n">c_strip_comments_regexp</span> <span class="n">CONSTANT</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'[[:blank:]](--|#).*($|
+    )'</span><span class="p">;</span>
+    <span class="k">BEGIN</span>
+      <span class="c1">-- note that \n and \t will be replaced if not preceded by a \</span>
+      <span class="c1">-- \\n and \\t will not be replaced. Unfortunately, neither will \\\n or \\\t.</span>
+      <span class="c1">-- We are not parsing into tokens, so this is as close as we can get cheaply</span>
+      <span class="k">RETURN</span> 
+        <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
+          <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
+            <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
+              <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
+                <span class="n">REGEXP_REPLACE</span><span class="p">(</span><span class="n">p_re</span><span class="p">,</span> <span class="n">c_strip_comments_regexp</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">'m'</span><span class="p">)</span> <span class="c1">-- strip comments</span>
+                    <span class="p">,</span> <span class="s1">'</span><span class="se">\s</span><span class="s1">+'</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>                 <span class="c1">-- strip spaces and newlines too like 'x' modifier</span>
+              <span class="p">)</span> 
+              <span class="p">,</span> <span class="s1">'(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">t'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\1</span><span class="s1">'</span><span class="o">||</span><span class="n">CHR</span><span class="p">(</span><span class="mi">9</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>    <span class="c1">-- replace \t with tab character value so it works like in perl</span>
+            <span class="p">)</span> 
+            <span class="p">,</span> <span class="s1">'(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">n'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\1</span><span class="s1">'</span><span class="o">||</span><span class="n">CHR</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>       <span class="c1">-- replace \n with newline character value so it works like in perl</span>
+          <span class="p">)</span>
+          <span class="p">,</span> <span class="s1">'(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">r'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\1</span><span class="s1">'</span><span class="o">||</span><span class="n">CHR</span><span class="p">(</span><span class="mi">13</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>         <span class="c1">-- replace \r with CR character value so it works like in perl</span>
+        <span class="p">)</span> 
+      <span class="p">;</span>
+    <span class="k">END</span> <span class="n">transform_perl_regexp</span><span class="p">;</span>
+
+
+  <span class="k">FUNCTION</span> <span class="n">split</span> <span class="p">(</span>
+     <span class="n">p_s</span>            <span class="n">VARCHAR2</span>
+    <span class="p">,</span><span class="n">p_separator</span>    <span class="n">VARCHAR2</span>    <span class="k">DEFAULT</span> <span class="s1">','</span>
+    <span class="p">,</span><span class="n">p_keep_nulls</span>   <span class="n">VARCHAR2</span>    <span class="k">DEFAULT</span> <span class="s1">'N'</span>
+    <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="n">VARCHAR2</span>    <span class="k">DEFAULT</span> <span class="s1">'Y'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
+  <span class="p">)</span> <span class="k">RETURN</span> <span class="n">arr_varchar2_udt</span> <span class="k">DETERMINISTIC</span>
+<span class="c1">-- when p_s IS NULL, returns initialized collection with COUNT=0</span>
+<span class="c1">--</span>
+<span class="cm">/*
+
+Treat input string p_s as following the Comma Separated Values (csv) format 
+(not delimited, but separated) and break it into an array of strings (fields) 
+returned to the caller. This is overkill for the most common case
+of simple separated strings that do not contain the separator char and are 
+not quoted, but if they are double quoted fields, this will handle them 
+appropriately including the quoting of " within the field.
+
+We comply with RFC4180 on CSV format (for what it is worth) while also 
+handling the mentioned common variants like backwacked quotes and 
+backwacked separators in non-double quoted fields that Excel produces.
+
+See https://www.loc.gov/preservation/digital/formats/fdd/fdd000323.shtml
+
+*/</span>
+<span class="c1">--</span>
+<span class="cm">/*
+MIT License
+
+Copyright (c) 2021 Lee Lindley
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/</span>
+  <span class="k">IS</span>
+        <span class="n">v_str</span>       <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">);</span>    <span class="c1">-- individual parsed values cannot exceed 4000 chars</span>
+        <span class="n">v_occurence</span> <span class="n">BINARY_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="n">v_i</span>         <span class="n">BINARY_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">v_cnt</span>       <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+        <span class="n">v_arr</span>       <span class="n">arr_varchar2_udt</span> <span class="p">:</span><span class="o">=</span> <span class="n">arr_varchar2_udt</span><span class="p">();</span>
+
+        <span class="c1">-- we are going to match multiple times. After each match the position </span>
+        <span class="c1">-- will be after the last separator.</span>
+        <span class="n">v_regexp</span>    <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="s1">'
+</span><span class="se">\s</span><span class="s1">*                         -- optional whitespace before anything, or after
+                            -- last delim
+                            --
+   (                        -- begin capture of </span><span class="se">\1</span><span class="s1"> which is what we will return.
+                            -- It can be NULL!
+                            --
+       "                        -- one double quote char binding start of the match
+           (                        -- just grouping
+ --
+ -- order of these next things matters. Look for longest one first
+ --
+               ""                       -- literal "" which is a quoted quote 
+                                        -- within dquote string
+               |                        
+               </span><span class="se">\\</span><span class="s1">"                      -- Then how about a backwacked double
+                                        -- quote???
+               | 
+               [^"]                     -- char that is not a closing quote
+           )*                       -- 0 or more of those chars greedy for
+                                    -- field between quotes
+                                    --
+       "                        -- now the closing dquote 
+       |                        -- if not a double quoted string, try plain one
+ --
+ -- if the capture is not going to be null or a "*" string, then must start 
+ -- with a char that is not a separator or a "
+ --
+       [^"'</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="s1">']    -- so one non-sep, non-" character to bind 
+                                -- start of match
+                                --
+           (                        -- just grouping
+ --
+ -- order of these things matters. Look for longest one first
+ --
+               </span><span class="se">\\</span><span class="s1">'</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="s1">'      -- look for a backwacked separator
+               |                        
+               [^'</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="s1">']     -- a char that is not a separator
+           )*                       -- 0 or more of these non-sep, non backwack
+                                    -- sep chars after one starting (bound) a 
+                                    -- char 1 that is neither sep nor "
+                                    --
+   )?                       -- end capture of our field </span><span class="se">\1</span><span class="s1">, and we want 0 or 1
+                            -- of them because we can have ,,
+ --
+ -- Since we allowed zero matches in the above, regexp_subst can return null
+ -- or just spaces in the referenced grouped string </span><span class="se">\1</span><span class="s1">
+ --
+   ('</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="s1">'|$)    -- now we must find a literal separator or be at 
+                            -- end of string. This separator is included and 
+                            -- consumed at the end of our match, but we do not
+                            -- include it in what we return
+'</span><span class="p">);</span>
+<span class="c1">--</span>
+<span class="c1">--</span>
+<span class="c1">--</span>
+<span class="c1">--v_log app_log_udt := app_log_udt('TEST');</span>
+  <span class="k">BEGIN</span>
+        <span class="n">IF</span> <span class="n">p_s</span> <span class="k">IS</span> <span class="k">NULL</span> <span class="k">THEN</span>
+            <span class="k">RETURN</span> <span class="n">v_arr</span><span class="p">;</span> <span class="c1">-- will be empty</span>
+        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+<span class="c1">--v_log.log_p(TO_CHAR(REGEXP_COUNT(p_s,v_regexp)));</span>
+        <span class="c1">-- since our matched group may be a null string that regexp_substr </span>
+        <span class="c1">-- returns before we are done, we cannot rely on the condition that </span>
+        <span class="c1">-- regexp_substr returns null to know we are done. </span>
+        <span class="c1">-- That is the traditional way to loop using regexp_subst, but that </span>
+        <span class="c1">-- will not work for us. So, we first have to find out how many fields</span>
+        <span class="c1">-- we have including null captures and run regexp_substr that many times</span>
+        <span class="n">v_cnt</span> <span class="p">:</span><span class="o">=</span> <span class="n">REGEXP_COUNT</span><span class="p">(</span><span class="n">p_s</span><span class="p">,</span> <span class="n">v_regexp</span><span class="p">);</span>
+        <span class="c1">--</span>
+        <span class="c1">-- A "delimited" string, as opposed to a separated string, will end in</span>
+        <span class="c1">-- a delimiter char. In other words there is always one "delimiter"</span>
+        <span class="c1">-- after every field. But the most common case of CSV is a "separator"</span>
+        <span class="c1">-- style which does not have separator at the end, and if we actually</span>
+        <span class="c1">-- have a separator at the end of the string, it is because the last</span>
+        <span class="c1">-- field value was NULL!!!! In that scenario with the trailing separator</span>
+        <span class="c1">-- we want to count that NULL and include it in our array.</span>
+        <span class="c1">-- In the case where the last char is not a "separator" char, </span>
+        <span class="c1">-- the regexp will match one last time on the zero-width $. That is an</span>
+        <span class="c1">-- oddity of how it is constructed.</span>
+        <span class="c1">-- For our purposes of expecting a separated string, not delimited,</span>
+        <span class="c1">-- we need to reduce the count by 1 for the case where the last</span>
+        <span class="c1">-- character is NOT a separator. </span>
+        <span class="c1">--</span>
+        <span class="c1">-- I do not know what to say. I was very dissapointed I could not handle</span>
+        <span class="c1">-- all the logic in the regexp, but Oracle regexp are just not as</span>
+        <span class="c1">-- powerful as the ones in Perl which have negative/positive lookahead</span>
+        <span class="c1">-- and lookbehinds plus the concept of "POS()" so you can match against</span>
+        <span class="c1">-- the start of the substr like ^ does for the whole thing. Without</span>
+        <span class="c1">-- those features, this was very difficult. It is also possible I am</span>
+        <span class="c1">-- missing something important and a regexp expert could do it more</span>
+        <span class="c1">-- simply. I would not mind being corrected and shown a better way.</span>
+        <span class="c1">--</span>
+        <span class="n">IF</span> <span class="n">SUBSTR</span><span class="p">(</span><span class="n">p_s</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">p_separator</span> <span class="k">THEN</span> <span class="c1">-- if last char of string is not the separator</span>
+            <span class="n">v_cnt</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_cnt</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+
+        <span class="k">FOR</span> <span class="n">v_occurence</span> <span class="k">IN</span> <span class="mi">1</span><span class="p">..</span><span class="n">v_cnt</span>
+        <span class="n">LOOP</span>
+            <span class="n">v_str</span> <span class="p">:</span><span class="o">=</span> <span class="n">REGEXP_SUBSTR</span><span class="p">(</span>
+                    <span class="n">p_s</span>                 <span class="c1">-- the string we are parsing</span>
+                    <span class="p">,</span><span class="n">v_regexp</span>           <span class="c1">-- the regexp we built using the chosen separator (like ',')</span>
+                    <span class="p">,</span><span class="mi">1</span>                  <span class="c1">-- starting at the beginning of the string on the first call</span>
+                    <span class="p">,</span><span class="n">v_occurence</span>        <span class="c1">-- but on subsequent calls we will get 2nd, then 3rd, etc, match of the pattern</span>
+                    <span class="p">,</span><span class="s1">''</span>                 <span class="c1">-- no regexp modifiers</span>
+                    <span class="p">,</span><span class="mi">1</span>                  <span class="c1">-- we want the \1 grouping match returned, not the entire expression</span>
+            <span class="p">);</span>
+<span class="c1">--v_log.log_p(TO_CHAR(v_occurence)||' x'||v_str||'x');</span>
+
+            <span class="c1">-- cannot use this test for NULL like the man page for regexp_substr</span>
+            <span class="c1">-- shows because our grouped match can be null as a valid value</span>
+            <span class="c1">-- while still parsing the string.</span>
+            <span class="c1">--EXIT WHEN v_str IS NULL;</span>
+
+            <span class="n">v_str</span> <span class="p">:</span><span class="o">=</span> <span class="k">TRIM</span><span class="p">(</span><span class="n">v_str</span><span class="p">);</span>                               <span class="c1">-- if it is a double quoted string, can still have leading/trailing spaces in the value</span>
+            <span class="n">IF</span> <span class="n">v_str</span> <span class="k">IS</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">OR</span> <span class="n">p_keep_nulls</span> <span class="o">=</span> <span class="s1">'Y'</span> <span class="k">THEN</span>     <span class="c1">-- otherwise it was an empty string which we discard.</span>
+                <span class="c1">-- we WILL add this to the array</span>
+                <span class="n">IF</span> <span class="n">v_str</span> <span class="k">IS</span> <span class="k">NULL</span> <span class="k">THEN</span>
+                    <span class="k">NULL</span><span class="p">;</span>
+                <span class="n">ELSIF</span> <span class="n">SUBSTR</span><span class="p">(</span><span class="n">v_str</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="s1">'"'</span> <span class="k">THEN</span>                 <span class="c1">-- it IS a double quoted string</span>
+                    <span class="n">IF</span> <span class="n">p_strip_dquote</span> <span class="o">=</span> <span class="s1">'Y'</span> <span class="k">THEN</span>
+                        <span class="c1">-- get rid of starting and ending " char</span>
+                        <span class="c1">-- replace any \" or "" pairs with single "</span>
+                        <span class="n">v_str</span> <span class="p">:</span><span class="o">=</span> <span class="n">REGEXP_REPLACE</span><span class="p">(</span><span class="n">v_str</span><span class="p">,</span> 
+                                    <span class="s1">'^"|"$'</span>         <span class="c1">-- leading " or ending "</span>
+                                    <span class="o">||</span><span class="s1">'|["</span><span class="se">\\</span><span class="s1">]'</span>  <span class="c1">-- or one of chars " or \</span>
+                                        <span class="o">||</span><span class="s1">'(")'</span>     <span class="c1">-- that is followed by a " and we capture that one in \1</span>
+                                    <span class="p">,</span><span class="s1">'</span><span class="se">\1</span><span class="s1">'</span>           <span class="c1">-- We put any '"' we captured back without the backwack or " quote</span>
+                                    <span class="p">,</span><span class="mi">1</span>              <span class="c1">-- start at position 1 in v_str</span>
+                                    <span class="p">,</span><span class="mi">0</span>              <span class="c1">-- 0 occurence means replace all of these we find</span>
+                                <span class="p">);</span> 
+                    <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+                <span class="k">ELSE</span> 
+                        <span class="c1">-- not a double quoted string so unbackwack separators inside it. Excel format</span>
+                        <span class="n">v_str</span> <span class="p">:</span><span class="o">=</span> <span class="n">REGEXP_REPLACE</span><span class="p">(</span><span class="n">v_str</span><span class="p">,</span> <span class="s1">'</span><span class="se">\\</span><span class="s1">('</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="s1">')'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\1</span><span class="s1">'</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+                <span class="k">END</span> <span class="n">IF</span><span class="p">;</span> <span class="c1">-- end if double quoted string</span>
+                <span class="c1">-- Note that if it was an empty double quoted string we are still putting it into the array.</span>
+                <span class="c1">-- So, you can still get nulls in the case they are given to you as "" and we stripped the dquotes,</span>
+                <span class="c1">-- even if you asked to not keep nulls. Cause an empty string is not NULL. Uggh.</span>
+                <span class="n">v_i</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+                <span class="n">v_arr</span><span class="p">.</span><span class="n">EXTEND</span><span class="p">;</span>
+                <span class="c1">-- this will raise an error if the value is more than 400 chars</span>
+                <span class="n">v_arr</span><span class="p">(</span><span class="n">v_i</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">v_str</span><span class="p">;</span>
+            <span class="k">END</span> <span class="n">IF</span><span class="p">;</span> <span class="c1">-- end not an empty string or we want to include NULL</span>
+        <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
+        <span class="k">RETURN</span> <span class="n">v_arr</span><span class="p">;</span>
+  <span class="k">END</span> <span class="n">split</span>
+    <span class="p">;</span>
+<span class="c1">-- start package initialization block</span>
+<span class="k">BEGIN</span>
+
+    <span class="n">g_rows_regexp</span>   <span class="p">:</span><span class="o">=</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="s1">'
+(                               # capture in </span><span class="se">\1</span><span class="s1">
+  (                             # going to group 0 or more of these things
+    [^"</span><span class="se">\n\\</span><span class="s1">]+                   # any number of chars that are not dquote, backwack or newline
+    |
+    (                           # just grouping for repeat
+        </span><span class="se">\\</span><span class="s1"> </span><span class="se">\n</span><span class="s1">                   # or a backwacked </span><span class="se">\n</span><span class="s1"> but put space between them so gets transformed correctly
+    )+                          # one or more protected newlines (as if they were in dquoted string)
+    |
+    (                           # just grouping for repeat
+        </span><span class="se">\\</span><span class="s1">"                     # or a backwacked "
+    )+                          # one or more protected "
+    |
+    "                           # double quoted string start
+        (                       # just grouping. Order of the next set of things matters. Longest first
+            ""                  # literal "" which is a quoted dquoute within dquote string
+            |
+            </span><span class="se">\\</span><span class="s1">"                 # a backwacked dquote 
+            |
+            [^"]                # any single character not the above two multi-char constructs, or a dquote
+                                #     Important! This can be embedded newlines too!
+        )*                      # zero or more of those chars or constructs 
+    "                           # closing dquote
+    |                           
+    </span><span class="se">\\</span><span class="s1">                          # or a backwack, but do this last as it is the smallest and we do not want
+                                #   to consume the backwack before a newline or a dquote
+  )*                            # zero or more strings on a single "line" that could include newline in dquotes
+                                # or even a backwacked newline
+)                               # end capture </span><span class="se">\1</span><span class="s1">
+(                               # just grouping 
+    $|</span><span class="se">\n</span><span class="s1">                        # require match newline or string end 
+)                               # close grouping
+'</span><span class="p">);</span>
+
+<span class="k">END</span> <span class="n">csv_to_table_pkg</span><span class="p">;</span>
+<span class="o">/</span>
+<span class="k">show</span> <span class="n">errors</span>
+</code></pre></div></div>
+
+<h2 id="using-the-ptf-for-data-deploy">Using the PTF for Data Deploy</h2>
+
+<p>Here is how I could deploy the rows in my example at the start of this blog post:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="n">MERGE</span> <span class="k">INTO</span> <span class="n">util_config</span>
+    <span class="k">USING</span> <span class="p">(</span>
+        <span class="k">SELECT</span> <span class="o">*</span>
+        <span class="k">FROM</span> <span class="n">csv_to_table_pkg</span><span class="p">.</span><span class="n">t</span><span class="p">(</span>
+            <span class="n">p_tab</span>       <span class="o">=&gt;</span> <span class="n">dual</span>
+            <span class="p">,</span><span class="n">p_table_name</span>   <span class="o">=&gt;</span> <span class="s1">'util_config'</span>
+            <span class="p">,</span><span class="n">p_columns</span>      <span class="o">=&gt;</span> <span class="s1">'app_name, param_name, param_value'</span>
+            <span class="p">,</span><span class="n">p_clob</span>         <span class="o">=&gt;</span> <span class="s1">'
+My App, email_address, bogus@mycompany.com
+My App, debug_level, 0
+'</span>
+        <span class="p">)</span>
+    <span class="p">)</span> <span class="n">q</span>
+    <span class="k">ON</span> <span class="p">(</span><span class="k">c</span><span class="p">.</span><span class="n">app_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">app_name</span> <span class="k">AND</span> <span class="k">c</span><span class="p">.</span><span class="n">param_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">)</span>
+<span class="k">WHEN</span> <span class="k">NOT</span> <span class="n">MATCHED</span> <span class="k">THEN</span> <span class="k">INSERT</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">created_by</span><span class="p">,</span> <span class="n">created_dt</span><span class="p">)</span>
+    <span class="k">VALUES</span><span class="p">(</span><span class="n">q</span><span class="p">.</span><span class="n">app_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span><span class="p">,</span> <span class="k">USER</span><span class="p">,</span> <span class="n">SYSDATE</span><span class="p">)</span>
+<span class="k">WHEN</span> <span class="n">MATCHED</span> <span class="k">THEN</span> <span class="k">UPDATE</span> <span class="k">SET</span>
+        <span class="n">param_value</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span>
+        <span class="p">,</span><span class="n">updated_by</span> <span class="o">=</span> <span class="k">USER</span>
+        <span class="p">,</span><span class="n">update_DT</span> <span class="o">=</span> <span class="n">sysdate</span>
+    <span class="k">WHERE</span> <span class="n">DECODE</span><span class="p">(</span><span class="k">c</span><span class="p">.</span><span class="n">param_value</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="c1">-- compares NULLs too</span>
+<span class="p">;</span>
+<span class="k">COMMIT</span><span class="p">;</span>
+</code></pre></div></div>
+<p>Our use case was to simplify deploy of DATA to configuration tables. We certainly seemed to have
+done a crapton of hard work to make this <em>easier</em>. I do not know whether the solution is worth
+it or not.</p>
+
+<p>I will likely add this package to <a href="https://github.com/lee-lindley/plsql_utilities">plsql utilities</a>,
+but have not done so yet. I need to exercise it a bit more to see if anything shakes out. I’m
+also still uncomfortable with this pattern of abusing the replication factor for PTF. It does not
+really fit the PTF design. I might break this into two pieces, one of which parses the clob
+into lines and the other which uses a PTF to parse the CSV lines as was done by Mr. Saxon in
+his example.</p>
+
+<p>If you are exploring <em>Polymorphic Table Functions</em>, I hope you might find this exercise helpful.
+We certainly need more examples of them to help learn about it. This was not a <em>gimme</em>.</p>
+
+</div>
+</div>
+
+
+  
+    
+      
+        
+          
+            
+            <div class="panel-body">
+              <h4>Related Posts</h4>
+              <ul>
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+  
+  </ul>
+</div>
+
+
+<div class="PageNavigation">
+  
+    <a class="prev" href="/oracle/plsql/2021/12/26/Perl-Regexp-vs-Oracle.html">&laquo; Perl REgexp vs Oracle</a>
+  
+  
+    <a class="next" href="/oracle/sql/plsql/2021/12/28/Polymorphic-Table-Function-for-CSV-2.html">Polymorphic Table Function for CSV (take 2) &raquo;</a>
+  
+</div>
+
+<div class="disqus-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    /* <![CDATA[ */
+    var disqus_shortname = "leelindleyscratchpad";
+    var disqus_identifier = "http://localhost:4000_Polymorphic Table Function to the Rescue?";
+    var disqus_title = "Polymorphic Table Function to the Rescue?";
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    /* ]]> */
+  </script>
+</div>
+
+        <footer>
+          &copy; Lee Lindley
+          
+            - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.
+          
+          <div class="btn-github" style="float:right;">
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+          </div>
+        </footer>
+      </div>
+      <!-- end /.col-sm-8 -->
+    </div>
+    <!-- end /.container -->
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/super-search.js"></script>
+    <script src="/static/js/thickbox-compressed.js"></script>
+    <script src="/static/js/projects.js"></script>
+  </body>
+</html>
+

@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    <title>Why do I need Inline PL/SQL Methods? - Lee Lindley Scratchpad</title>
+    <meta name="author" content="Lee Lindley" />
+    <meta name="description" content="Why do I need Inline PL/SQL Methods?" />
+    <meta name="keywords" content="Why do I need Inline PL/SQL Methods?, Lee Lindley Scratchpad, oracle, sql, plsql" />
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+    <meta content="" property="fb:app_id">
+    <meta content="Lee Lindley Scratchpad" property="og:site_name">
+
+    
+
+    
+      <meta content="Why do I need Inline PL/SQL Methods?" property="og:title">
+      <meta content="article" property="og:type">
+    
+
+    
+      <meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description">
+    
+
+    
+      <meta content="http://localhost:4000/oracle/sql/plsql/2021/09/25/Inline-PLSQL-Methods.html" property="og:url">
+    
+
+    
+      <meta content="2021-09-25T11:30:00-04:00" property="article:published_time">
+      <meta content="http://localhost:4000/about/" property="article:author">
+    
+
+    
+
+    
+      
+        <meta content="oracle" property="article:section">
+      
+    
+
+    
+      
+        <meta content="oracle" property="article:tag">
+      
+        <meta content="sql" property="article:tag">
+      
+        <meta content="plsql" property="article:tag">
+      
+    
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@">
+    <meta name="twitter:creator" content="@">
+
+    
+      <meta name="twitter:title" content="Why do I need Inline PL/SQL Methods?">
+    
+
+    
+      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/2021/09/25/Inline-PLSQL-Methods.html">
+    
+
+    
+      <meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux">
+    
+
+    
+
+    <!-- Font awesome icons -->
+    <link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <!-- syntax highlighting CSS -->
+    <link rel="stylesheet" href="/static/css/syntax.css">
+    <!-- Bootstrap core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/super-search.css">
+    <link rel="stylesheet" href="/static/css/thickbox.css">
+    <link rel="stylesheet" href="/static/css/projects.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-sm-3">
+        <div class="fixed-condition">
+          <h1 class="author-name"><a href="/">Lee Lindley</a></h1>
+          
+            <div class="profile-about">
+              I'm Just Another Perl Hacker who wound up in a big Oracle Database playground
+            </div>
+          
+          <div class="social">
+            <ul>
+              
+                <li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+              
+                <li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></li>
+              
+            </ul>
+          </div>
+          <div class="search" id="js-search">
+            <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input">
+            <ul class="search__results" id="js-search__results"></ul>
+          </div>
+          <hr />
+          <ul class="sidebar-nav">
+            <strong>Navigation</strong>
+            <li><a href="/">Home</a></li>
+            
+              <li><a class="about" href="/about/">About Me</a></li>
+            
+              <li><a class="about" href="/projects/">My Projects</a></li>
+            
+              <li><a class="about" href="/feed.xml">XML Feed</a></li>
+            
+          </ul>
+        </div>
+        <!-- end /.fixed-condition -->
+      </div>
+      <div class="col-sm-8 col-offset-1 main-layout">
+        <header class="post-header">
+  <h1 class="post-title">Why do I need Inline PL/SQL Methods?</h1>
+</header>
+
+<span class="time">25 Sep 2021</span>
+
+  <span class="categories">
+    &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>
+  </span>
+
+
+<div class="content">
+  <div class="post"><h1 id="declaring-plsql-in-an-oracle-sql-with-clause">Declaring PL/SQL in an Oracle SQL <em>WITH</em> Clause</h1>
+
+<p>The capability to define PL/SQL functions and procedures inside an Oracle SQL query (and even 
+the query portion of DML statements) was added in Oracle version 12.1. The Oracle documentation 
+for it that I have found so far is sparse. Tim Hall of <em>Oracle Base</em> fame has a good primer
+on it <a href="https://oracle-base.com/articles/12c/with-clause-enhancements-12cr1">WITH Clause Enhancements in Oracle Database 12c Release 1 (12.1)</a>.</p>
+
+<p>The primary reason (allegedly) that Oracle provided for defining the PL/SQL code inline is
+to improve performance by avoiding context switching. Yet in the same release we were given
+<em>PRAGMA UDF</em> which allows optimizing schema level PL/SQL functions as inline. That seems a wash.</p>
+
+<p>The best case I have for deploying inline methods in production code is when the logic is specific to that single query, and is not easily and cleanly done directly in SQL. There are not that many tasks that are so difficult in SQL that this condition exists, but there are some where procedural code is just a better answer. I would also add a caveat that if the procedure is big and gnarly, I would rather compile it in the schema than trying to debug it in the middle of a giant query.</p>
+
+<h1 id="another-reason-for-needing-inline-plsql">Another Reason for Needing Inline PL/SQL</h1>
+
+<p>I have another use for inline PL/SQL. Consider the case where you cannot deploy schema level PL/SQL. The best example I have is doing adhoc queries on a production system. You can deploy PL/SQL to that system after going through the formal process, but not today.</p>
+
+<p>Maybe you have a real need for PL/SQL, like calling procedures with OUT parameters then selecting the value in a query, but you have query-only access on a system. Or perhaps your access to the database elements you need is through roles, not direct grants, so you cannot deploy PL/SQL that uses those elements.</p>
+
+<h2 id="role-access-for-inline-plsql">Role Access for Inline PL/SQL</h2>
+
+<p>For this test my schema has not been granted <em>SELECT</em> on <em>HR.job_history</em>. I have the role privilege <em>HR_SELECT</em>,
+and that role has been granted <em>SELECT</em> on <em>HR.job_history</em>. If I attempted to create a function
+that read from the table <em>HR.job_history</em>, the create would fail. The inline PL/SQL function works though.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="k">FUNCTION</span> <span class="n">get_hist_job_id</span><span class="p">(</span><span class="n">p_emp</span> <span class="n">number</span><span class="p">)</span> <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
+<span class="k">AS</span>
+    <span class="n">l_job_id</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">);</span>
+<span class="k">BEGIN</span>
+    <span class="k">SELECT</span> <span class="k">MAX</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span> <span class="n">KEEP</span> <span class="p">(</span><span class="n">DENSE_RANK</span> <span class="k">FIRST</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">end_date</span> <span class="k">DESC</span><span class="p">)</span> <span class="k">INTO</span> <span class="n">l_job_id</span>
+    <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">job_history</span>
+    <span class="k">WHERE</span> <span class="n">employee_id</span> <span class="o">=</span> <span class="n">p_emp</span>
+    <span class="p">;</span>
+    <span class="k">RETURN</span> <span class="n">l_job_id</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="n">get_hist_job_id</span><span class="p">(</span><span class="mi">176</span><span class="p">)</span> <span class="k">FROM</span> <span class="n">dual</span><span class="p">;</span>
+<span class="o">/</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GET_HIST_JOB_ID(176)
+--------------------------------------------------------------------------------
+SA_MAN
+</code></pre></div></div>
+
+<p>Granted that the function doesn’t do anything that we could not have done directly in the query, but the test was merely to prove that we can avoid the issue with grants through roles versus direct grants to the schema owner. If you need PL/SQL and face a limitation where you cannot get the direct grants, this might be a way around it. Note that this is not likely to please certain control freaks, so keep it to yourself.</p>
+
+<p>You might also be able to get around this limitation by using dynamic sql (EXECUTE IMMEDIATE) and AUTHID CURRENT_USER. I admit to not having a complete grasp of all of the intricacies of the privilege stack where dynamic sql is involved, but I think it can be done. I like the inline PL/SQL method for it though.</p>
+
+<h2 id="selecting-a-value-from-a-procedure-out-parameter">Selecting a Value from a Procedure OUT Parameter</h2>
+
+<p>Consider a scenario where the only methods available to you for retrieving some value
+is through a procedure with an OUT parameter. You cannot call that directly from a
+SQL select. In this system we cannot deploy schema level PL/SQL today, so we will use
+an inline function to provide the result.</p>
+
+<p>The <em>DBMS_LOB</em> package has a procedure <em>LOADBLOBFROMFILE</em> that puts the result in an OUT parameter.
+I want to SELECT that BLOB value and save it to my local drive (which I can do easily from Toad
+or SqlDeveloper).</p>
+
+<p>As of Oracle 12.2 you can do this in straight SQL (see <a href="https://odieweblog.wordpress.com/2017/04/17/oracle-12-2-to_clob-and-to_blob-enhancements/">TO_CLOB and TO_BLOB enhancements</a>), 
+but I’m going to use the example anyway.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="k">FUNCTION</span> <span class="n">get_blob</span><span class="p">(</span><span class="n">p_directory</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">p_filename</span> <span class="n">VARCHAR2</span><span class="p">)</span> <span class="k">RETURN</span> <span class="nb">BLOB</span>
+<span class="k">AS</span>
+    <span class="n">l_bfile</span>         <span class="n">BFILE</span><span class="p">;</span>
+    <span class="n">l_blob</span>          <span class="nb">BLOB</span><span class="p">;</span>
+    <span class="n">l_blob_out</span>      <span class="nb">BLOB</span><span class="p">;</span>
+    <span class="n">l_dest_offset</span>   <span class="nb">INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="n">l_src_offset</span>    <span class="nb">INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+    <span class="n">l_bfile</span> <span class="p">:</span><span class="o">=</span> <span class="n">BFILENAME</span><span class="p">(</span><span class="n">p_directory</span><span class="p">,</span> <span class="n">p_filename</span><span class="p">);</span>
+    <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">fileopen</span><span class="p">(</span><span class="n">l_bfile</span><span class="p">,</span> <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">file_readonly</span><span class="p">);</span>
+    <span class="n">IF</span> <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">getlength</span><span class="p">(</span><span class="n">l_bfile</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">THEN</span>
+        <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">createtemporary</span><span class="p">(</span><span class="n">l_blob</span><span class="p">,</span><span class="k">TRUE</span><span class="p">);</span>
+        <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">loadblobfromfile</span><span class="p">(</span>
+            <span class="n">dest_lob</span>        <span class="o">=&gt;</span> <span class="n">l_blob</span>
+            <span class="p">,</span><span class="n">src_bfile</span>      <span class="o">=&gt;</span> <span class="n">l_bfile</span>
+            <span class="p">,</span><span class="n">amount</span>         <span class="o">=&gt;</span> <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">getlength</span><span class="p">(</span><span class="n">l_bfile</span><span class="p">)</span>
+            <span class="p">,</span><span class="n">dest_offset</span>    <span class="o">=&gt;</span> <span class="n">l_dest_offset</span>
+            <span class="p">,</span><span class="n">src_offset</span>     <span class="o">=&gt;</span> <span class="n">l_src_offset</span>
+        <span class="p">);</span>
+        <span class="n">l_blob_out</span> <span class="p">:</span><span class="o">=</span> <span class="n">l_blob</span><span class="p">;</span>
+        <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">freetemporary</span><span class="p">(</span><span class="n">l_blob</span><span class="p">);</span>
+    <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+    <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">fileclose</span><span class="p">(</span><span class="n">l_bfile</span><span class="p">);</span>
+    <span class="k">RETURN</span> <span class="n">l_blob_out</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="n">get_blob</span><span class="p">(</span><span class="s1">'TMP_DIR'</span><span class="p">,</span><span class="s1">'x.xlsx'</span><span class="p">)</span> <span class="k">FROM</span> <span class="n">dual</span>
+<span class="p">;</span>
+<span class="o">/</span>
+</code></pre></div></div>
+<p>That gives me a “(BLOB)” in the query result in SqlDeveloper that I can download to my local disk.</p>
+
+<h2 id="procedure-required-to-produce-result">Procedure Required to Produce Result</h2>
+
+<p>In a similar vein you may require execution of multiple PL/SQL procedural steps to produce
+the output you ultimately want to select in your adhoc query.</p>
+
+<p>Marc Bleron has an excellent tool for generating MS Excel files directly in the database <a href="https://github.com/mbleron/ExcelGen">ExcelGen - An Oracle PL/SQL Generator for MS Excel Files</a>. Most of the time you will use this
+tool within PL/SQL procedures or packages that you deploy. Yet there are times when it can
+be useful for an adhoc task. Sure, you can have Toad or Sqldeveloper produce CSV or even Excel
+files from a query, but they do not match this for capability. And if you happen to have
+already written a procedure that does much of what you need for your adhoc query, you can
+quickly copy/paste the code into a WITH clause and be ready to rock and roll.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> 
+<span class="k">FUNCTION</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="n">p_src</span> <span class="n">SYS_REFCURSOR</span><span class="p">)</span> <span class="k">RETURN</span> <span class="nb">BLOB</span> <span class="k">AS</span>
+    <span class="n">v_blob</span>          <span class="nb">BLOB</span><span class="p">;</span>
+    <span class="n">v_ctxId</span>         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">ctxHandle</span><span class="p">;</span>
+    <span class="n">v_sheetHandle</span>   <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+        <span class="n">v_ctxId</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">createContext</span><span class="p">();</span>
+        <span class="n">v_sheetHandle</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addSheetFromCursor</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="s1">'Employee Salaries'</span><span class="p">,</span> <span class="n">p_src</span><span class="p">,</span> <span class="n">p_sheetIndex</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">);</span>
+        <span class="c1">-- freeze the top row with the column headers</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setHeader</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="n">v_sheetHandle</span><span class="p">,</span> <span class="n">p_frozen</span> <span class="o">=&gt;</span> <span class="k">TRUE</span><span class="p">);</span>
+        <span class="c1">-- style with alternating colors on each row. </span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableFormat</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="n">v_sheetHandle</span><span class="p">,</span> <span class="s1">'TableStyleLight2'</span><span class="p">);</span>
+        <span class="c1">-- single column format on the salary column. The ID column keeps default format</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setColumnFormat</span><span class="p">(</span>
+            <span class="n">p_ctxId</span>     <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+            <span class="p">,</span><span class="n">p_sheetId</span>  <span class="o">=&gt;</span> <span class="n">v_sheetHandle</span>
+            <span class="p">,</span><span class="n">p_columnId</span> <span class="o">=&gt;</span> <span class="mi">5</span>        <span class="c1">-- the salary column</span>
+            <span class="p">,</span><span class="n">p_format</span>   <span class="o">=&gt;</span> <span class="s1">'$#,##0.00'</span>
+        <span class="p">);</span>
+        <span class="n">v_blob</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">getFileContent</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">closeContext</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
+        <span class="k">RETURN</span> <span class="n">v_blob</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="c1">-- begin sql portion </span>
+<span class="n">add_bilbo</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span> <span class="k">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">salary</span>
+    <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
+    <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> <span class="n">d</span>
+        <span class="k">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
+    <span class="k">UNION</span> <span class="k">ALL</span>
+    <span class="k">SELECT</span> <span class="mi">999</span> <span class="k">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="s1">'Baggins'</span> <span class="k">As</span> <span class="n">last_name</span><span class="p">,</span> <span class="s1">'Bilbo'</span> <span class="k">as</span> <span class="n">first_name</span><span class="p">,</span> <span class="s1">'Sales'</span> <span class="k">AS</span> <span class="n">department_name</span>
+        <span class="p">,</span><span class="mi">123</span><span class="p">.</span><span class="mi">45</span> <span class="k">AS</span> <span class="n">salary</span>
+    <span class="k">FROM</span> <span class="n">dual</span>
+<span class="p">),</span> <span class="n">emp_curs</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">add_bilbo</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">last_name</span><span class="p">,</span> <span class="n">first_name</span>
+<span class="p">)</span> <span class="k">SELECT</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="k">CURSOR</span><span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">emp_curs</span><span class="p">))</span> <span class="k">FROM</span> <span class="n">DUAL</span>
+<span class="p">;</span>
+<span class="o">/</span>
+</code></pre></div></div>
+<p>The trick of passing a CURSOR variable using the last named subquery of the WITH clause (last line of above sample)
+is awesome. Many times I’ve written huge queries that were stuffed into a CURSOR cast to pass into a Function
+before I discovered this handy syntax.</p>
+
+<p>Since the ExcelGen package uses session level package global variables to store everything, 
+you could probably execute an anonymous PL/SQL
+block using a client declared context variable that does the first part of this through <em>setColumnFormat</em>, then use a simple</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">getFileContent</span><span class="p">(:</span><span class="n">v_ctxId</span><span class="p">)</span> <span class="k">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+<p>to get the result. I like the <em>WITH PL/SQL</em> version much better.</p>
+
+<p><img src="/images/excelpage.gif" alt="ExcelPage" class="centered" /></p>
+
+<p>Here is another example using <a href="https://github.com/lee-lindley/PdfGen">PdfGen</a>, a package I wrote that wraps
+the core <em>as_pdf3</em> written by Anton Scheffer.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="k">FUNCTION</span> <span class="n">get_blob</span><span class="p">(</span><span class="n">p_src</span> <span class="n">SYS_REFCURSOR</span><span class="p">)</span> <span class="k">RETURN</span> <span class="nb">BLOB</span>
+<span class="k">IS</span>
+    <span class="n">v_blob</span>      <span class="nb">BLOB</span><span class="p">;</span>
+    <span class="n">v_widths</span>    <span class="n">PdfGen</span><span class="p">.</span><span class="n">t_col_widths</span><span class="p">;</span>
+    <span class="n">v_headers</span>   <span class="n">PdfGen</span><span class="p">.</span><span class="n">t_col_headers</span><span class="p">;</span>
+    <span class="n">v_formats</span>   <span class="n">PdfGen</span><span class="p">.</span><span class="n">t_col_headers</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+                                                <span class="c1">-- Similar to the sqlplus COLUMN HEADING commands</span>
+    <span class="n">v_headers</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'Employee ID'</span><span class="p">;</span>
+    <span class="n">v_widths</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="p">:</span><span class="o">=</span> <span class="mi">11</span><span class="p">;</span>
+    <span class="n">v_headers</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'Last Name'</span><span class="p">;</span>
+    <span class="n">v_widths</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="p">:</span><span class="o">=</span> <span class="mi">25</span><span class="p">;</span>
+    <span class="n">v_headers</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'First Name'</span><span class="p">;</span>
+    <span class="n">v_widths</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>  <span class="p">:</span><span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
+                                                <span class="c1">-- will not print this column, </span>
+                                                <span class="c1">-- just capture it for column page break</span>
+    <span class="n">v_headers</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="k">NULL</span><span class="p">;</span>                       <span class="c1">--'Department Name'</span>
+    <span class="n">v_widths</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>  <span class="p">:</span><span class="o">=</span> <span class="mi">0</span><span class="p">;</span>                          <span class="c1">-- sqlplus COLUMN NOPRINT </span>
+    <span class="n">v_headers</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'Salary'</span><span class="p">;</span>
+    <span class="n">v_widths</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="p">:</span><span class="o">=</span> <span class="mi">16</span><span class="p">;</span>
+    <span class="c1">-- override default number format for this column</span>
+    <span class="n">v_formats</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'$999,999,999.99'</span><span class="p">;</span>
+    <span class="c1">--</span>
+    <span class="n">PdfGen</span><span class="p">.</span><span class="n">init</span><span class="p">;</span>
+    <span class="n">PdfGen</span><span class="p">.</span><span class="n">set_page_format</span><span class="p">(</span>
+        <span class="n">p_format</span>            <span class="o">=&gt;</span> <span class="s1">'LETTER'</span> 
+        <span class="p">,</span><span class="n">p_orientation</span>      <span class="o">=&gt;</span> <span class="s1">'PORTRAIT'</span>
+        <span class="p">,</span><span class="n">p_top_margin</span>       <span class="o">=&gt;</span> <span class="mi">1</span>
+        <span class="p">,</span><span class="n">p_bottom_margin</span>    <span class="o">=&gt;</span> <span class="mi">1</span>
+        <span class="p">,</span><span class="n">p_left_margin</span>      <span class="o">=&gt;</span> <span class="mi">0</span><span class="p">.</span><span class="mi">75</span>
+        <span class="p">,</span><span class="n">p_right_margin</span>     <span class="o">=&gt;</span> <span class="mi">0</span><span class="p">.</span><span class="mi">75</span>
+    <span class="p">);</span>
+    <span class="n">PdfGen</span><span class="p">.</span><span class="n">set_footer</span><span class="p">;</span>                          <span class="c1">-- 'Page #PAGE_NR# of "PAGE_COUNT#' is the default</span>
+                                                <span class="c1">-- sqlplus TITLE command</span>
+    <span class="n">PdfGen</span><span class="p">.</span><span class="n">set_page_header</span><span class="p">(</span>
+        <span class="n">p_txt_center</span>        <span class="o">=&gt;</span> <span class="s1">'Employee Salary Report'</span>
+        <span class="p">,</span><span class="n">p_font_family</span>      <span class="o">=&gt;</span> <span class="s1">'helvetica'</span>
+        <span class="p">,</span><span class="n">p_style</span>            <span class="o">=&gt;</span> <span class="s1">'b'</span>
+        <span class="p">,</span><span class="n">p_fontsize_pt</span>      <span class="o">=&gt;</span> <span class="mi">16</span>
+        <span class="p">,</span><span class="n">p_txt_left_2</span>       <span class="o">=&gt;</span> <span class="s1">'Department: !PAGE_VAL#'</span>
+        <span class="p">,</span><span class="n">p_font_family_2</span>    <span class="o">=&gt;</span> <span class="s1">'helvetica'</span>
+        <span class="p">,</span><span class="n">p_fontsize_pt_2</span>    <span class="o">=&gt;</span> <span class="mi">12</span>
+        <span class="p">,</span><span class="n">p_style_2</span>          <span class="o">=&gt;</span> <span class="s1">'n'</span>
+    <span class="p">);</span>
+    <span class="c1">--</span>
+    <span class="n">as_pdf3</span><span class="p">.</span><span class="n">set_font</span><span class="p">(</span><span class="s1">'courier'</span><span class="p">,</span> <span class="s1">'n'</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+    <span class="n">PdfGen</span><span class="p">.</span><span class="n">refcursor2table</span><span class="p">(</span>
+        <span class="n">p_src</span>                       <span class="o">=&gt;</span> <span class="n">p_src</span>
+        <span class="p">,</span><span class="n">p_widths</span>                   <span class="o">=&gt;</span> <span class="n">v_widths</span>
+        <span class="p">,</span><span class="n">p_headers</span>                  <span class="o">=&gt;</span> <span class="n">v_headers</span>
+        <span class="p">,</span><span class="n">p_formats</span>                  <span class="o">=&gt;</span> <span class="n">v_formats</span>
+        <span class="p">,</span><span class="n">p_bold_headers</span>             <span class="o">=&gt;</span> <span class="k">TRUE</span>     <span class="c1">-- also light gray background on headers</span>
+        <span class="p">,</span><span class="n">p_char_widths_conversion</span>   <span class="o">=&gt;</span> <span class="k">TRUE</span>
+        <span class="p">,</span><span class="n">p_break_col</span>                <span class="o">=&gt;</span> <span class="mi">4</span>        <span class="c1">-- sqlplus BREAK ON column</span>
+        <span class="p">,</span><span class="n">p_grid_lines</span>               <span class="o">=&gt;</span> <span class="k">FALSE</span>
+    <span class="p">);</span>
+    <span class="n">v_blob</span> <span class="p">:</span><span class="o">=</span> <span class="n">PdfGen</span><span class="p">.</span><span class="n">get_pdf</span><span class="p">;</span>
+    <span class="k">RETURN</span> <span class="n">v_blob</span><span class="p">;</span>                              
+<span class="k">END</span><span class="p">;</span>
+<span class="c1">-- begin sql</span>
+<span class="n">a</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span>
+        <span class="p">,</span><span class="k">SUM</span><span class="p">(</span><span class="n">salary</span><span class="p">)</span> <span class="k">AS</span> <span class="n">salary</span>          <span class="c1">-- emulate sqplus COMPUTE SUM</span>
+    <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
+    <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> <span class="n">d</span>
+        <span class="k">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
+    <span class="k">GROUP</span> <span class="k">BY</span> <span class="k">GROUPING</span> <span class="k">SETS</span> <span class="p">(</span>
+                                        <span class="c1">-- seemingly useless SUM on single record, </span>
+                                        <span class="c1">-- but required to get detail records</span>
+                                        <span class="c1">-- in same query as the subtotal and total aggregates</span>
+        <span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">)</span>
+        <span class="p">,(</span><span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">)</span>            <span class="c1">-- sqlplus COMPUTE SUM of salary ON department_name</span>
+        <span class="p">,()</span>                             <span class="c1">-- sqlplus COMPUTE SUM of salary ON report - the grand total</span>
+    <span class="p">)</span>
+<span class="p">),</span> <span class="n">b</span> <span class="k">AS</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="n">employee_id</span>
+        <span class="c1">-- NULL last_name indicates an aggregate result.</span>
+        <span class="c1">-- NULL department_name indicates it was the grand total</span>
+        <span class="c1">-- Similar to the LABEL on COMPUTE SUM</span>
+        <span class="p">,</span><span class="n">NVL</span><span class="p">(</span><span class="n">last_name</span><span class="p">,</span> <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">department_name</span> <span class="k">IS</span> <span class="k">NULL</span>
+                            <span class="k">THEN</span> <span class="n">LPAD</span><span class="p">(</span><span class="s1">'GRAND TOTAL:'</span><span class="p">,</span><span class="mi">25</span><span class="p">)</span>
+                            <span class="k">ELSE</span> <span class="n">LPAD</span><span class="p">(</span><span class="s1">'DEPT TOTAL:'</span><span class="p">,</span><span class="mi">25</span><span class="p">)</span>
+                        <span class="k">END</span>
+        <span class="p">)</span> <span class="k">AS</span> <span class="n">last_name</span>
+        <span class="p">,</span><span class="n">first_name</span>
+        <span class="p">,</span><span class="n">department_name</span>
+        <span class="p">,</span><span class="n">salary</span>
+    <span class="k">FROM</span> <span class="n">a</span>
+    <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">department_name</span> <span class="n">NULLS</span> <span class="k">LAST</span>     <span class="c1">-- to get the aggregates after detail</span>
+        <span class="p">,</span><span class="n">a</span><span class="p">.</span><span class="n">last_name</span> <span class="n">NULLS</span> <span class="k">LAST</span>             <span class="c1">-- notice based on FROM column value, not the one we munged in resultset</span>
+        <span class="p">,</span><span class="n">first_name</span>
+<span class="p">)</span>
+<span class="k">SELECT</span> <span class="n">get_blob</span><span class="p">(</span><span class="k">CURSOR</span><span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">b</span><span class="p">))</span> <span class="k">FROM</span> <span class="n">dual</span>
+<span class="p">;</span>
+<span class="o">/</span>
+</code></pre></div></div>
+<p>An example page from that pdf report follows. That is all a bit much for something you are doing adhoc, but
+given the scrutiny placed over moving code into production in modern corporate environments, you may
+find yourself reaching at times. This is a capability that will allow you to reach pretty far without
+deploying any code to production. That is nice to have in your back pocket when everyone is looking to
+you for a miracle.</p>
+
+<p><img src="/images/test0_pg1.png" alt="PDFGen_Page" class="centered" /></p>
+
+<h1 id="writes">Writes</h1>
+
+<p>Since this facility is part of a SELECT query (or the SELECT portion of DML), it is limited to read only operations. If your inline procedure or function will perform DML or DDL, you need to declare it with PRAGMA AUTONOMOUS_TRANSACTION 
+as mentioned in this <a href="https://asktom.oracle.com/pls/apex/f?p=100:11:0::::P11_QUESTION_ID:9537276300346582444">asktom question</a>.</p>
+
+<p>I won’t disagree with the assertion that it is generally a bad idea, but when constrained by circumstances, one does as needs must.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>Although avoidance of context switching may have been the driving force behind Oracle delivering
+the inline PL/SQL capability for the SQL engine, we can take advantage of it for many reasons.
+I hope these examples were enlightening.</p>
+</div>
+</div>
+
+
+  
+    
+      
+        
+          
+            
+            <div class="panel-body">
+              <h4>Related Posts</h4>
+              <ul>
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+  
+  </ul>
+</div>
+
+
+<div class="PageNavigation">
+  
+    <a class="prev" href="/oracle/sql/plsql/2021/09/10/Ubiquitous-CSV_file.html">&laquo; The Ubiquitous CSV File</a>
+  
+  
+    <a class="next" href="/oracle/sql/plsql/2021/10/17/Use-Case-SQL-Tuning.html">Sql Tuning for Multiple Use Cases &raquo;</a>
+  
+</div>
+
+<div class="disqus-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    /* <![CDATA[ */
+    var disqus_shortname = "leelindleyscratchpad";
+    var disqus_identifier = "http://localhost:4000_Why do I need Inline PL/SQL Methods?";
+    var disqus_title = "Why do I need Inline PL/SQL Methods?";
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    /* ]]> */
+  </script>
+</div>
+
+        <footer>
+          &copy; Lee Lindley
+          
+            - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.
+          
+          <div class="btn-github" style="float:right;">
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+          </div>
+        </footer>
+      </div>
+      <!-- end /.col-sm-8 -->
+    </div>
+    <!-- end /.container -->
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/super-search.js"></script>
+    <script src="/static/js/thickbox-compressed.js"></script>
+    <script src="/static/js/projects.js"></script>
+  </body>
+</html>
+
