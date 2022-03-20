@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/plsql/2021/12/26/Perl-Regexp-vs-Oracle.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/plsql/2021/12/26/Perl-Regexp-vs-Oracle.html" property="og:url">
     
 
     
       <meta content="2021-12-26T10:30:00-05:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -58,7 +58,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/plsql/2021/12/26/Perl-Regexp-vs-Oracle.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/plsql/2021/12/26/Perl-Regexp-vs-Oracle.html">
     
 
     
@@ -153,33 +153,33 @@ These may seem trivial concerns, but I’m not changing.</p>
 Perl would treat the ‘x’ modifier stripping comments and whitespace, plus allowing
 us to use ‘\n’, ‘\r’ and ‘\t’ as character representations that are not stripped as whitespace.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">FUNCTION</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">p_re</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
-    <span class="k">IS</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">FUNCTION</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">p_re</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+    <span class="kr">IS</span>
         <span class="cm">/*
             strip comment blocks that start with at least one blank, then
             '--' or '#', then everything to end of line or string
         */</span>
-        <span class="n">c_strip_comments_regexp</span> <span class="n">CONSTANT</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'[[:blank:]](--|#).*($|
-)'</span><span class="p">;</span>
+        <span class="n">c_strip_comments_regexp</span> <span class="k">CONSTANT</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">)</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">[[:blank:]](--|#).*($|
+)</span><span class="o">'</span><span class="p">;</span>
     <span class="k">BEGIN</span>
     <span class="c1">-- note that \n, \r and \t will be replaced if not preceded by a \</span>
     <span class="c1">-- \\n and \\t will not be replaced. Unfortunately, neither will \\\n or \\\t.</span>
     <span class="c1">-- If you need \\\n, use \\ \n since the space will be removed.</span>
     <span class="c1">-- We are not parsing into tokens, so this is as close as we can get cheaply</span>
       <span class="k">RETURN</span> 
-        <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
-          <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
-            <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
-              <span class="n">REGEXP_REPLACE</span><span class="p">(</span>
-                <span class="n">REGEXP_REPLACE</span><span class="p">(</span><span class="n">p_re</span><span class="p">,</span> <span class="n">c_strip_comments_regexp</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">'m'</span><span class="p">)</span> <span class="c1">-- strip comments</span>
-                <span class="p">,</span> <span class="s1">'</span><span class="se">\s</span><span class="s1">+'</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>                 <span class="c1">-- strip spaces and newlines too like 'x' modifier</span>
+        <span class="nf">REGEXP_REPLACE</span><span class="p">(</span>
+          <span class="nf">REGEXP_REPLACE</span><span class="p">(</span>
+            <span class="nf">REGEXP_REPLACE</span><span class="p">(</span>
+              <span class="nf">REGEXP_REPLACE</span><span class="p">(</span>
+                <span class="nf">REGEXP_REPLACE</span><span class="p">(</span><span class="n">p_re</span><span class="p">,</span> <span class="n">c_strip_comments_regexp</span><span class="p">,</span> <span class="kr">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">'</span><span class="s1">m</span><span class="o">'</span><span class="p">)</span> <span class="c1">-- strip comments</span>
+                <span class="p">,</span> <span class="o">'</span><span class="se">\s</span><span class="s1">+</span><span class="o">'</span><span class="p">,</span> <span class="kr">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>                 <span class="c1">-- strip spaces and newlines too like 'x' modifier</span>
               <span class="p">)</span> 
-              <span class="p">,</span> <span class="s1">'(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">t'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\1</span><span class="s1">'</span><span class="o">||</span><span class="n">CHR</span><span class="p">(</span><span class="mi">9</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>    <span class="c1">-- replace \t with tab character value so it works like in perl</span>
+              <span class="p">,</span> <span class="o">'</span><span class="s1">(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">t</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="se">\1</span><span class="o">'||</span><span class="nf">CHR</span><span class="p">(</span><span class="mi">9</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>    <span class="c1">-- replace \t with tab character value so it works like in perl</span>
             <span class="p">)</span> 
-            <span class="p">,</span> <span class="s1">'(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">n'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\1</span><span class="s1">'</span><span class="o">||</span><span class="n">CHR</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>       <span class="c1">-- replace \n with newline character value so it works like in perl</span>
+            <span class="p">,</span> <span class="o">'</span><span class="s1">(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">n</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="se">\1</span><span class="o">'||</span><span class="nf">CHR</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>       <span class="c1">-- replace \n with newline character value so it works like in perl</span>
           <span class="p">)</span>
-          <span class="p">,</span> <span class="s1">'(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">r'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\1</span><span class="s1">'</span><span class="o">||</span><span class="n">CHR</span><span class="p">(</span><span class="mi">13</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>         <span class="c1">-- replace \r with CR character value so it works like in perl</span>
+          <span class="p">,</span> <span class="o">'</span><span class="s1">(^|[^</span><span class="se">\\</span><span class="s1">])</span><span class="se">\\</span><span class="s1">r</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="se">\1</span><span class="o">'||</span><span class="nf">CHR</span><span class="p">(</span><span class="mi">13</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span>         <span class="c1">-- replace \r with CR character value so it works like in perl</span>
         <span class="p">)</span> 
 
       <span class="p">;</span>
@@ -198,20 +198,20 @@ in <a href="https://www.loc.gov/preservation/digital/formats/fdd/fdd000323.shtml
 <em>plsql_utilities</em> library if it interests you, but the main point is to show the regular expression
 presentation in the Perl style and how it is transformed.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DECLARE</span>
-    <span class="n">v_lines</span>     <span class="k">CLOB</span> <span class="p">:</span><span class="o">=</span> 
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DECLARE</span>
+    <span class="n">v_lines</span>     <span class="kt">CLOB</span> <span class="o">:=</span> 
 <span class="c1">------------------------</span>
-<span class="s1">'23, "this contains a comma (,)", 06/30/2021
+<span class="o">'</span><span class="s1">23, "this contains a comma (,)", 06/30/2021
 47, "this contains a newline (
 )", 01/01/2022
 
 73, and we can have backwacked comma (</span><span class="se">\,</span><span class="s1">), 12/25/2021
-92, what about backwacked dquote &gt;</span><span class="se">\"</span><span class="s1">&lt;?, 12/28/2021'</span>
+92, what about backwacked dquote &gt;</span><span class="se">\"</span><span class="s1">&lt;?, 12/28/2021</span><span class="o">'</span>
 <span class="p">;</span>
 <span class="c1">------------------------</span>
 
     <span class="c1">-- beware this is using Perl-like regexp so we have to apply a transform</span>
-    <span class="n">v_regexp</span>    <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'
+    <span class="n">v_regexp</span>    <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">)</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">
 (                               # capture in </span><span class="se">\1</span><span class="s1">
   (                             # going to group 0 or more of these things
     [^"</span><span class="se">\n\\</span><span class="s1">]+                   # any number of chars that are not dquote, backwack or newline
@@ -243,20 +243,20 @@ presentation in the Perl style and how it is transformed.</p>
 (                               # just grouping 
     $|</span><span class="se">\n</span><span class="s1">                        # require match newline or string end 
 )                               # close grouping
-'</span><span class="p">;</span>
-    <span class="n">v_line</span>      <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">);</span>
-    <span class="n">v_i</span>         <span class="n">BINARY_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-    <span class="n">v_cnt</span>       <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+</span><span class="o">'</span><span class="p">;</span>
+    <span class="n">v_line</span>      <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">);</span>
+    <span class="n">v_i</span>         <span class="kt">BINARY_INTEGER</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="n">v_cnt</span>       <span class="kt">BINARY_INTEGER</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-    <span class="n">v_regexp</span> <span class="p">:</span><span class="o">=</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">v_regexp</span><span class="p">);</span>
-    <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'preprocessed regexp: &gt;'</span><span class="o">||</span><span class="n">v_regexp</span><span class="o">||</span><span class="s1">'&lt;'</span><span class="p">);</span>
+    <span class="n">v_regexp</span> <span class="o">:=</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">v_regexp</span><span class="p">);</span>
+    <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">preprocessed regexp: &gt;</span><span class="o">'||</span><span class="n">v_regexp</span><span class="o">||'</span><span class="s1">&lt;</span><span class="o">'</span><span class="p">);</span>
     <span class="c1">--</span>
-    <span class="n">v_cnt</span> <span class="p">:</span><span class="o">=</span> <span class="n">REGEXP_COUNT</span><span class="p">(</span><span class="n">v_lines</span><span class="p">,</span> <span class="n">v_regexp</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>   <span class="c1">-- get number of times regexp will match less match on $</span>
-    <span class="k">FOR</span> <span class="n">v_i</span> <span class="k">IN</span> <span class="mi">1</span> <span class="p">..</span><span class="n">v_cnt</span>                            <span class="c1">-- for each time we know it will match including NULL match values</span>
-    <span class="n">LOOP</span>
-        <span class="n">v_line</span> <span class="p">:</span><span class="o">=</span> <span class="n">REGEXP_SUBSTR</span><span class="p">(</span><span class="n">v_lines</span><span class="p">,</span> <span class="n">v_regexp</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">v_i</span><span class="p">,</span> <span class="k">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
-        <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'line '</span><span class="o">||</span><span class="n">TO_CHAR</span><span class="p">(</span><span class="n">v_i</span><span class="p">)</span><span class="o">||</span><span class="s1">' is &gt;'</span><span class="o">||</span><span class="n">v_line</span><span class="o">||</span><span class="s1">'&lt;'</span><span class="p">);</span>
-    <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
+    <span class="n">v_cnt</span> <span class="o">:=</span> <span class="nf">REGEXP_COUNT</span><span class="p">(</span><span class="n">v_lines</span><span class="p">,</span> <span class="n">v_regexp</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>   <span class="c1">-- get number of times regexp will match less match on $</span>
+    <span class="kr">FOR</span> <span class="n">v_i</span> <span class="o">IN</span> <span class="mi">1</span> <span class="o">..</span><span class="n">v_cnt</span>                            <span class="c1">-- for each time we know it will match including NULL match values</span>
+    <span class="kr">LOOP</span>
+        <span class="n">v_line</span> <span class="o">:=</span> <span class="nf">REGEXP_SUBSTR</span><span class="p">(</span><span class="n">v_lines</span><span class="p">,</span> <span class="n">v_regexp</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">v_i</span><span class="p">,</span> <span class="kr">NULL</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+        <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">line </span><span class="o">'||</span><span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">v_i</span><span class="p">)</span><span class="o">||'</span><span class="s1"> is &gt;</span><span class="o">'||</span><span class="n">v_line</span><span class="o">||'</span><span class="s1">&lt;</span><span class="o">'</span><span class="p">);</span>
+    <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
 </code></pre></div></div>
@@ -297,13 +297,38 @@ programs.</p>
       
         
           
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -328,7 +353,7 @@ programs.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -365,7 +390,7 @@ programs.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -402,7 +427,7 @@ programs.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -433,7 +458,7 @@ programs.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -462,16 +487,6 @@ programs.</p>
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -754,7 +769,7 @@ programs.</p>
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_Perl REgexp vs Oracle";
+    var disqus_identifier = "https://lee-lindley.github.io_Perl REgexp vs Oracle";
     var disqus_title = "Perl REgexp vs Oracle";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

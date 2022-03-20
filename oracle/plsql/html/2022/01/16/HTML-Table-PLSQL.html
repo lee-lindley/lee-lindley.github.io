@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html" property="og:url">
     
 
     
       <meta content="2022-01-16T10:30:00-05:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -70,7 +70,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">
     
 
     
@@ -204,7 +204,7 @@ colors as well.</p>
 columns or rows. The one to solve our specific issue of right justifying particular columns is encoded
 as:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tr &gt; td:nth-of-type(4) { text-align:right; }
+<div class="language-css highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nt">tr</span> <span class="o">&gt;</span> <span class="nt">td</span><span class="nd">:nth-of-type</span><span class="o">(</span><span class="err">4</span><span class="o">)</span> <span class="p">{</span> <span class="nl">text-align</span><span class="p">:</span><span class="nb">right</span><span class="p">;</span> <span class="p">}</span>
 </code></pre></div></div>
 
 <p>Huh. That was my first thought. I’ll read that as for any table row do this for the fourth table data element (aka column).
@@ -212,7 +212,7 @@ I’m not going to try to explain the rules because I’ll butcher it, but that 
 
 <p>A related construct that lets us alternate the background color on rows is</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>tr:nth-child(odd) { background-color: AliceBlue }
+<div class="language-css highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="nt">tr</span><span class="nd">:nth-child</span><span class="o">(</span><span class="nt">odd</span><span class="o">)</span> <span class="p">{</span> <span class="nl">background-color</span><span class="p">:</span> <span class="n">AliceBlue</span> <span class="p">}</span>
 </code></pre></div></div>
 
 <p>That says for table row elements, on the odd rows use this background color. You could leave the even rows
@@ -225,61 +225,61 @@ for our query with any style adjustments you desire. You don’t have to underst
 you can copy/paste the default style and tweak it a bit. This one is on the fancy side while the 
 default from the package is an austere black and white.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;div id="plsql-table"&gt;
-&lt;style type="text/css" scoped&gt;
-
-table {
-    border: 1px solid black; 
-    border-spacing: 0; 
-    border-collapse: collapse;
-}
-caption {
-    font-style: italic;
-    font-weight: bold;
-    font-size: larger;
-    margin-bottom: 0.5em;
-}
-th {
-    text-align:left;
-    background-color: LightGrey
-}
-th, td {
-    border: 1px solid black; 
-    padding:4px 6px;
-}
-tr:nth-child(odd) { background-color: AliceBlue }
-tr &gt; td:nth-of-type(1) {
-    text-align:right;
-}
-tr &gt; td:nth-of-type(4) {
-    text-align:right;
-}
-&lt;/style&gt;
-&lt;table&gt;
-&lt;caption&gt;Poorly Paid People&lt;/caption&gt;
-&lt;tr&gt;
-  &lt;th&gt;Emp ID&lt;/th&gt;
-  &lt;th&gt;Full Name&lt;/th&gt;
-  &lt;th&gt;Date_x002C_Hire&lt;/th&gt;
-  &lt;th&gt;Salary&lt;/th&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;td&gt;999&lt;/td&gt;
-  &lt;td&gt;  Baggins, Bilbo &amp;quot;badboy&amp;quot; &lt;/td&gt;
-  &lt;td&gt;12/31/1999&lt;/td&gt;
-  &lt;td&gt;     $123.45&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-  &lt;td&gt;206&lt;/td&gt;
-  &lt;td&gt;Gietz, William&lt;/td&gt;
-  &lt;td&gt;06/07/2002&lt;/td&gt;
-  &lt;td&gt;   $8,300.00&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;/table&gt;&lt;/div&gt;
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">"plsql-table"</span><span class="nt">&gt;</span>
+	<span class="nt">&lt;style </span><span class="na">type=</span><span class="s">"text/css"</span> <span class="na">scoped</span><span class="nt">&gt;</span>
+	
+	<span class="nt">table</span> <span class="p">{</span>
+	    <span class="nl">border</span><span class="p">:</span> <span class="m">1px</span> <span class="nb">solid</span> <span class="no">black</span><span class="p">;</span> 
+	    <span class="nl">border-spacing</span><span class="p">:</span> <span class="m">0</span><span class="p">;</span> 
+	    <span class="nl">border-collapse</span><span class="p">:</span> <span class="nb">collapse</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="nt">caption</span> <span class="p">{</span>
+	    <span class="nl">font-style</span><span class="p">:</span> <span class="nb">italic</span><span class="p">;</span>
+	    <span class="nl">font-weight</span><span class="p">:</span> <span class="nb">bold</span><span class="p">;</span>
+	    <span class="nl">font-size</span><span class="p">:</span> <span class="nb">larger</span><span class="p">;</span>
+	    <span class="nl">margin-bottom</span><span class="p">:</span> <span class="m">0.5em</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="nt">th</span> <span class="p">{</span>
+	    <span class="nl">text-align</span><span class="p">:</span><span class="nb">left</span><span class="p">;</span>
+	    <span class="nl">background-color</span><span class="p">:</span> <span class="n">LightGrey</span>
+	<span class="p">}</span>
+	<span class="nt">th</span><span class="o">,</span> <span class="nt">td</span> <span class="p">{</span>
+	    <span class="nl">border</span><span class="p">:</span> <span class="m">1px</span> <span class="nb">solid</span> <span class="no">black</span><span class="p">;</span> 
+	    <span class="nl">padding</span><span class="p">:</span><span class="m">4px</span> <span class="m">6px</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="nt">tr</span><span class="nd">:nth-child</span><span class="o">(</span><span class="nt">odd</span><span class="o">)</span> <span class="p">{</span> <span class="nl">background-color</span><span class="p">:</span> <span class="n">AliceBlue</span> <span class="p">}</span>
+	<span class="nt">tr</span> <span class="o">&gt;</span> <span class="nt">td</span><span class="nd">:nth-of-type</span><span class="o">(</span><span class="err">1</span><span class="o">)</span> <span class="p">{</span>
+	    <span class="nl">text-align</span><span class="p">:</span><span class="nb">right</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="nt">tr</span> <span class="o">&gt;</span> <span class="nt">td</span><span class="nd">:nth-of-type</span><span class="o">(</span><span class="err">4</span><span class="o">)</span> <span class="p">{</span>
+	    <span class="nl">text-align</span><span class="p">:</span><span class="nb">right</span><span class="p">;</span>
+	<span class="p">}</span>
+	<span class="nt">&lt;/style&gt;</span>
+	<span class="nt">&lt;table&gt;</span>
+	<span class="nt">&lt;caption&gt;</span>Poorly Paid People<span class="nt">&lt;/caption&gt;</span>
+	<span class="nt">&lt;tr&gt;</span>
+	  <span class="nt">&lt;th&gt;</span>Emp ID<span class="nt">&lt;/th&gt;</span>
+	  <span class="nt">&lt;th&gt;</span>Full Name<span class="nt">&lt;/th&gt;</span>
+	  <span class="nt">&lt;th&gt;</span>Date_x002C_Hire<span class="nt">&lt;/th&gt;</span>
+	  <span class="nt">&lt;th&gt;</span>Salary<span class="nt">&lt;/th&gt;</span>
+	<span class="nt">&lt;/tr&gt;</span>
+	<span class="nt">&lt;tr&gt;</span>
+	  <span class="nt">&lt;td&gt;</span>999<span class="nt">&lt;/td&gt;</span>
+	  <span class="nt">&lt;td&gt;</span>  Baggins, Bilbo <span class="ni">&amp;quot;</span>badboy<span class="ni">&amp;quot;</span> <span class="nt">&lt;/td&gt;</span>
+	  <span class="nt">&lt;td&gt;</span>12/31/1999<span class="nt">&lt;/td&gt;</span>
+	  <span class="nt">&lt;td&gt;</span>     $123.45<span class="nt">&lt;/td&gt;</span>
+	<span class="nt">&lt;/tr&gt;</span>
+	<span class="nt">&lt;tr&gt;</span>
+	  <span class="nt">&lt;td&gt;</span>206<span class="nt">&lt;/td&gt;</span>
+	  <span class="nt">&lt;td&gt;</span>Gietz, William<span class="nt">&lt;/td&gt;</span>
+	  <span class="nt">&lt;td&gt;</span>06/07/2002<span class="nt">&lt;/td&gt;</span>
+	  <span class="nt">&lt;td&gt;</span>   $8,300.00<span class="nt">&lt;/td&gt;</span>
+	<span class="nt">&lt;/tr&gt;</span>
+	<span class="nt">&lt;tr&gt;</span>
+	<span class="nt">&lt;/table&gt;&lt;/div&gt;</span>
 </code></pre></div></div>
 
-<p>And here is how it is rendered in my browser:</p>
+<p>Here is how it is rendered in my browser:</p>
 
 <table class="img-table-centered">
   <thead>
@@ -302,13 +302,42 @@ tr &gt; td:nth-of-type(4) {
       
         
           
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -337,7 +366,7 @@ tr &gt; td:nth-of-type(4) {
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -382,7 +411,7 @@ tr &gt; td:nth-of-type(4) {
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -427,7 +456,7 @@ tr &gt; td:nth-of-type(4) {
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -464,7 +493,7 @@ tr &gt; td:nth-of-type(4) {
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -526,16 +555,6 @@ tr &gt; td:nth-of-type(4) {
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/09/More-CSV-Fun.html">More CSV Fun - Turn CSV into SQL Resultset</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -867,7 +886,7 @@ tr &gt; td:nth-of-type(4) {
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_HTML Table Markup in Oracle";
+    var disqus_identifier = "https://lee-lindley.github.io_HTML Table Markup in Oracle";
     var disqus_title = "HTML Table Markup in Oracle";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

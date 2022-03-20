@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/sql/plsql/2021/09/10/Ubiquitous-CSV_file.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/2021/09/10/Ubiquitous-CSV_file.html" property="og:url">
     
 
     
       <meta content="2021-09-10T11:30:00-04:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -62,7 +62,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/2021/09/10/Ubiquitous-CSV_file.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/2021/09/10/Ubiquitous-CSV_file.html">
     
 
     
@@ -218,20 +218,20 @@ so it may be a decent option. We will come back to that.</p>
 <p>If you are stuck with an older version, you can concatenate data elements converted to text
 with comma’s between them in your SQL statement and spool it to a text file. For example:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">set</span> <span class="n">linesize</span> <span class="mi">200</span>
-<span class="k">set</span> <span class="n">pagesize</span> <span class="mi">0</span>
-<span class="k">set</span> <span class="n">heading</span> <span class="k">off</span>
-<span class="k">set</span> <span class="n">trimspool</span> <span class="k">on</span>
-<span class="k">set</span> <span class="n">echo</span> <span class="k">off</span>
-<span class="k">set</span> <span class="n">termout</span> <span class="k">off</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">set</span> <span class="n">linesize</span> <span class="mi">200</span>
+<span class="nf">set</span> <span class="n">pagesize</span> <span class="mi">0</span>
+<span class="nf">set</span> <span class="n">heading</span> <span class="k">off</span>
+<span class="nf">set</span> <span class="n">trimspool</span> <span class="kr">on</span>
+<span class="nf">set</span> <span class="n">echo</span> <span class="k">off</span>
+<span class="nf">set</span> <span class="n">termout</span> <span class="k">off</span>
 <span class="n">spool</span> <span class="n">test1</span><span class="p">.</span><span class="n">csv</span>
-<span class="k">SELECT</span> 
-    <span class="n">TO_CHAR</span><span class="p">(</span><span class="n">department_id</span><span class="p">)</span>
-    <span class="o">||</span><span class="s1">','</span><span class="o">||</span> <span class="n">department_name</span>
-    <span class="o">||</span><span class="s1">','</span><span class="o">||</span> <span class="n">TO_CHAR</span><span class="p">(</span><span class="n">manager_id</span><span class="p">)</span>
-    <span class="o">||</span><span class="s1">','</span><span class="o">||</span> <span class="n">TO_CHAR</span><span class="p">(</span><span class="n">location_id</span><span class="p">)</span>
-<span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> 
-<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">department_name</span>
+<span class="kr">SELECT</span> 
+    <span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">department_id</span><span class="p">)</span>
+    <span class="o">||'</span><span class="s1">,</span><span class="o">'||</span> <span class="n">department_name</span>
+    <span class="o">||'</span><span class="s1">,</span><span class="o">'||</span> <span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">manager_id</span><span class="p">)</span>
+    <span class="o">||'</span><span class="s1">,</span><span class="o">'||</span> <span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">location_id</span><span class="p">)</span>
+<span class="kr">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> 
+<span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">department_name</span>
 <span class="p">;</span>
 <span class="n">spool</span> <span class="k">off</span>
 </code></pre></div></div>
@@ -241,20 +241,20 @@ one careless data entry event away from waking up some poor support person in th
 when the file won’t load because there is a comma in one of the field values. A little better pattern
 can protect against that:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">set</span> <span class="n">linesize</span> <span class="mi">200</span>
-<span class="k">set</span> <span class="n">pagesize</span> <span class="mi">0</span>
-<span class="k">set</span> <span class="n">heading</span> <span class="k">off</span>
-<span class="k">set</span> <span class="n">trimspool</span> <span class="k">on</span>
-<span class="k">set</span> <span class="n">echo</span> <span class="k">off</span>
-<span class="k">set</span> <span class="n">termout</span> <span class="k">off</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">set</span> <span class="n">linesize</span> <span class="mi">200</span>
+<span class="nf">set</span> <span class="n">pagesize</span> <span class="mi">0</span>
+<span class="nf">set</span> <span class="n">heading</span> <span class="k">off</span>
+<span class="nf">set</span> <span class="n">trimspool</span> <span class="kr">on</span>
+<span class="nf">set</span> <span class="n">echo</span> <span class="k">off</span>
+<span class="nf">set</span> <span class="n">termout</span> <span class="k">off</span>
 <span class="n">spool</span> <span class="n">test2</span><span class="p">.</span><span class="n">csv</span>
-<span class="k">SELECT</span> 
-                  <span class="n">TO_CHAR</span><span class="p">(</span><span class="n">department_id</span><span class="p">)</span>
-    <span class="o">||</span><span class="s1">','</span><span class="o">||</span> <span class="s1">'"'</span><span class="o">||</span> <span class="n">department_name</span>           <span class="o">||</span><span class="s1">'"'</span>
-    <span class="o">||</span><span class="s1">','</span><span class="o">||</span>       <span class="n">TO_CHAR</span><span class="p">(</span><span class="n">manager_id</span><span class="p">)</span>
-    <span class="o">||</span><span class="s1">','</span><span class="o">||</span>       <span class="n">TO_CHAR</span><span class="p">(</span><span class="n">location_id</span><span class="p">)</span>
-<span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> 
-<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">department_name</span>
+<span class="kr">SELECT</span> 
+                  <span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">department_id</span><span class="p">)</span>
+    <span class="o">||'</span><span class="s1">,</span><span class="o">'||</span> <span class="o">'</span><span class="s1">"</span><span class="o">'||</span> <span class="n">department_name</span>           <span class="o">||'</span><span class="s1">"</span><span class="o">'</span>
+    <span class="o">||'</span><span class="s1">,</span><span class="o">'||</span>       <span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">manager_id</span><span class="p">)</span>
+    <span class="o">||'</span><span class="s1">,</span><span class="o">'||</span>       <span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">location_id</span><span class="p">)</span>
+<span class="kr">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> 
+<span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">department_name</span>
 <span class="p">;</span>
 <span class="n">spool</span> <span class="k">off</span>
 </code></pre></div></div>
@@ -276,24 +276,24 @@ formats contain a comma in the result.</p>
 
 <p>First we will try with <em>quote off</em>.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">SESSION</span> <span class="k">SET</span> <span class="n">nls_date_format</span> <span class="o">=</span> <span class="s1">'YYYYMMDD, HH24:MI'</span><span class="p">;</span>
-<span class="k">ALTER</span> <span class="k">SESSION</span> <span class="k">SET</span> <span class="n">nls_numeric_characters</span> <span class="o">=</span> <span class="s1">',.'</span><span class="p">;</span>
-<span class="k">set</span> <span class="n">markup</span> <span class="n">csv</span> <span class="k">on</span> <span class="n">quote</span> <span class="k">off</span>
-<span class="k">set</span> <span class="n">linesize</span> <span class="mi">200</span>
-<span class="k">set</span> <span class="n">pagesize</span> <span class="mi">0</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">ALTER</span> <span class="k">SESSION</span> <span class="nf">SET</span> <span class="k">nls_date_format</span> <span class="o">=</span> <span class="o">'</span><span class="s1">YYYYMMDD, HH24:MI</span><span class="o">'</span><span class="p">;</span>
+<span class="kr">ALTER</span> <span class="k">SESSION</span> <span class="nf">SET</span> <span class="k">nls_numeric_characters</span> <span class="o">=</span> <span class="o">'</span><span class="s1">,.</span><span class="o">'</span><span class="p">;</span>
+<span class="nf">set</span> <span class="n">markup</span> <span class="n">csv</span> <span class="kr">on</span> <span class="n">quote</span> <span class="k">off</span>
+<span class="nf">set</span> <span class="n">linesize</span> <span class="mi">200</span>
+<span class="nf">set</span> <span class="n">pagesize</span> <span class="mi">0</span>
 <span class="c1">--set heading off</span>
-<span class="k">set</span> <span class="n">trimspool</span> <span class="k">on</span>
-<span class="k">set</span> <span class="n">echo</span> <span class="k">off</span>
-<span class="k">set</span> <span class="n">termout</span> <span class="k">off</span>
+<span class="nf">set</span> <span class="n">trimspool</span> <span class="kr">on</span>
+<span class="nf">set</span> <span class="n">echo</span> <span class="k">off</span>
+<span class="nf">set</span> <span class="n">termout</span> <span class="k">off</span>
 <span class="n">spool</span> <span class="n">test_markup_noquote</span><span class="p">.</span><span class="n">csv</span>
-<span class="k">SELECT</span> 
-    <span class="s1">'a string with comma(,)'</span> <span class="k">AS</span> <span class="nv">"s1"</span>
-    <span class="p">,</span><span class="s1">'a string with dquote(")'</span> <span class="k">AS</span> <span class="nv">"s2"</span>
-    <span class="p">,</span><span class="s1">'a string with newline(
-)'</span> <span class="k">AS</span> <span class="nv">"s3"</span>
-    <span class="p">,</span><span class="n">SYSDATE</span> <span class="k">AS</span> <span class="nv">"date1"</span>
-    <span class="p">,</span><span class="mi">12345</span> <span class="o">/</span> <span class="mi">100</span> <span class="k">AS</span> <span class="nv">"num1"</span>
-<span class="k">FROM</span> <span class="n">DUAL</span>
+<span class="kr">SELECT</span> 
+    <span class="o">'</span><span class="s1">a string with comma(,)</span><span class="o">'</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">s1</span><span class="o">"</span>
+    <span class="p">,</span><span class="o">'</span><span class="s1">a string with dquote(")</span><span class="o">'</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">s2</span><span class="o">"</span>
+    <span class="p">,</span><span class="o">'</span><span class="s1">a string with newline(
+)</span><span class="o">'</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">s3</span><span class="o">"</span>
+    <span class="p">,</span><span class="nf">SYSDATE</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">date1</span><span class="o">"</span>
+    <span class="p">,</span><span class="mi">12345</span> <span class="o">/</span> <span class="mi">100</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">num1</span><span class="o">"</span>
+<span class="kr">FROM</span> <span class="n">DUAL</span>
 <span class="p">;</span>
 <span class="n">spool</span> <span class="k">off</span>
 </code></pre></div></div>
@@ -315,24 +315,24 @@ for a job, I’ll have to figure that out.</p>
 
 <p>Let’s try the same but with <em>quote on</em></p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">SESSION</span> <span class="k">SET</span> <span class="n">nls_date_format</span> <span class="o">=</span> <span class="s1">'YYYYMMDD, HH24:MI'</span><span class="p">;</span>
-<span class="k">ALTER</span> <span class="k">SESSION</span> <span class="k">SET</span> <span class="n">nls_numeric_characters</span> <span class="o">=</span> <span class="s1">',.'</span><span class="p">;</span>
-<span class="k">set</span> <span class="n">markup</span> <span class="n">csv</span> <span class="k">on</span> <span class="n">quote</span> <span class="k">on</span>
-<span class="k">set</span> <span class="n">linesize</span> <span class="mi">200</span>
-<span class="k">set</span> <span class="n">pagesize</span> <span class="mi">0</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">ALTER</span> <span class="k">SESSION</span> <span class="nf">SET</span> <span class="k">nls_date_format</span> <span class="o">=</span> <span class="o">'</span><span class="s1">YYYYMMDD, HH24:MI</span><span class="o">'</span><span class="p">;</span>
+<span class="kr">ALTER</span> <span class="k">SESSION</span> <span class="nf">SET</span> <span class="k">nls_numeric_characters</span> <span class="o">=</span> <span class="o">'</span><span class="s1">,.</span><span class="o">'</span><span class="p">;</span>
+<span class="nf">set</span> <span class="n">markup</span> <span class="n">csv</span> <span class="kr">on</span> <span class="n">quote</span> <span class="kr">on</span>
+<span class="nf">set</span> <span class="n">linesize</span> <span class="mi">200</span>
+<span class="nf">set</span> <span class="n">pagesize</span> <span class="mi">0</span>
 <span class="c1">--set heading off</span>
-<span class="k">set</span> <span class="n">trimspool</span> <span class="k">on</span>
-<span class="k">set</span> <span class="n">echo</span> <span class="k">off</span>
-<span class="k">set</span> <span class="n">termout</span> <span class="k">off</span>
+<span class="nf">set</span> <span class="n">trimspool</span> <span class="kr">on</span>
+<span class="nf">set</span> <span class="n">echo</span> <span class="k">off</span>
+<span class="nf">set</span> <span class="n">termout</span> <span class="k">off</span>
 <span class="n">spool</span> <span class="n">test_markup_wquote</span><span class="p">.</span><span class="n">csv</span>
-<span class="k">SELECT</span> 
-    <span class="s1">'a string with comma(,)'</span> <span class="k">AS</span> <span class="nv">"s1"</span>
-    <span class="p">,</span><span class="s1">'a string with dquote(")'</span> <span class="k">AS</span> <span class="nv">"s2"</span>
-    <span class="p">,</span><span class="s1">'a string with newline(
-)'</span> <span class="k">AS</span> <span class="nv">"s3"</span>
-    <span class="p">,</span><span class="n">SYSDATE</span> <span class="k">AS</span> <span class="nv">"date1"</span>
-    <span class="p">,</span><span class="mi">12345</span> <span class="o">/</span> <span class="mi">100</span> <span class="k">AS</span> <span class="nv">"num1"</span>
-<span class="k">FROM</span> <span class="n">DUAL</span>
+<span class="kr">SELECT</span> 
+    <span class="o">'</span><span class="s1">a string with comma(,)</span><span class="o">'</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">s1</span><span class="o">"</span>
+    <span class="p">,</span><span class="o">'</span><span class="s1">a string with dquote(")</span><span class="o">'</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">s2</span><span class="o">"</span>
+    <span class="p">,</span><span class="o">'</span><span class="s1">a string with newline(
+)</span><span class="o">'</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">s3</span><span class="o">"</span>
+    <span class="p">,</span><span class="nf">SYSDATE</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">date1</span><span class="o">"</span>
+    <span class="p">,</span><span class="mi">12345</span> <span class="o">/</span> <span class="mi">100</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">num1</span><span class="o">"</span>
+<span class="kr">FROM</span> <span class="n">DUAL</span>
 <span class="p">;</span>
 <span class="n">spool</span> <span class="k">off</span>
 </code></pre></div></div>
@@ -371,52 +371,52 @@ file using PL/SQL.</p>
 This is a fairly common technique I have seen deployed by clients (though they rarely bothered
 with the bulk collect).</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DECLARE</span>
-    <span class="k">CURSOR</span> <span class="n">c1</span> <span class="k">IS</span>
-        <span class="k">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">salary</span>
-        <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DECLARE</span>
+    <span class="k">CURSOR</span> <span class="n">c1</span> <span class="kr">IS</span>
+        <span class="kr">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">salary</span>
+        <span class="kr">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
         <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> <span class="n">d</span>
-            <span class="k">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
-        <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span>
+            <span class="kr">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
+        <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span>
     <span class="p">;</span>
-    <span class="n">SUBTYPE</span> <span class="n">t_c1_rec</span> <span class="k">IS</span> <span class="n">c1</span><span class="o">%</span><span class="n">ROWTYPE</span><span class="p">;</span>
-    <span class="k">TYPE</span> <span class="n">t_arr_c1_rec</span> <span class="k">IS</span> <span class="k">TABLE</span> <span class="k">OF</span> <span class="n">t_c1_rec</span><span class="p">;</span>
+    <span class="k">SUBTYPE</span> <span class="n">t_c1_rec</span> <span class="kr">IS</span> <span class="n">c1</span><span class="na">%ROWTYPE</span><span class="p">;</span>
+    <span class="kr">TYPE</span> <span class="n">t_arr_c1_rec</span> <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">t_c1_rec</span><span class="p">;</span>
     <span class="n">v_arr_c1_rec</span>    <span class="n">t_arr_c1_rec</span><span class="p">;</span>
     <span class="n">v_file</span>          <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">file_type</span><span class="p">;</span>
-    <span class="n">v_dir</span>           <span class="n">CONSTANT</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'TMP_DIR'</span><span class="p">;</span>
-    <span class="n">v_file_name</span>     <span class="n">CONSTANT</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'test_csv_dbfile.csv'</span><span class="p">;</span>
+    <span class="n">v_dir</span>           <span class="k">CONSTANT</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">TMP_DIR</span><span class="o">'</span><span class="p">;</span>
+    <span class="n">v_file_name</span>     <span class="k">CONSTANT</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">test_csv_dbfile.csv</span><span class="o">'</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-    <span class="n">v_file</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">fopen</span><span class="p">(</span>
+    <span class="n">v_file</span> <span class="o">:=</span> <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">fopen</span><span class="p">(</span>
         <span class="n">filename</span>        <span class="o">=&gt;</span> <span class="n">v_file_name</span>
         <span class="p">,</span><span class="k">location</span>       <span class="o">=&gt;</span> <span class="n">v_dir</span>
-        <span class="p">,</span><span class="n">open_mode</span>      <span class="o">=&gt;</span> <span class="s1">'w'</span>
+        <span class="p">,</span><span class="n">open_mode</span>      <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">w</span><span class="o">'</span>
         <span class="p">,</span><span class="n">max_linesize</span>   <span class="o">=&gt;</span> <span class="mi">32767</span>
     <span class="p">);</span>
-    <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_file</span><span class="p">,</span> <span class="s1">'employee_id,last_name,first_name,department_name,salary'</span><span class="p">);</span>
+    <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_file</span><span class="p">,</span> <span class="o">'</span><span class="s1">employee_id,last_name,first_name,department_name,salary</span><span class="o">'</span><span class="p">);</span>
     <span class="k">OPEN</span> <span class="n">c1</span><span class="p">;</span>
-    <span class="n">LOOP</span>
-        <span class="k">FETCH</span> <span class="n">c1</span> <span class="n">BULK</span> <span class="n">COLLECT</span> <span class="k">INTO</span> <span class="n">v_arr_c1_rec</span> <span class="k">LIMIT</span> <span class="mi">100</span><span class="p">;</span>
-        <span class="n">EXIT</span> <span class="k">WHEN</span> <span class="n">v_arr_c1_rec</span><span class="p">.</span><span class="k">COUNT</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-        <span class="k">FOR</span> <span class="n">i</span> <span class="k">IN</span> <span class="mi">1</span><span class="p">..</span><span class="n">v_arr_c1_rec</span><span class="p">.</span><span class="k">COUNT</span>
-        <span class="n">LOOP</span>
+    <span class="kr">LOOP</span>
+        <span class="k">FETCH</span> <span class="n">c1</span> <span class="k">BULK</span> <span class="nf">COLLECT</span> <span class="kr">INTO</span> <span class="n">v_arr_c1_rec</span> <span class="k">LIMIT</span> <span class="mi">100</span><span class="p">;</span>
+        <span class="kr">EXIT</span> <span class="k">WHEN</span> <span class="n">v_arr_c1_rec</span><span class="p">.</span><span class="nf">COUNT</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_arr_c1_rec</span><span class="p">.</span><span class="nf">COUNT</span>
+        <span class="kr">LOOP</span>
             <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_file</span><span class="p">,</span>
-                <span class="n">TO_CHAR</span><span class="p">(</span><span class="n">v_arr_c1_rec</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">employee_id</span><span class="p">)</span>
-                <span class="o">||</span><span class="s1">',"'</span><span class="o">||</span><span class="n">v_arr_c1_rec</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">last_name</span>           <span class="o">||</span><span class="s1">'"'</span>
-                <span class="o">||</span><span class="s1">',"'</span><span class="o">||</span><span class="n">v_arr_c1_rec</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">first_name</span>          <span class="o">||</span><span class="s1">'"'</span>
-                <span class="o">||</span><span class="s1">',"'</span><span class="o">||</span><span class="n">v_arr_c1_rec</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">department_name</span>     <span class="o">||</span><span class="s1">'"'</span>
-                <span class="o">||</span><span class="s1">',"'</span><span class="o">||</span><span class="n">LTRIM</span><span class="p">(</span><span class="n">TO_CHAR</span><span class="p">(</span><span class="n">v_arr_c1_rec</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">salary</span><span class="p">,</span><span class="s1">'$999,999,999.99'</span><span class="p">))</span>
-                                                            <span class="o">||</span><span class="s1">'"'</span>
+                <span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">v_arr_c1_rec</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">employee_id</span><span class="p">)</span>
+                <span class="o">||'</span><span class="s1">,"</span><span class="o">'||</span><span class="n">v_arr_c1_rec</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">last_name</span>           <span class="o">||'</span><span class="s1">"</span><span class="o">'</span>
+                <span class="o">||'</span><span class="s1">,"</span><span class="o">'||</span><span class="n">v_arr_c1_rec</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">first_name</span>          <span class="o">||'</span><span class="s1">"</span><span class="o">'</span>
+                <span class="o">||'</span><span class="s1">,"</span><span class="o">'||</span><span class="n">v_arr_c1_rec</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">department_name</span>     <span class="o">||'</span><span class="s1">"</span><span class="o">'</span>
+                <span class="o">||'</span><span class="s1">,"</span><span class="o">'||</span><span class="nf">LTRIM</span><span class="p">(</span><span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">v_arr_c1_rec</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">salary</span><span class="p">,</span><span class="o">'</span><span class="s1">$999,999,999.99</span><span class="o">'</span><span class="p">))</span>
+                                                            <span class="o">||'</span><span class="s1">"</span><span class="o">'</span>
             <span class="p">);</span>
-        <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
-    <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
+        <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+    <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
     <span class="k">CLOSE</span> <span class="n">c1</span><span class="p">;</span>
     <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">fclose</span><span class="p">(</span><span class="n">v_file</span><span class="p">);</span>
     <span class="k">RETURN</span><span class="p">;</span>
-<span class="n">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">OTHERS</span> <span class="k">THEN</span>
-    <span class="n">IF</span> <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">is_open</span><span class="p">(</span><span class="n">v_file</span><span class="p">)</span>
-        <span class="k">THEN</span> <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">fclose</span><span class="p">(</span><span class="n">v_file</span><span class="p">);</span>
-    <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
-    <span class="n">RAISE</span><span class="p">;</span>
+<span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="k">OTHERS</span> <span class="kr">THEN</span>
+    <span class="k">IF</span> <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">is_open</span><span class="p">(</span><span class="n">v_file</span><span class="p">)</span>
+        <span class="kr">THEN</span> <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">fclose</span><span class="p">(</span><span class="n">v_file</span><span class="p">);</span>
+    <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+    <span class="kr">RAISE</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
 </code></pre></div></div>
@@ -520,13 +520,42 @@ by your users.</p>
       
         
           
+      
+          
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -555,7 +584,7 @@ by your users.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -600,7 +629,7 @@ by your users.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -645,7 +674,7 @@ by your users.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -682,7 +711,7 @@ by your users.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -717,16 +746,6 @@ by your users.</p>
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -1085,7 +1104,7 @@ by your users.</p>
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_The Ubiquitous CSV File";
+    var disqus_identifier = "https://lee-lindley.github.io_The Ubiquitous CSV File";
     var disqus_title = "The Ubiquitous CSV File";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

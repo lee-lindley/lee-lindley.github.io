@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html" property="og:url">
     
 
     
       <meta content="2022-01-24T10:30:00-05:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -64,7 +64,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">
     
 
     
@@ -166,12 +166,12 @@ and assume you, the developer who wants to load the CSV data, will hand craft th
 
 <h1 id="create-file-on-oracle-server">Create File on Oracle Server</h1>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
-    <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">clob2file</span><span class="p">(</span><span class="n">q</span><span class="s1">'[999, "Baggins", "Bilbo", "badboy, ringbearer"
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
+    <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">clob2file</span><span class="p">(</span><span class="o">q'[</span><span class="sx">999, "Baggins", "Bilbo", "badboy, ringbearer"
 998, "Baggins", "Frodo",
-997, "Orc", "Ogg", "i kill you"]'</span>
-                        <span class="p">,</span><span class="s1">'TMP_DIR'</span>
-                        <span class="p">,</span><span class="s1">'temp_csv_load.csv'</span>
+997, "Orc", "Ogg", "i kill you"</span><span class="o">]'</span>
+                        <span class="p">,</span><span class="o">'</span><span class="s1">TMP_DIR</span><span class="o">'</span>
+                        <span class="p">,</span><span class="o">'</span><span class="s1">temp_csv_load.csv</span><span class="o">'</span>
     <span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
@@ -180,24 +180,24 @@ and assume you, the developer who wants to load the CSV data, will hand craft th
 
 <p>Now we read from the file:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">SELECT</span> <span class="o">*</span>
-    <span class="k">FROM</span> <span class="k">EXTERNAL</span><span class="p">(</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">SELECT</span> <span class="o">*</span>
+    <span class="kr">FROM</span> <span class="k">EXTERNAL</span><span class="p">(</span>
         <span class="p">(</span>
-            <span class="nv">"Employee ID"</span>   <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
-            <span class="p">,</span><span class="nv">"Last Name"</span>    <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
-            <span class="p">,</span><span class="nv">"First Name"</span>   <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
-            <span class="p">,</span><span class="nv">"nickname"</span>     <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
+            <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
+            <span class="p">,</span><span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>    <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
+            <span class="p">,</span><span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
+            <span class="p">,</span><span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>     <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
         <span class="p">)</span>
-        <span class="k">TYPE</span> <span class="n">ORACLE_LOADER</span>
-        <span class="k">DEFAULT</span> <span class="n">DIRECTORY</span> <span class="n">TMP_DIR</span>
+        <span class="kr">TYPE</span> <span class="n">ORACLE_LOADER</span>
+        <span class="kr">DEFAULT</span> <span class="k">DIRECTORY</span> <span class="n">TMP_DIR</span>
         <span class="k">ACCESS</span> <span class="k">PARAMETERS</span> <span class="p">(</span>
-            <span class="n">RECORDS</span> <span class="n">DELIMITED</span> <span class="k">BY</span> <span class="n">NEWLINE</span>
-            <span class="n">FIELDS</span> <span class="n">TERMINATED</span> <span class="k">BY</span> <span class="s1">','</span> 
-            <span class="n">OPTIONALLY</span> <span class="n">ENCLOSED</span> <span class="k">BY</span> <span class="s1">'"'</span>
-            <span class="n">MISSING</span> <span class="n">FIELD</span> <span class="k">VALUES</span> <span class="k">ARE</span> <span class="k">NULL</span>
+            <span class="n">RECORDS</span> <span class="n">DELIMITED</span> <span class="kr">BY</span> <span class="n">NEWLINE</span>
+            <span class="n">FIELDS</span> <span class="n">TERMINATED</span> <span class="kr">BY</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span> 
+            <span class="n">OPTIONALLY</span> <span class="n">ENCLOSED</span> <span class="kr">BY</span> <span class="o">'</span><span class="s1">"</span><span class="o">'</span>
+            <span class="k">MISSING</span> <span class="n">FIELD</span> <span class="kr">VALUES</span> <span class="n">ARE</span> <span class="kr">NULL</span>
         <span class="p">)</span>
-        <span class="k">LOCATION</span> <span class="p">(</span><span class="s1">'temp_csv_load.csv'</span><span class="p">)</span>
-        <span class="n">REJECT</span> <span class="k">LIMIT</span> <span class="n">UNLIMITED</span>
+        <span class="k">LOCATION</span> <span class="p">(</span><span class="o">'</span><span class="s1">temp_csv_load.csv</span><span class="o">'</span><span class="p">)</span>
+        <span class="k">REJECT</span> <span class="k">LIMIT</span> <span class="k">UNLIMITED</span>
     <span class="p">)</span> <span class="n">temp_csv_load_ext</span>
     <span class="p">;</span>
 </code></pre></div></div>
@@ -233,8 +233,8 @@ Without it our second record would fail to load.</p>
 
 <p>Being a good citizen, we remove our trash:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
-    <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">fremove</span><span class="p">(</span><span class="s1">'TMP_DIR'</span><span class="p">,</span><span class="s1">'temp_csv_load.csv'</span><span class="p">);</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
+    <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">fremove</span><span class="p">(</span><span class="o">'</span><span class="s1">TMP_DIR</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">temp_csv_load.csv</span><span class="o">'</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
 </code></pre></div></div>
@@ -261,13 +261,46 @@ with a way to make that better. This is one more technique we might be able to u
       
         
           
+      
+          
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -343,7 +376,7 @@ with a way to make that better. This is one more technique we might be able to u
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -396,7 +429,7 @@ with a way to make that better. This is one more technique we might be able to u
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -439,7 +472,7 @@ with a way to make that better. This is one more technique we might be able to u
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -482,7 +515,7 @@ with a way to make that better. This is one more technique we might be able to u
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -523,16 +556,6 @@ with a way to make that better. This is one more technique we might be able to u
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/09/More-CSV-Fun.html">More CSV Fun - Turn CSV into SQL Resultset</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -934,7 +957,7 @@ with a way to make that better. This is one more technique we might be able to u
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_Inline External Tables for CSV Load";
+    var disqus_identifier = "https://lee-lindley.github.io_Inline External Tables for CSV Load";
     var disqus_title = "Inline External Tables for CSV Load";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

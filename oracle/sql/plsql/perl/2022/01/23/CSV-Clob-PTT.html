@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html" property="og:url">
     
 
     
       <meta content="2022-01-23T10:30:00-05:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -64,7 +64,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">
     
 
     
@@ -181,15 +181,15 @@ and populate a Private Temporary Table to contain your data from the CSV clob. H
 
 <h2 id="example">Example</h2>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
-    <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">create_ptt_csv</span><span class="p">(</span><span class="s1">'Employee ID, Last Name, First Name, nickname
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
+    <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">create_ptt_csv</span><span class="p">(</span><span class="o">'</span><span class="s1">Employee ID, Last Name, First Name, nickname
 999, "Baggins", "Bilbo", "badboy, ringbearer"
 998, "Baggins", "Frodo",
-997, "Orc", "Ogg", "i kill you"'</span><span class="p">);</span>
+997, "Orc", "Ogg", "i kill you"</span><span class="o">'</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="k">select</span> <span class="nv">"Employee ID"</span><span class="p">,</span> <span class="nv">"Last Name"</span><span class="p">,</span> <span class="nv">"First Name"</span><span class="p">,</span> <span class="nv">"nickname"</span>
-<span class="k">FROM</span> <span class="n">ora</span><span class="err">$</span><span class="n">ptt_csv</span>
+<span class="kr">select</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span><span class="p">,</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span><span class="p">,</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span><span class="p">,</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
+<span class="kr">FROM</span> <span class="n">ora$ptt_csv</span>
 <span class="p">;</span>
 </code></pre></div></div>
 
@@ -209,14 +209,14 @@ we were using before. Under the covers that is what it does, but now we have som
 <p>Given the prior work with <em>perlish_util_udt.split_clobs_to_lines</em> and <em>perlish_util_udt.split_csv</em>, this was not
 difficult to implement.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="k">STATIC</span> <span class="k">PROCEDURE</span> <span class="n">create_ptt_csv</span> <span class="p">(</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="k">STATIC</span> <span class="kr">PROCEDURE</span> <span class="n">create_ptt_csv</span> <span class="p">(</span>
          <span class="c1">-- creates private temporary table ora$ptt_csv with columns named in first row of data case preserved.</span>
          <span class="c1">-- All fields are varchar2(4000)</span>
-	     <span class="n">p_clob</span>         <span class="k">CLOB</span>
-	    <span class="p">,</span><span class="n">p_separator</span>    <span class="n">VARCHAR2</span>    <span class="k">DEFAULT</span> <span class="s1">','</span>
-	    <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="n">VARCHAR2</span>    <span class="k">DEFAULT</span> <span class="s1">'Y'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
-	<span class="p">)</span> <span class="k">IS</span>
-        <span class="n">v_rows</span>      <span class="n">arr_varchar2_udt</span> <span class="p">:</span><span class="o">=</span> <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span><span class="n">p_clob</span><span class="p">);</span>
+	     <span class="n">p_clob</span>         <span class="kt">CLOB</span>
+	    <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
+	    <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
+	<span class="p">)</span> <span class="kr">IS</span>
+        <span class="n">v_rows</span>      <span class="n">arr_varchar2_udt</span> <span class="o">:=</span> <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span><span class="n">p_clob</span><span class="p">);</span>
         <span class="n">v_cols</span>      <span class="n">perlish_util_udt</span><span class="p">;</span>
 </code></pre></div></div>
 
@@ -224,32 +224,32 @@ difficult to implement.</p>
 going to parse the first row into <em>v_cols</em> which we make into an object type so we can take advantage
 of our <em>map</em> and <em>join</em> methods to build the SQL we need to execute.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span>       <span class="k">CLOB</span><span class="p">;</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span>       <span class="kt">CLOB</span><span class="p">;</span>
     <span class="k">BEGIN</span>
-        <span class="n">v_cols</span> <span class="p">:</span><span class="o">=</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">v_rows</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="s1">'Y'</span><span class="p">));</span>
+        <span class="n">v_cols</span> <span class="o">:=</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">v_rows</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">));</span>
         <span class="c1">-- remove the header row so can bind the array to read the data</span>
-        <span class="n">v_rows</span><span class="p">.</span><span class="k">DELETE</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+        <span class="n">v_rows</span><span class="p">.</span><span class="kr">DELETE</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
 </code></pre></div></div>
 
 <p>We parse the first row differently than the rest. We are going to enclose the data in double quotes so we must strip
 them if they exist. After we get our data from the first row, we delete it from the collection. We will later
 bind the collection array to a SQL statement and do not want the first row to be present.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'DROP TABLE ora$ptt_csv'</span><span class="p">;</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">DROP TABLE ora$ptt_csv</span><span class="o">'</span><span class="p">;</span>
         <span class="k">BEGIN</span>
             <span class="k">EXECUTE</span> <span class="k">IMMEDIATE</span> <span class="n">v_sql</span><span class="p">;</span>
-        <span class="n">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">OTHERS</span> <span class="k">THEN</span> <span class="k">NULL</span><span class="p">;</span>
+        <span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="k">OTHERS</span> <span class="kr">THEN</span> <span class="kr">NULL</span><span class="p">;</span>
         <span class="k">END</span><span class="p">;</span>
 </code></pre></div></div>
 
 <p>Drop the PTT if it already exists.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'CREATE PRIVATE TEMPORARY TABLE ora$ptt_csv(
-'</span>
-            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="s1">'"$_"    VARCHAR2(4000)'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="s1">'
-,'</span><span class="p">)</span>
-            <span class="o">||</span><span class="s1">'
-)'</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">CREATE PRIVATE TEMPORARY TABLE ora$ptt_csv(
+</span><span class="o">'</span>
+            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"    VARCHAR2(4000)</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+,</span><span class="o">'</span><span class="p">)</span>
+            <span class="o">||'</span><span class="s1">
+)</span><span class="o">'</span>
             <span class="p">;</span>
         <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_sql</span><span class="p">);</span>
         <span class="k">EXECUTE</span> <span class="k">IMMEDIATE</span> <span class="n">v_sql</span><span class="p">;</span>
@@ -260,26 +260,26 @@ each column is. We just stuff each column value into a VARCHAR2(4000) field.</p>
 
 <p>The serveroutput of this code from running the example above was:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="n">PRIVATE</span> <span class="k">TEMPORARY</span> <span class="k">TABLE</span> <span class="n">ora</span><span class="err">$</span><span class="n">ptt_csv</span><span class="p">(</span>
-<span class="nv">"Employee ID"</span>    <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
-<span class="p">,</span><span class="nv">"Last Name"</span>    <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
-<span class="p">,</span><span class="nv">"First Name"</span>    <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
-<span class="p">,</span><span class="nv">"nickname"</span>    <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="k">PRIVATE</span> <span class="k">TEMPORARY</span> <span class="kr">TABLE</span> <span class="n">ora$ptt_csv</span><span class="p">(</span>
+<span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>    <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
+<span class="p">,</span><span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>    <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
+<span class="p">,</span><span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>    <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
+<span class="p">,</span><span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>    <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div></div>
 <p>Now for the INSERT.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span> <span class="p">:</span><span class="o">=</span> <span class="n">q</span><span class="s1">'[INSERT INTO ora$ptt_csv 
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">q'[</span><span class="sx">INSERT INTO ora$ptt_csv 
 WITH a AS (
     SELECT perlish_util_udt(
-            perlish_util_udt.split_csv(t.column_value, p_separator =&gt; :p_separator, p_strip_dquote =&gt; :p_strip_dquote, p_keep_nulls =&gt; '</span><span class="n">Y</span><span class="s1">')
+            perlish_util_udt.split_csv(t.column_value, p_separator =&gt; :p_separator, p_strip_dquote =&gt; :p_strip_dquote, p_keep_nulls =&gt; 'Y')
         ) AS p
     FROM TABLE(:bind_array) t
-) SELECT ]'</span>
-        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="s1">'x.p.get($##index_val##) AS "$_"'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="s1">'
-,'</span><span class="p">)</span>
-        <span class="o">||</span><span class="s1">'
-FROM a x'</span><span class="p">;</span>
+) SELECT </span><span class="o">]'</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">x.p.get($##index_val##) AS "$_"</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+,</span><span class="o">'</span><span class="p">)</span>
+        <span class="o">||'</span><span class="s1">
+FROM a x</span><span class="o">'</span><span class="p">;</span>
         <span class="c1">-- must use table alias and fully qualify object name with it to be able to call function or get attribute of object</span>
         <span class="c1">-- Thus alias x for a.</span>
         <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_sql</span><span class="p">);</span>
@@ -294,17 +294,17 @@ index value for each column. Once again <em>map</em> and <em>join</em> are handi
 substitution to <em>map</em> for this release.</p>
 
 <p>The serveroutput of this section from the example:</p>
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">ora</span><span class="err">$</span><span class="n">ptt_csv</span>
-<span class="k">WITH</span> <span class="n">a</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span>
-            <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">column_value</span><span class="p">,</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="s1">'Y'</span><span class="p">)</span>
-        <span class="p">)</span> <span class="k">AS</span> <span class="n">p</span>
-    <span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(:</span><span class="n">bind_array</span><span class="p">)</span> <span class="n">t</span>
-<span class="p">)</span> <span class="k">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"Employee ID"</span>
-<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"Last Name"</span>
-<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"First Name"</span>
-<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="k">AS</span> <span class="nv">"nickname"</span>
-<span class="k">FROM</span> <span class="n">a</span> <span class="n">x</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">INSERT</span> <span class="kr">INTO</span> <span class="n">ora$ptt_csv</span>
+<span class="kr">WITH</span> <span class="n">a</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span>
+            <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="k">column_value</span><span class="p">,</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">)</span>
+        <span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
+    <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(:</span><span class="n">bind_array</span><span class="p">)</span> <span class="n">t</span>
+<span class="p">)</span> <span class="kr">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
+<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
+<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
+<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
+<span class="kr">FROM</span> <span class="n">a</span> <span class="n">x</span>
 </code></pre></div></div>
 
 <p>And of course you have seen the results. I’m starting to like this. Sure, I’ve been seduced by the dark side
@@ -318,13 +318,46 @@ and am writing PL/SQL code that looks like Perl, but I am what I am.</p>
       
         
           
+      
+          
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -357,7 +390,7 @@ and am writing PL/SQL code that looks like Perl, but I am what I am.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -453,7 +486,7 @@ and am writing PL/SQL code that looks like Perl, but I am what I am.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -496,7 +529,7 @@ and am writing PL/SQL code that looks like Perl, but I am what I am.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -539,7 +572,7 @@ and am writing PL/SQL code that looks like Perl, but I am what I am.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -580,16 +613,6 @@ and am writing PL/SQL code that looks like Perl, but I am what I am.</p>
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/09/More-CSV-Fun.html">More CSV Fun - Turn CSV into SQL Resultset</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -991,7 +1014,7 @@ and am writing PL/SQL code that looks like Perl, but I am what I am.</p>
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_CSV Clob and Private Temporary Table";
+    var disqus_identifier = "https://lee-lindley.github.io_CSV Clob and Private Temporary Table";
     var disqus_title = "CSV Clob and Private Temporary Table";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

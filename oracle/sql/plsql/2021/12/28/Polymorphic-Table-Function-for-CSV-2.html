@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/sql/plsql/2021/12/28/Polymorphic-Table-Function-for-CSV-2.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/2021/12/28/Polymorphic-Table-Function-for-CSV-2.html" property="og:url">
     
 
     
       <meta content="2021-12-28T10:30:00-05:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -60,7 +60,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/2021/12/28/Polymorphic-Table-Function-for-CSV-2.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/2021/12/28/Polymorphic-Table-Function-for-CSV-2.html">
     
 
     
@@ -186,31 +186,31 @@ that contains multiple lines, each of which are a CSV record. Note that
 this is a full blown CSV parser that should handle any records that comply
 with RFC4180 (See https://www.loc.gov/preservation/digital/formats/fdd/fdd000323.shtml).</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">FUNCTION</span> <span class="n">ptf</span><span class="p">(</span>
-        <span class="n">p_tab</span>           <span class="k">TABLE</span>
-        <span class="p">,</span><span class="n">p_table_name</span>   <span class="n">VARCHAR2</span>
-        <span class="p">,</span><span class="n">p_columns</span>      <span class="n">VARCHAR2</span> <span class="c1">-- csv list -- could be COLUMNS() construct instead</span>
-        <span class="p">,</span><span class="n">p_date_fmt</span>     <span class="n">VARCHAR2</span> <span class="k">DEFAULT</span> <span class="k">NULL</span> <span class="c1">-- uses nls_date_format if null</span>
-        <span class="p">,</span><span class="n">p_separator</span>    <span class="n">VARCHAR2</span> <span class="k">DEFAULT</span> <span class="s1">','</span>
-    <span class="p">)</span> <span class="k">RETURN</span> <span class="k">TABLE</span>
-    <span class="n">PIPELINED</span> <span class="k">ROW</span> <span class="n">POLYMORPHIC</span> <span class="k">USING</span> <span class="n">csv_to_table_pkg</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">FUNCTION</span> <span class="n">ptf</span><span class="p">(</span>
+        <span class="n">p_tab</span>           <span class="kr">TABLE</span>
+        <span class="p">,</span><span class="n">p_table_name</span>   <span class="kt">VARCHAR2</span>
+        <span class="p">,</span><span class="n">p_columns</span>      <span class="kt">VARCHAR2</span> <span class="c1">-- csv list -- could be COLUMNS() construct instead</span>
+        <span class="p">,</span><span class="n">p_date_fmt</span>     <span class="kt">VARCHAR2</span> <span class="kr">DEFAULT</span> <span class="kr">NULL</span> <span class="c1">-- uses nls_date_format if null</span>
+        <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span> <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
+    <span class="p">)</span> <span class="k">RETURN</span> <span class="kr">TABLE</span>
+    <span class="kr">PIPELINED</span> <span class="k">ROW</span> <span class="kr">POLYMORPHIC</span> <span class="k">USING</span> <span class="n">csv_to_table_pkg</span>
     <span class="p">;</span>
 
     <span class="c1">-- public type to be returned by split_clob_to_lines PIPE ROW function</span>
-    <span class="k">TYPE</span> <span class="n">t_csv_row_rec</span> <span class="k">IS</span> <span class="n">RECORD</span><span class="p">(</span>
-        <span class="n">s</span>   <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>  <span class="c1">-- the csv row</span>
-        <span class="p">,</span><span class="n">rn</span> <span class="n">NUMBER</span>          <span class="c1">-- line number in the input</span>
+    <span class="kr">TYPE</span> <span class="n">t_csv_row_rec</span> <span class="kr">IS</span> <span class="kr">RECORD</span><span class="p">(</span>
+        <span class="n">s</span>   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>  <span class="c1">-- the csv row</span>
+        <span class="p">,</span><span class="n">rn</span> <span class="kt">NUMBER</span>          <span class="c1">-- line number in the input</span>
     <span class="p">);</span>
-    <span class="k">TYPE</span> <span class="n">t_arr_csv_row_rec</span> <span class="k">IS</span> <span class="k">TABLE</span> <span class="k">OF</span> <span class="n">t_csv_row_rec</span><span class="p">;</span>
+    <span class="kr">TYPE</span> <span class="n">t_arr_csv_row_rec</span> <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">t_csv_row_rec</span><span class="p">;</span>
 
     <span class="c1">--</span>
     <span class="c1">-- split a clob into a row for each line.</span>
     <span class="c1">-- Handle case where a "line" can have embedded LF chars per RFC for CSV format</span>
     <span class="c1">-- Throw out completely blank lines (but keep track of line number)</span>
     <span class="c1">--</span>
-    <span class="k">FUNCTION</span> <span class="n">split_clob_to_lines</span><span class="p">(</span><span class="n">p_clob</span> <span class="k">CLOB</span><span class="p">)</span>
+    <span class="kr">FUNCTION</span> <span class="n">split_clob_to_lines</span><span class="p">(</span><span class="n">p_clob</span> <span class="kt">CLOB</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="n">t_arr_csv_row_rec</span>
-    <span class="n">PIPELINED</span>
+    <span class="kr">PIPELINED</span>
     <span class="p">;</span>
 </code></pre></div></div>
 <h2 id="example">Example</h2>
@@ -222,19 +222,19 @@ with RFC4180 (See https://www.loc.gov/preservation/digital/formats/fdd/fdd000323
 
 <p>Here is the query using the revised package:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">WITH</span> <span class="n">R</span> <span class="k">AS</span> <span class="p">(</span>
-        <span class="k">SELECT</span> <span class="o">*</span>
-        <span class="k">FROM</span> <span class="n">csv_to_table_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span>
-<span class="n">q</span><span class="s1">'!23, "this contains a comma (,)", 06/30/2021
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">WITH</span> <span class="n">R</span> <span class="kr">AS</span> <span class="p">(</span>
+        <span class="kr">SELECT</span> <span class="o">*</span>
+        <span class="kr">FROM</span> <span class="n">csv_to_table_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span>
+<span class="o">q'!</span><span class="sx">23, "this contains a comma (,)", 06/30/2021
 47, "this contains a newline (
 )", 01/01/2022
 
-73, and we can have backwacked comma (</span><span class="se">\,</span><span class="s1">),
-92, what about backwacked dquote &gt;</span><span class="se">\"</span><span class="s1">&lt;?, 12/28/2021
-!'</span>
+73, and we can have backwacked comma (\,),
+92, what about backwacked dquote &gt;\"&lt;?, 12/28/2021
+</span><span class="o">!'</span>
         <span class="p">)</span>
-    <span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span>
-    <span class="k">FROM</span> <span class="n">csv_to_table_pkg</span><span class="p">.</span><span class="n">ptf</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="s1">'my_table_name'</span><span class="p">,</span> <span class="s1">'id, msg, dt'</span><span class="p">,</span> <span class="s1">'MM/DD/YYYY'</span><span class="p">)</span>
+    <span class="p">)</span> <span class="kr">SELECT</span> <span class="o">*</span>
+    <span class="kr">FROM</span> <span class="n">csv_to_table_pkg</span><span class="p">.</span><span class="n">ptf</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="o">'</span><span class="s1">my_table_name</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">id, msg, dt</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">MM/DD/YYYY</span><span class="o">'</span><span class="p">)</span>
     <span class="p">;</span>
 </code></pre></div></div>
 <p>The blank line is ignored; however, the line numbers are maintained through the process so that
@@ -289,19 +289,19 @@ errors/problems can be reported.</p>
 <p>As I mentioned this tracks the input line numbers including the blank lines that it discards.
 Here is an example of an error in the date conversion on the 4th row:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">WITH</span> <span class="n">R</span> <span class="k">AS</span> <span class="p">(</span>
-        <span class="k">SELECT</span> <span class="o">*</span>
-        <span class="k">FROM</span> <span class="n">csv_to_table_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span>
-<span class="n">q</span><span class="s1">'!23, "this contains a comma (,)", 06/30/2021
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">WITH</span> <span class="n">R</span> <span class="kr">AS</span> <span class="p">(</span>
+        <span class="kr">SELECT</span> <span class="o">*</span>
+        <span class="kr">FROM</span> <span class="n">csv_to_table_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span>
+<span class="o">q'!</span><span class="sx">23, "this contains a comma (,)", 06/30/2021
 47, "this contains a newline (
 )", 01/01/2022
 
-73, and we can have backwacked comma (</span><span class="se">\,</span><span class="s1">),12/24/
-92, what about backwacked dquote &gt;</span><span class="se">\"</span><span class="s1">&lt;?, 12/28/2021
-!'</span>
+73, and we can have backwacked comma (\,),12/24/
+92, what about backwacked dquote &gt;\"&lt;?, 12/28/2021
+</span><span class="o">!'</span>
         <span class="p">)</span>
-    <span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span>
-    <span class="k">FROM</span> <span class="n">csv_to_table_pkg</span><span class="p">.</span><span class="n">ptf</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="s1">'my_table_name'</span><span class="p">,</span> <span class="s1">'id, msg, dt'</span><span class="p">,</span> <span class="s1">'MM/DD/YYYY'</span><span class="p">)</span>
+    <span class="p">)</span> <span class="kr">SELECT</span> <span class="o">*</span>
+    <span class="kr">FROM</span> <span class="n">csv_to_table_pkg</span><span class="p">.</span><span class="n">ptf</span><span class="p">(</span><span class="n">R</span><span class="p">,</span> <span class="o">'</span><span class="s1">my_table_name</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">id, msg, dt</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">MM/DD/YYYY</span><span class="o">'</span><span class="p">)</span>
     <span class="p">;</span>
 </code></pre></div></div>
 
@@ -330,13 +330,42 @@ but I expect to merge it to main in the not too distant future.</p>
       
         
           
+      
+          
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -365,7 +394,7 @@ but I expect to merge it to main in the not too distant future.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -410,7 +439,7 @@ but I expect to merge it to main in the not too distant future.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -455,7 +484,7 @@ but I expect to merge it to main in the not too distant future.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -492,7 +521,7 @@ but I expect to merge it to main in the not too distant future.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -527,16 +556,6 @@ but I expect to merge it to main in the not too distant future.</p>
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -895,7 +914,7 @@ but I expect to merge it to main in the not too distant future.</p>
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_Polymorphic Table Function for CSV (take 2)";
+    var disqus_identifier = "https://lee-lindley.github.io_Polymorphic Table Function for CSV (take 2)";
     var disqus_title = "Polymorphic Table Function for CSV (take 2)";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/sql/plsql/2021/12/18/sqlplus-blob.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/2021/12/18/sqlplus-blob.html" property="og:url">
     
 
     
       <meta content="2021-12-18T10:30:00-05:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -64,7 +64,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/2021/12/18/sqlplus-blob.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/2021/12/18/sqlplus-blob.html">
     
 
     
@@ -177,87 +177,87 @@ a binary file to an email. We base64 encode it. Clever!</p>
 published by Tim Hall we have a sqlplus script that generates and extracts a BLOB
 to a file as base64 encoded text.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">-- 16mb should be plenty for most spreadsheets.</span>
-<span class="k">set</span> <span class="n">long</span> <span class="mi">16777216</span>
-<span class="k">set</span> <span class="n">longchunksize</span> <span class="mi">32767</span>
-<span class="k">set</span> <span class="n">heading</span> <span class="k">off</span>
-<span class="k">set</span> <span class="n">verify</span> <span class="k">off</span> 
-<span class="k">set</span> <span class="n">feedback</span> <span class="k">off</span> 
-<span class="k">set</span> <span class="n">trimout</span> <span class="k">on</span> 
-<span class="k">set</span> <span class="n">trimspool</span> <span class="k">on</span> 
-<span class="k">set</span> <span class="n">pagesize</span> <span class="mi">0</span> 
-<span class="k">set</span> <span class="n">linesize</span> <span class="mi">1000</span> 
-<span class="k">whenever</span> <span class="k">sqlerror</span> <span class="n">exit</span> <span class="n">failure</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">-- 16mb should be plenty for most spreadsheets.</span>
+<span class="nf">set</span> <span class="kt">long</span> <span class="mi">16777216</span>
+<span class="nf">set</span> <span class="n">longchunksize</span> <span class="mi">32767</span>
+<span class="nf">set</span> <span class="n">heading</span> <span class="k">off</span>
+<span class="nf">set</span> <span class="k">verify</span> <span class="k">off</span> 
+<span class="nf">set</span> <span class="n">feedback</span> <span class="k">off</span> 
+<span class="nf">set</span> <span class="n">trimout</span> <span class="kr">on</span> 
+<span class="nf">set</span> <span class="n">trimspool</span> <span class="kr">on</span> 
+<span class="nf">set</span> <span class="n">pagesize</span> <span class="mi">0</span> 
+<span class="nf">set</span> <span class="n">linesize</span> <span class="mi">1000</span> 
+<span class="k">whenever</span> <span class="n">sqlerror</span> <span class="kr">exit</span> <span class="k">failure</span>
 <span class="c1">-- sqlplus supports clob variables but not blob</span>
-<span class="k">variable</span> <span class="n">vo_clob</span> <span class="k">clob</span>
+<span class="kr">variable</span> <span class="n">vo_clob</span> <span class="kt">clob</span>
 <span class="c1">--</span>
 <span class="k">DECLARE</span>
-    <span class="k">c</span> <span class="n">SYS_REFCURSOR</span><span class="p">;</span>
+    <span class="kr">c</span> <span class="kt">SYS_REFCURSOR</span><span class="p">;</span>
 
-    <span class="k">FUNCTION</span> <span class="n">base64encode</span><span class="p">(</span><span class="n">p_blob</span> <span class="k">IN</span> <span class="nb">BLOB</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="k">CLOB</span>
+    <span class="kr">FUNCTION</span> <span class="n">base64encode</span><span class="p">(</span><span class="n">p_blob</span> <span class="o">IN</span> <span class="kt">BLOB</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">CLOB</span>
     <span class="c1">-- -----------------------------------------------------------------------------------</span>
     <span class="c1">-- File Name    : https://oracle-base.com/dba/miscellaneous/base64encode.sql</span>
     <span class="c1">-- Author       : Tim Hall</span>
     <span class="c1">-- Description  : Encodes a BLOB into a Base64 CLOB.</span>
     <span class="c1">-- Last Modified: 09/11/2011</span>
     <span class="c1">-- -----------------------------------------------------------------------------------</span>
-    <span class="k">IS</span>
-        <span class="n">l_clob</span> <span class="k">CLOB</span><span class="p">;</span>
-        <span class="n">l_step</span> <span class="n">PLS_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">12000</span><span class="p">;</span> <span class="c1">-- make sure you set a multiple of 3 not higher than 24573</span>
+    <span class="kr">IS</span>
+        <span class="n">l_clob</span> <span class="kt">CLOB</span><span class="p">;</span>
+        <span class="n">l_step</span> <span class="kt">PLS_INTEGER</span> <span class="o">:=</span> <span class="mi">12000</span><span class="p">;</span> <span class="c1">-- make sure you set a multiple of 3 not higher than 24573</span>
     <span class="k">BEGIN</span>
-        <span class="k">FOR</span> <span class="n">i</span> <span class="k">IN</span> <span class="mi">0</span> <span class="p">..</span> <span class="n">TRUNC</span><span class="p">((</span><span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">getlength</span><span class="p">(</span><span class="n">p_blob</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span><span class="o">/</span><span class="n">l_step</span><span class="p">)</span> <span class="n">LOOP</span>
-            <span class="n">l_clob</span> <span class="p">:</span><span class="o">=</span> <span class="n">l_clob</span> <span class="o">||</span> <span class="n">UTL_RAW</span><span class="p">.</span><span class="n">cast_to_varchar2</span><span class="p">(</span><span class="n">UTL_ENCODE</span><span class="p">.</span><span class="n">base64_encode</span><span class="p">(</span><span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">substr</span><span class="p">(</span><span class="n">p_blob</span><span class="p">,</span> <span class="n">l_step</span><span class="p">,</span> <span class="n">i</span> <span class="o">*</span> <span class="n">l_step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)));</span>
-        <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mi">0</span> <span class="o">..</span> <span class="nf">TRUNC</span><span class="p">((</span><span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">getlength</span><span class="p">(</span><span class="n">p_blob</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span><span class="o">/</span><span class="n">l_step</span><span class="p">)</span> <span class="kr">LOOP</span>
+            <span class="n">l_clob</span> <span class="o">:=</span> <span class="n">l_clob</span> <span class="o">||</span> <span class="n">UTL_RAW</span><span class="p">.</span><span class="n">cast_to_varchar2</span><span class="p">(</span><span class="n">UTL_ENCODE</span><span class="p">.</span><span class="n">base64_encode</span><span class="p">(</span><span class="n">DBMS_LOB</span><span class="p">.</span><span class="nf">substr</span><span class="p">(</span><span class="n">p_blob</span><span class="p">,</span> <span class="n">l_step</span><span class="p">,</span> <span class="n">i</span> <span class="o">*</span> <span class="n">l_step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)));</span>
+        <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
         <span class="k">RETURN</span> <span class="n">l_clob</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
 
-    <span class="k">FUNCTION</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="n">p_src</span> <span class="n">SYS_REFCURSOR</span><span class="p">)</span> 
-    <span class="k">RETURN</span> <span class="k">CLOB</span> <span class="k">AS</span>
-        <span class="n">v_blob</span>          <span class="nb">BLOB</span><span class="p">;</span>
+    <span class="kr">FUNCTION</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="n">p_src</span> <span class="kt">SYS_REFCURSOR</span><span class="p">)</span> 
+    <span class="k">RETURN</span> <span class="kt">CLOB</span> <span class="kr">AS</span>
+        <span class="n">v_blob</span>          <span class="kt">BLOB</span><span class="p">;</span>
         <span class="n">v_ctxId</span>         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">ctxHandle</span><span class="p">;</span>
-        <span class="n">v_sheetHandle</span>   <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+        <span class="n">v_sheetHandle</span>   <span class="kt">BINARY_INTEGER</span><span class="p">;</span>
     <span class="k">BEGIN</span>
-        <span class="n">v_ctxId</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">createContext</span><span class="p">();</span>
-        <span class="n">v_sheetHandle</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addSheetFromCursor</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="s1">'Employee Salaries'</span><span class="p">,</span> <span class="n">p_src</span><span class="p">,</span> <span class="n">p_sheetIndex</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">);</span>
+        <span class="n">v_ctxId</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">createContext</span><span class="p">();</span>
+        <span class="n">v_sheetHandle</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addSheetFromCursor</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="o">'</span><span class="s1">Employee Salaries</span><span class="o">'</span><span class="p">,</span> <span class="n">p_src</span><span class="p">,</span> <span class="n">p_sheetIndex</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">);</span>
         <span class="c1">-- freeze the top row with the column headers</span>
         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setHeader</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="n">v_sheetHandle</span><span class="p">,</span> <span class="n">p_frozen</span> <span class="o">=&gt;</span> <span class="k">TRUE</span><span class="p">);</span>
         <span class="c1">-- style with alternating colors on each row. </span>
-        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableFormat</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="n">v_sheetHandle</span><span class="p">,</span> <span class="s1">'TableStyleLight11'</span><span class="p">);</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableFormat</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="n">v_sheetHandle</span><span class="p">,</span> <span class="o">'</span><span class="s1">TableStyleLight11</span><span class="o">'</span><span class="p">);</span>
         <span class="c1">-- single column format on the salary column. The ID column keeps default format</span>
         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setColumnFormat</span><span class="p">(</span>
             <span class="n">p_ctxId</span>     <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
             <span class="p">,</span><span class="n">p_sheetId</span>  <span class="o">=&gt;</span> <span class="n">v_sheetHandle</span>
             <span class="p">,</span><span class="n">p_columnId</span> <span class="o">=&gt;</span> <span class="mi">5</span>        <span class="c1">-- the salary column</span>
-            <span class="p">,</span><span class="n">p_format</span>   <span class="o">=&gt;</span> <span class="s1">'$#,##0.00'</span>
+            <span class="p">,</span><span class="n">p_format</span>   <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">$#,##0.00</span><span class="o">'</span>
         <span class="p">);</span>
-        <span class="n">v_blob</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">getFileContent</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
+        <span class="n">v_blob</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">getFileContent</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">closeContext</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
         <span class="k">RETURN</span> <span class="n">base64encode</span><span class="p">(</span><span class="n">v_blob</span><span class="p">);</span>
     <span class="k">END</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 
-    <span class="k">OPEN</span> <span class="k">c</span> <span class="k">FOR</span> <span class="k">WITH</span> <span class="n">add_bilbo</span> <span class="k">AS</span> <span class="p">(</span>
-            <span class="k">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span> <span class="k">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">salary</span>
-            <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
+    <span class="k">OPEN</span> <span class="kr">c</span> <span class="kr">FOR</span> <span class="kr">WITH</span> <span class="n">add_bilbo</span> <span class="kr">AS</span> <span class="p">(</span>
+            <span class="kr">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span> <span class="kr">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">salary</span>
+            <span class="kr">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
             <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> <span class="n">d</span>
-                <span class="k">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
-            <span class="k">UNION</span> <span class="k">ALL</span>
-            <span class="k">SELECT</span> <span class="mi">999</span> <span class="k">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="s1">'Baggins'</span> <span class="k">As</span> <span class="n">last_name</span><span class="p">,</span> <span class="s1">'Bilbo'</span> <span class="k">as</span> <span class="n">first_name</span><span class="p">,</span> <span class="s1">'Sales'</span> <span class="k">AS</span> <span class="n">department_name</span>
-                <span class="p">,</span><span class="mi">123</span><span class="p">.</span><span class="mi">45</span> <span class="k">AS</span> <span class="n">salary</span>
-            <span class="k">FROM</span> <span class="n">dual</span>
-        <span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">add_bilbo</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">last_name</span><span class="p">,</span> <span class="n">first_name</span>
+                <span class="kr">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
+            <span class="kr">UNION</span> <span class="kr">ALL</span>
+            <span class="kr">SELECT</span> <span class="mi">999</span> <span class="kr">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="o">'</span><span class="s1">Baggins</span><span class="o">'</span> <span class="kr">As</span> <span class="n">last_name</span><span class="p">,</span> <span class="o">'</span><span class="s1">Bilbo</span><span class="o">'</span> <span class="kr">as</span> <span class="n">first_name</span><span class="p">,</span> <span class="o">'</span><span class="s1">Sales</span><span class="o">'</span> <span class="kr">AS</span> <span class="n">department_name</span>
+                <span class="p">,</span><span class="mf">123.45</span> <span class="kr">AS</span> <span class="n">salary</span>
+            <span class="kr">FROM</span> <span class="n">dual</span>
+        <span class="p">)</span> <span class="kr">SELECT</span> <span class="o">*</span> <span class="kr">FROM</span> <span class="n">add_bilbo</span> <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">last_name</span><span class="p">,</span> <span class="n">first_name</span>
     <span class="p">;</span>
     <span class="c1">-- assign the uuencoded clob data to the sqlplus bind variable</span>
-    <span class="p">:</span><span class="n">vo_clob</span> <span class="p">:</span><span class="o">=</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="k">c</span><span class="p">);</span>
+    <span class="p">:</span><span class="n">vo_clob</span> <span class="o">:=</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="kr">c</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
 <span class="c1">-- spool out the encoded clob</span>
-<span class="k">set</span> <span class="n">termout</span> <span class="k">off</span>
-<span class="n">spool</span> <span class="nv">"x.xlsx.base64"</span>
+<span class="nf">set</span> <span class="n">termout</span> <span class="k">off</span>
+<span class="n">spool</span> <span class="o">"</span><span class="nv">x.xlsx.base64</span><span class="o">"</span>
 <span class="n">print</span> <span class="n">vo_clob</span>
 <span class="n">spool</span> <span class="k">off</span>
-<span class="k">set</span> <span class="n">termout</span> <span class="k">on</span>
+<span class="nf">set</span> <span class="n">termout</span> <span class="kr">on</span>
 <span class="c1">--  base64 -d -i x.xlsx.base64 &gt;x.xlsx &amp;&amp; rm x.xlsx.base64</span>
 <span class="c1">-- OR on windows</span>
 <span class="c1">-- certutil -decode x.xlsx.base64 x.xlsx</span>
@@ -297,13 +297,42 @@ back pocket.</p>
       
         
           
+      
+          
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -332,7 +361,7 @@ back pocket.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -377,7 +406,7 @@ back pocket.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -422,7 +451,7 @@ back pocket.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -459,7 +488,7 @@ back pocket.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -494,16 +523,6 @@ back pocket.</p>
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -862,7 +881,7 @@ back pocket.</p>
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_Extracting BLOB from Oracle with Sqlplus";
+    var disqus_identifier = "https://lee-lindley.github.io_Extracting BLOB from Oracle with Sqlplus";
     var disqus_title = "Extracting BLOB from Oracle with Sqlplus";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

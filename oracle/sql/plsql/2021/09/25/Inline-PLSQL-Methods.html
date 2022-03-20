@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/sql/plsql/2021/09/25/Inline-PLSQL-Methods.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/2021/09/25/Inline-PLSQL-Methods.html" property="og:url">
     
 
     
       <meta content="2021-09-25T11:30:00-04:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -60,7 +60,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/2021/09/25/Inline-PLSQL-Methods.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/2021/09/25/Inline-PLSQL-Methods.html">
     
 
     
@@ -161,17 +161,17 @@ to improve performance by avoiding context switching. Yet in the same release we
 and that role has been granted <em>SELECT</em> on <em>HR.job_history</em>. If I attempted to create a function
 that read from the table <em>HR.job_history</em>, the create would fail. The inline PL/SQL function works though.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="k">FUNCTION</span> <span class="n">get_hist_job_id</span><span class="p">(</span><span class="n">p_emp</span> <span class="n">number</span><span class="p">)</span> <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
-<span class="k">AS</span>
-    <span class="n">l_job_id</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">);</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="kr">FUNCTION</span> <span class="n">get_hist_job_id</span><span class="p">(</span><span class="n">p_emp</span> <span class="kt">number</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+<span class="kr">AS</span>
+    <span class="n">l_job_id</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">);</span>
 <span class="k">BEGIN</span>
-    <span class="k">SELECT</span> <span class="k">MAX</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span> <span class="n">KEEP</span> <span class="p">(</span><span class="n">DENSE_RANK</span> <span class="k">FIRST</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">end_date</span> <span class="k">DESC</span><span class="p">)</span> <span class="k">INTO</span> <span class="n">l_job_id</span>
-    <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">job_history</span>
-    <span class="k">WHERE</span> <span class="n">employee_id</span> <span class="o">=</span> <span class="n">p_emp</span>
+    <span class="kr">SELECT</span> <span class="nf">MAX</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span> <span class="k">KEEP</span> <span class="p">(</span><span class="nf">DENSE_RANK</span> <span class="nf">FIRST</span> <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">end_date</span> <span class="kr">DESC</span><span class="p">)</span> <span class="kr">INTO</span> <span class="n">l_job_id</span>
+    <span class="kr">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">job_history</span>
+    <span class="kr">WHERE</span> <span class="n">employee_id</span> <span class="o">=</span> <span class="n">p_emp</span>
     <span class="p">;</span>
     <span class="k">RETURN</span> <span class="n">l_job_id</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
-<span class="k">SELECT</span> <span class="n">get_hist_job_id</span><span class="p">(</span><span class="mi">176</span><span class="p">)</span> <span class="k">FROM</span> <span class="n">dual</span><span class="p">;</span>
+<span class="kr">SELECT</span> <span class="n">get_hist_job_id</span><span class="p">(</span><span class="mi">176</span><span class="p">)</span> <span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
 <span class="o">/</span>
 </code></pre></div></div>
 
@@ -198,17 +198,17 @@ or SqlDeveloper).</p>
 <p>As of Oracle 12.2 you can do this in straight SQL (see <a href="https://odieweblog.wordpress.com/2017/04/17/oracle-12-2-to_clob-and-to_blob-enhancements/">TO_CLOB and TO_BLOB enhancements</a>), 
 but I’m going to use the example anyway.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="k">FUNCTION</span> <span class="n">get_blob</span><span class="p">(</span><span class="n">p_directory</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">p_filename</span> <span class="n">VARCHAR2</span><span class="p">)</span> <span class="k">RETURN</span> <span class="nb">BLOB</span>
-<span class="k">AS</span>
-    <span class="n">l_bfile</span>         <span class="n">BFILE</span><span class="p">;</span>
-    <span class="n">l_blob</span>          <span class="nb">BLOB</span><span class="p">;</span>
-    <span class="n">l_blob_out</span>      <span class="nb">BLOB</span><span class="p">;</span>
-    <span class="n">l_dest_offset</span>   <span class="nb">INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-    <span class="n">l_src_offset</span>    <span class="nb">INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="kr">FUNCTION</span> <span class="n">get_blob</span><span class="p">(</span><span class="n">p_directory</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">p_filename</span> <span class="kt">VARCHAR2</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">BLOB</span>
+<span class="kr">AS</span>
+    <span class="n">l_bfile</span>         <span class="kt">BFILE</span><span class="p">;</span>
+    <span class="n">l_blob</span>          <span class="kt">BLOB</span><span class="p">;</span>
+    <span class="n">l_blob_out</span>      <span class="kt">BLOB</span><span class="p">;</span>
+    <span class="n">l_dest_offset</span>   <span class="kt">INTEGER</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="n">l_src_offset</span>    <span class="kt">INTEGER</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-    <span class="n">l_bfile</span> <span class="p">:</span><span class="o">=</span> <span class="n">BFILENAME</span><span class="p">(</span><span class="n">p_directory</span><span class="p">,</span> <span class="n">p_filename</span><span class="p">);</span>
+    <span class="n">l_bfile</span> <span class="o">:=</span> <span class="nf">BFILENAME</span><span class="p">(</span><span class="n">p_directory</span><span class="p">,</span> <span class="n">p_filename</span><span class="p">);</span>
     <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">fileopen</span><span class="p">(</span><span class="n">l_bfile</span><span class="p">,</span> <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">file_readonly</span><span class="p">);</span>
-    <span class="n">IF</span> <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">getlength</span><span class="p">(</span><span class="n">l_bfile</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">THEN</span>
+    <span class="k">IF</span> <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">getlength</span><span class="p">(</span><span class="n">l_bfile</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="kr">THEN</span>
         <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">createtemporary</span><span class="p">(</span><span class="n">l_blob</span><span class="p">,</span><span class="k">TRUE</span><span class="p">);</span>
         <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">loadblobfromfile</span><span class="p">(</span>
             <span class="n">dest_lob</span>        <span class="o">=&gt;</span> <span class="n">l_blob</span>
@@ -217,13 +217,13 @@ but I’m going to use the example anyway.</p>
             <span class="p">,</span><span class="n">dest_offset</span>    <span class="o">=&gt;</span> <span class="n">l_dest_offset</span>
             <span class="p">,</span><span class="n">src_offset</span>     <span class="o">=&gt;</span> <span class="n">l_src_offset</span>
         <span class="p">);</span>
-        <span class="n">l_blob_out</span> <span class="p">:</span><span class="o">=</span> <span class="n">l_blob</span><span class="p">;</span>
+        <span class="n">l_blob_out</span> <span class="o">:=</span> <span class="n">l_blob</span><span class="p">;</span>
         <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">freetemporary</span><span class="p">(</span><span class="n">l_blob</span><span class="p">);</span>
-    <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+    <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
     <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">fileclose</span><span class="p">(</span><span class="n">l_bfile</span><span class="p">);</span>
     <span class="k">RETURN</span> <span class="n">l_blob_out</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
-<span class="k">SELECT</span> <span class="n">get_blob</span><span class="p">(</span><span class="s1">'TMP_DIR'</span><span class="p">,</span><span class="s1">'x.xlsx'</span><span class="p">)</span> <span class="k">FROM</span> <span class="n">dual</span>
+<span class="kr">SELECT</span> <span class="n">get_blob</span><span class="p">(</span><span class="o">'</span><span class="s1">TMP_DIR</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">x.xlsx</span><span class="o">'</span><span class="p">)</span> <span class="kr">FROM</span> <span class="n">dual</span>
 <span class="p">;</span>
 <span class="o">/</span>
 </code></pre></div></div>
@@ -241,42 +241,42 @@ files from a query, but they do not match this for capability. And if you happen
 already written a procedure that does much of what you need for your adhoc query, you can
 quickly copy/paste the code into a WITH clause and be ready to rock and roll.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> 
-<span class="k">FUNCTION</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="n">p_src</span> <span class="n">SYS_REFCURSOR</span><span class="p">)</span> <span class="k">RETURN</span> <span class="nb">BLOB</span> <span class="k">AS</span>
-    <span class="n">v_blob</span>          <span class="nb">BLOB</span><span class="p">;</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> 
+<span class="kr">FUNCTION</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="n">p_src</span> <span class="kt">SYS_REFCURSOR</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">BLOB</span> <span class="kr">AS</span>
+    <span class="n">v_blob</span>          <span class="kt">BLOB</span><span class="p">;</span>
     <span class="n">v_ctxId</span>         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">ctxHandle</span><span class="p">;</span>
-    <span class="n">v_sheetHandle</span>   <span class="n">BINARY_INTEGER</span><span class="p">;</span>
+    <span class="n">v_sheetHandle</span>   <span class="kt">BINARY_INTEGER</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-        <span class="n">v_ctxId</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">createContext</span><span class="p">();</span>
-        <span class="n">v_sheetHandle</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addSheetFromCursor</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="s1">'Employee Salaries'</span><span class="p">,</span> <span class="n">p_src</span><span class="p">,</span> <span class="n">p_sheetIndex</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">);</span>
+        <span class="n">v_ctxId</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">createContext</span><span class="p">();</span>
+        <span class="n">v_sheetHandle</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addSheetFromCursor</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="o">'</span><span class="s1">Employee Salaries</span><span class="o">'</span><span class="p">,</span> <span class="n">p_src</span><span class="p">,</span> <span class="n">p_sheetIndex</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">);</span>
         <span class="c1">-- freeze the top row with the column headers</span>
         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setHeader</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="n">v_sheetHandle</span><span class="p">,</span> <span class="n">p_frozen</span> <span class="o">=&gt;</span> <span class="k">TRUE</span><span class="p">);</span>
         <span class="c1">-- style with alternating colors on each row. </span>
-        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableFormat</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="n">v_sheetHandle</span><span class="p">,</span> <span class="s1">'TableStyleLight2'</span><span class="p">);</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableFormat</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="n">v_sheetHandle</span><span class="p">,</span> <span class="o">'</span><span class="s1">TableStyleLight2</span><span class="o">'</span><span class="p">);</span>
         <span class="c1">-- single column format on the salary column. The ID column keeps default format</span>
         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setColumnFormat</span><span class="p">(</span>
             <span class="n">p_ctxId</span>     <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
             <span class="p">,</span><span class="n">p_sheetId</span>  <span class="o">=&gt;</span> <span class="n">v_sheetHandle</span>
             <span class="p">,</span><span class="n">p_columnId</span> <span class="o">=&gt;</span> <span class="mi">5</span>        <span class="c1">-- the salary column</span>
-            <span class="p">,</span><span class="n">p_format</span>   <span class="o">=&gt;</span> <span class="s1">'$#,##0.00'</span>
+            <span class="p">,</span><span class="n">p_format</span>   <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">$#,##0.00</span><span class="o">'</span>
         <span class="p">);</span>
-        <span class="n">v_blob</span> <span class="p">:</span><span class="o">=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">getFileContent</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
+        <span class="n">v_blob</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">getFileContent</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">closeContext</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
         <span class="k">RETURN</span> <span class="n">v_blob</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="c1">-- begin sql portion </span>
-<span class="n">add_bilbo</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span> <span class="k">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">salary</span>
-    <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
+<span class="n">add_bilbo</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span> <span class="kr">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">salary</span>
+    <span class="kr">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
     <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> <span class="n">d</span>
-        <span class="k">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
-    <span class="k">UNION</span> <span class="k">ALL</span>
-    <span class="k">SELECT</span> <span class="mi">999</span> <span class="k">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="s1">'Baggins'</span> <span class="k">As</span> <span class="n">last_name</span><span class="p">,</span> <span class="s1">'Bilbo'</span> <span class="k">as</span> <span class="n">first_name</span><span class="p">,</span> <span class="s1">'Sales'</span> <span class="k">AS</span> <span class="n">department_name</span>
-        <span class="p">,</span><span class="mi">123</span><span class="p">.</span><span class="mi">45</span> <span class="k">AS</span> <span class="n">salary</span>
-    <span class="k">FROM</span> <span class="n">dual</span>
-<span class="p">),</span> <span class="n">emp_curs</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">add_bilbo</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">last_name</span><span class="p">,</span> <span class="n">first_name</span>
-<span class="p">)</span> <span class="k">SELECT</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="k">CURSOR</span><span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">emp_curs</span><span class="p">))</span> <span class="k">FROM</span> <span class="n">DUAL</span>
+        <span class="kr">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
+    <span class="kr">UNION</span> <span class="kr">ALL</span>
+    <span class="kr">SELECT</span> <span class="mi">999</span> <span class="kr">AS</span> <span class="n">employee_id</span><span class="p">,</span> <span class="o">'</span><span class="s1">Baggins</span><span class="o">'</span> <span class="kr">As</span> <span class="n">last_name</span><span class="p">,</span> <span class="o">'</span><span class="s1">Bilbo</span><span class="o">'</span> <span class="kr">as</span> <span class="n">first_name</span><span class="p">,</span> <span class="o">'</span><span class="s1">Sales</span><span class="o">'</span> <span class="kr">AS</span> <span class="n">department_name</span>
+        <span class="p">,</span><span class="mf">123.45</span> <span class="kr">AS</span> <span class="n">salary</span>
+    <span class="kr">FROM</span> <span class="n">dual</span>
+<span class="p">),</span> <span class="n">emp_curs</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="o">*</span> <span class="kr">FROM</span> <span class="n">add_bilbo</span> <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">last_name</span><span class="p">,</span> <span class="n">first_name</span>
+<span class="p">)</span> <span class="kr">SELECT</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="k">CURSOR</span><span class="p">(</span><span class="kr">SELECT</span> <span class="o">*</span> <span class="kr">FROM</span> <span class="n">emp_curs</span><span class="p">))</span> <span class="kr">FROM</span> <span class="n">DUAL</span>
 <span class="p">;</span>
 <span class="o">/</span>
 </code></pre></div></div>
@@ -287,7 +287,7 @@ before I discovered this handy syntax.</p>
 <p>Since the ExcelGen package uses session level package global variables to store everything, 
 you could probably execute an anonymous PL/SQL
 block using a client declared context variable that does the first part of this through <em>setColumnFormat</em>, then use a simple</p>
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">getFileContent</span><span class="p">(:</span><span class="n">v_ctxId</span><span class="p">)</span> <span class="k">FROM</span> <span class="n">dual</span><span class="p">;</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">getFileContent</span><span class="p">(:</span><span class="n">v_ctxId</span><span class="p">)</span> <span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
 </code></pre></div></div>
 <p>to get the result. I like the <em>WITH PL/SQL</em> version much better.</p>
 
@@ -296,52 +296,52 @@ block using a client declared context variable that does the first part of this 
 <p>Here is another example using <a href="https://github.com/lee-lindley/PdfGen">PdfGen</a>, a package I wrote that wraps
 the core <em>as_pdf3</em> written by Anton Scheffer.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="k">FUNCTION</span> <span class="n">get_blob</span><span class="p">(</span><span class="n">p_src</span> <span class="n">SYS_REFCURSOR</span><span class="p">)</span> <span class="k">RETURN</span> <span class="nb">BLOB</span>
-<span class="k">IS</span>
-    <span class="n">v_blob</span>      <span class="nb">BLOB</span><span class="p">;</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="kr">FUNCTION</span> <span class="n">get_blob</span><span class="p">(</span><span class="n">p_src</span> <span class="kt">SYS_REFCURSOR</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">BLOB</span>
+<span class="kr">IS</span>
+    <span class="n">v_blob</span>      <span class="kt">BLOB</span><span class="p">;</span>
     <span class="n">v_widths</span>    <span class="n">PdfGen</span><span class="p">.</span><span class="n">t_col_widths</span><span class="p">;</span>
     <span class="n">v_headers</span>   <span class="n">PdfGen</span><span class="p">.</span><span class="n">t_col_headers</span><span class="p">;</span>
     <span class="n">v_formats</span>   <span class="n">PdfGen</span><span class="p">.</span><span class="n">t_col_headers</span><span class="p">;</span>
 <span class="k">BEGIN</span>
                                                 <span class="c1">-- Similar to the sqlplus COLUMN HEADING commands</span>
-    <span class="n">v_headers</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'Employee ID'</span><span class="p">;</span>
-    <span class="n">v_widths</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="p">:</span><span class="o">=</span> <span class="mi">11</span><span class="p">;</span>
-    <span class="n">v_headers</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'Last Name'</span><span class="p">;</span>
-    <span class="n">v_widths</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="p">:</span><span class="o">=</span> <span class="mi">25</span><span class="p">;</span>
-    <span class="n">v_headers</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'First Name'</span><span class="p">;</span>
-    <span class="n">v_widths</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>  <span class="p">:</span><span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
+    <span class="n">v_headers</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">Employee ID</span><span class="o">'</span><span class="p">;</span>
+    <span class="n">v_widths</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="o">:=</span> <span class="mi">11</span><span class="p">;</span>
+    <span class="n">v_headers</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">Last Name</span><span class="o">'</span><span class="p">;</span>
+    <span class="n">v_widths</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="o">:=</span> <span class="mi">25</span><span class="p">;</span>
+    <span class="n">v_headers</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">First Name</span><span class="o">'</span><span class="p">;</span>
+    <span class="n">v_widths</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>  <span class="o">:=</span> <span class="mi">20</span><span class="p">;</span>
                                                 <span class="c1">-- will not print this column, </span>
                                                 <span class="c1">-- just capture it for column page break</span>
-    <span class="n">v_headers</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="k">NULL</span><span class="p">;</span>                       <span class="c1">--'Department Name'</span>
-    <span class="n">v_widths</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>  <span class="p">:</span><span class="o">=</span> <span class="mi">0</span><span class="p">;</span>                          <span class="c1">-- sqlplus COLUMN NOPRINT </span>
-    <span class="n">v_headers</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'Salary'</span><span class="p">;</span>
-    <span class="n">v_widths</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="p">:</span><span class="o">=</span> <span class="mi">16</span><span class="p">;</span>
+    <span class="n">v_headers</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="o">:=</span> <span class="kr">NULL</span><span class="p">;</span>                       <span class="c1">--'Department Name'</span>
+    <span class="n">v_widths</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>  <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span>                          <span class="c1">-- sqlplus COLUMN NOPRINT </span>
+    <span class="n">v_headers</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">Salary</span><span class="o">'</span><span class="p">;</span>
+    <span class="n">v_widths</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="o">:=</span> <span class="mi">16</span><span class="p">;</span>
     <span class="c1">-- override default number format for this column</span>
-    <span class="n">v_formats</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="s1">'$999,999,999.99'</span><span class="p">;</span>
+    <span class="n">v_formats</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">$999,999,999.99</span><span class="o">'</span><span class="p">;</span>
     <span class="c1">--</span>
     <span class="n">PdfGen</span><span class="p">.</span><span class="n">init</span><span class="p">;</span>
     <span class="n">PdfGen</span><span class="p">.</span><span class="n">set_page_format</span><span class="p">(</span>
-        <span class="n">p_format</span>            <span class="o">=&gt;</span> <span class="s1">'LETTER'</span> 
-        <span class="p">,</span><span class="n">p_orientation</span>      <span class="o">=&gt;</span> <span class="s1">'PORTRAIT'</span>
+        <span class="n">p_format</span>            <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">LETTER</span><span class="o">'</span> 
+        <span class="p">,</span><span class="n">p_orientation</span>      <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">PORTRAIT</span><span class="o">'</span>
         <span class="p">,</span><span class="n">p_top_margin</span>       <span class="o">=&gt;</span> <span class="mi">1</span>
         <span class="p">,</span><span class="n">p_bottom_margin</span>    <span class="o">=&gt;</span> <span class="mi">1</span>
-        <span class="p">,</span><span class="n">p_left_margin</span>      <span class="o">=&gt;</span> <span class="mi">0</span><span class="p">.</span><span class="mi">75</span>
-        <span class="p">,</span><span class="n">p_right_margin</span>     <span class="o">=&gt;</span> <span class="mi">0</span><span class="p">.</span><span class="mi">75</span>
+        <span class="p">,</span><span class="n">p_left_margin</span>      <span class="o">=&gt;</span> <span class="mf">0.75</span>
+        <span class="p">,</span><span class="n">p_right_margin</span>     <span class="o">=&gt;</span> <span class="mf">0.75</span>
     <span class="p">);</span>
     <span class="n">PdfGen</span><span class="p">.</span><span class="n">set_footer</span><span class="p">;</span>                          <span class="c1">-- 'Page #PAGE_NR# of "PAGE_COUNT#' is the default</span>
                                                 <span class="c1">-- sqlplus TITLE command</span>
     <span class="n">PdfGen</span><span class="p">.</span><span class="n">set_page_header</span><span class="p">(</span>
-        <span class="n">p_txt_center</span>        <span class="o">=&gt;</span> <span class="s1">'Employee Salary Report'</span>
-        <span class="p">,</span><span class="n">p_font_family</span>      <span class="o">=&gt;</span> <span class="s1">'helvetica'</span>
-        <span class="p">,</span><span class="n">p_style</span>            <span class="o">=&gt;</span> <span class="s1">'b'</span>
+        <span class="n">p_txt_center</span>        <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Employee Salary Report</span><span class="o">'</span>
+        <span class="p">,</span><span class="n">p_font_family</span>      <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">helvetica</span><span class="o">'</span>
+        <span class="p">,</span><span class="n">p_style</span>            <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">b</span><span class="o">'</span>
         <span class="p">,</span><span class="n">p_fontsize_pt</span>      <span class="o">=&gt;</span> <span class="mi">16</span>
-        <span class="p">,</span><span class="n">p_txt_left_2</span>       <span class="o">=&gt;</span> <span class="s1">'Department: !PAGE_VAL#'</span>
-        <span class="p">,</span><span class="n">p_font_family_2</span>    <span class="o">=&gt;</span> <span class="s1">'helvetica'</span>
+        <span class="p">,</span><span class="n">p_txt_left_2</span>       <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Department: !PAGE_VAL#</span><span class="o">'</span>
+        <span class="p">,</span><span class="n">p_font_family_2</span>    <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">helvetica</span><span class="o">'</span>
         <span class="p">,</span><span class="n">p_fontsize_pt_2</span>    <span class="o">=&gt;</span> <span class="mi">12</span>
-        <span class="p">,</span><span class="n">p_style_2</span>          <span class="o">=&gt;</span> <span class="s1">'n'</span>
+        <span class="p">,</span><span class="n">p_style_2</span>          <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">n</span><span class="o">'</span>
     <span class="p">);</span>
     <span class="c1">--</span>
-    <span class="n">as_pdf3</span><span class="p">.</span><span class="n">set_font</span><span class="p">(</span><span class="s1">'courier'</span><span class="p">,</span> <span class="s1">'n'</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+    <span class="n">as_pdf3</span><span class="p">.</span><span class="n">set_font</span><span class="p">(</span><span class="o">'</span><span class="s1">courier</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">n</span><span class="o">'</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
     <span class="n">PdfGen</span><span class="p">.</span><span class="n">refcursor2table</span><span class="p">(</span>
         <span class="n">p_src</span>                       <span class="o">=&gt;</span> <span class="n">p_src</span>
         <span class="p">,</span><span class="n">p_widths</span>                   <span class="o">=&gt;</span> <span class="n">v_widths</span>
@@ -352,17 +352,17 @@ the core <em>as_pdf3</em> written by Anton Scheffer.</p>
         <span class="p">,</span><span class="n">p_break_col</span>                <span class="o">=&gt;</span> <span class="mi">4</span>        <span class="c1">-- sqlplus BREAK ON column</span>
         <span class="p">,</span><span class="n">p_grid_lines</span>               <span class="o">=&gt;</span> <span class="k">FALSE</span>
     <span class="p">);</span>
-    <span class="n">v_blob</span> <span class="p">:</span><span class="o">=</span> <span class="n">PdfGen</span><span class="p">.</span><span class="n">get_pdf</span><span class="p">;</span>
+    <span class="n">v_blob</span> <span class="o">:=</span> <span class="n">PdfGen</span><span class="p">.</span><span class="n">get_pdf</span><span class="p">;</span>
     <span class="k">RETURN</span> <span class="n">v_blob</span><span class="p">;</span>                              
 <span class="k">END</span><span class="p">;</span>
 <span class="c1">-- begin sql</span>
-<span class="n">a</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span>
-        <span class="p">,</span><span class="k">SUM</span><span class="p">(</span><span class="n">salary</span><span class="p">)</span> <span class="k">AS</span> <span class="n">salary</span>          <span class="c1">-- emulate sqplus COMPUTE SUM</span>
-    <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
+<span class="n">a</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="n">e</span><span class="p">.</span><span class="n">employee_id</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span>
+        <span class="p">,</span><span class="nf">SUM</span><span class="p">(</span><span class="n">salary</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">salary</span>          <span class="c1">-- emulate sqplus COMPUTE SUM</span>
+    <span class="kr">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
     <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> <span class="n">d</span>
-        <span class="k">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
-    <span class="k">GROUP</span> <span class="k">BY</span> <span class="k">GROUPING</span> <span class="k">SETS</span> <span class="p">(</span>
+        <span class="kr">ON</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">e</span><span class="p">.</span><span class="n">department_id</span>
+    <span class="kr">GROUP</span> <span class="kr">BY</span> <span class="nf">GROUPING</span> <span class="k">SETS</span> <span class="p">(</span>
                                         <span class="c1">-- seemingly useless SUM on single record, </span>
                                         <span class="c1">-- but required to get detail records</span>
                                         <span class="c1">-- in same query as the subtotal and total aggregates</span>
@@ -370,25 +370,25 @@ the core <em>as_pdf3</em> written by Anton Scheffer.</p>
         <span class="p">,(</span><span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">)</span>            <span class="c1">-- sqlplus COMPUTE SUM of salary ON department_name</span>
         <span class="p">,()</span>                             <span class="c1">-- sqlplus COMPUTE SUM of salary ON report - the grand total</span>
     <span class="p">)</span>
-<span class="p">),</span> <span class="n">b</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="n">employee_id</span>
+<span class="p">),</span> <span class="n">b</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="n">employee_id</span>
         <span class="c1">-- NULL last_name indicates an aggregate result.</span>
         <span class="c1">-- NULL department_name indicates it was the grand total</span>
         <span class="c1">-- Similar to the LABEL on COMPUTE SUM</span>
-        <span class="p">,</span><span class="n">NVL</span><span class="p">(</span><span class="n">last_name</span><span class="p">,</span> <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">department_name</span> <span class="k">IS</span> <span class="k">NULL</span>
-                            <span class="k">THEN</span> <span class="n">LPAD</span><span class="p">(</span><span class="s1">'GRAND TOTAL:'</span><span class="p">,</span><span class="mi">25</span><span class="p">)</span>
-                            <span class="k">ELSE</span> <span class="n">LPAD</span><span class="p">(</span><span class="s1">'DEPT TOTAL:'</span><span class="p">,</span><span class="mi">25</span><span class="p">)</span>
+        <span class="p">,</span><span class="nf">NVL</span><span class="p">(</span><span class="n">last_name</span><span class="p">,</span> <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">department_name</span> <span class="o">IS</span> <span class="o">NULL</span>
+                            <span class="kr">THEN</span> <span class="nf">LPAD</span><span class="p">(</span><span class="o">'</span><span class="s1">GRAND TOTAL:</span><span class="o">'</span><span class="p">,</span><span class="mi">25</span><span class="p">)</span>
+                            <span class="kr">ELSE</span> <span class="nf">LPAD</span><span class="p">(</span><span class="o">'</span><span class="s1">DEPT TOTAL:</span><span class="o">'</span><span class="p">,</span><span class="mi">25</span><span class="p">)</span>
                         <span class="k">END</span>
-        <span class="p">)</span> <span class="k">AS</span> <span class="n">last_name</span>
+        <span class="p">)</span> <span class="kr">AS</span> <span class="n">last_name</span>
         <span class="p">,</span><span class="n">first_name</span>
         <span class="p">,</span><span class="n">department_name</span>
         <span class="p">,</span><span class="n">salary</span>
-    <span class="k">FROM</span> <span class="n">a</span>
-    <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">department_name</span> <span class="n">NULLS</span> <span class="k">LAST</span>     <span class="c1">-- to get the aggregates after detail</span>
-        <span class="p">,</span><span class="n">a</span><span class="p">.</span><span class="n">last_name</span> <span class="n">NULLS</span> <span class="k">LAST</span>             <span class="c1">-- notice based on FROM column value, not the one we munged in resultset</span>
+    <span class="kr">FROM</span> <span class="n">a</span>
+    <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">department_name</span> <span class="k">NULLS</span> <span class="nf">LAST</span>     <span class="c1">-- to get the aggregates after detail</span>
+        <span class="p">,</span><span class="n">a</span><span class="p">.</span><span class="n">last_name</span> <span class="k">NULLS</span> <span class="nf">LAST</span>             <span class="c1">-- notice based on FROM column value, not the one we munged in resultset</span>
         <span class="p">,</span><span class="n">first_name</span>
 <span class="p">)</span>
-<span class="k">SELECT</span> <span class="n">get_blob</span><span class="p">(</span><span class="k">CURSOR</span><span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">b</span><span class="p">))</span> <span class="k">FROM</span> <span class="n">dual</span>
+<span class="kr">SELECT</span> <span class="n">get_blob</span><span class="p">(</span><span class="k">CURSOR</span><span class="p">(</span><span class="kr">SELECT</span> <span class="o">*</span> <span class="kr">FROM</span> <span class="n">b</span><span class="p">))</span> <span class="kr">FROM</span> <span class="n">dual</span>
 <span class="p">;</span>
 <span class="o">/</span>
 </code></pre></div></div>
@@ -421,13 +421,42 @@ I hope these examples were enlightening.</p>
       
         
           
+      
+          
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -456,7 +485,7 @@ I hope these examples were enlightening.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -501,7 +530,7 @@ I hope these examples were enlightening.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -546,7 +575,7 @@ I hope these examples were enlightening.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -583,7 +612,7 @@ I hope these examples were enlightening.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -618,16 +647,6 @@ I hope these examples were enlightening.</p>
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -986,7 +1005,7 @@ I hope these examples were enlightening.</p>
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_Why do I need Inline PL/SQL Methods?";
+    var disqus_identifier = "https://lee-lindley.github.io_Why do I need Inline PL/SQL Methods?";
     var disqus_title = "Why do I need Inline PL/SQL Methods?";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

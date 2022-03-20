@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html" property="og:url">
     
 
     
       <meta content="2022-03-06T10:30:00-05:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -60,7 +60,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">
     
 
     
@@ -217,34 +217,34 @@ the Optimizer does with your query.</p>
 easily alter the query to stop after any given CTE, then select from that CTE. You can select the entire resultset
 or use a where clause or even analytic.  For example:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">step1</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="p">...</span>
-<span class="p">),</span> <span class="n">step2</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="p">...</span>
-<span class="p">),</span> <span class="n">step3</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="p">...</span>
-<span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span>
-<span class="k">FROM</span> <span class="n">step</span> <span class="mi">3</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="n">step1</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="o">..</span><span class="p">.</span>
+<span class="p">),</span> <span class="n">step2</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="o">..</span><span class="p">.</span>
+<span class="p">),</span> <span class="n">step3</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="o">..</span><span class="p">.</span>
+<span class="p">)</span> <span class="kr">SELECT</span> <span class="o">*</span>
+<span class="kr">FROM</span> <span class="n">step</span> <span class="mi">3</span>
 <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">step2</span>
-    <span class="k">ON</span> <span class="p">...</span>
+    <span class="kr">ON</span> <span class="o">..</span><span class="p">.</span>
 </code></pre></div></div>
 
 <p>You make a copy and interject your debug select like so:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">step1</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="p">...</span>
-<span class="p">),</span> <span class="n">step2</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="p">...</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="n">step1</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="o">..</span><span class="p">.</span>
+<span class="p">),</span> <span class="n">step2</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="o">..</span><span class="p">.</span>
 </code></pre></div></div>
 <p><strong>) select mycollist from step2 where xyz = ‘mykey’;<br />
 – remainder of quuery does not run</strong></p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">),</span> <span class="n">step3</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="p">...</span>
-<span class="p">)</span> <span class="k">SELECT</span> <span class="o">*</span>
-<span class="k">FROM</span> <span class="n">step</span> <span class="mi">3</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">),</span> <span class="n">step3</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="o">..</span><span class="p">.</span>
+<span class="p">)</span> <span class="kr">SELECT</span> <span class="o">*</span>
+<span class="kr">FROM</span> <span class="n">step</span> <span class="mi">3</span>
 <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">step2</span>
-    <span class="k">ON</span> <span class="p">...</span>
+    <span class="kr">ON</span> <span class="o">..</span><span class="p">.</span>
 </code></pre></div></div>
 <p>It can also be helpful to do this if you want to look at the Explain Plan for the smaller subset of the
 query.</p>
@@ -284,13 +284,13 @@ Purists will tell you that you just don’t have your statistics right. I don’
 <p>For the example below,
 Oracle will almost always merge the view named <em>keys</em> into the main select and do a single HASH UNIQUE.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">keys</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="k">DISTINCT</span> <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">key3</span>
-    <span class="k">FROM</span> <span class="n">key_source</span>
-<span class="p">)</span> <span class="k">SELECT</span> <span class="k">DISTINCT</span> <span class="n">resultfieldlist</span>
-<span class="k">FROM</span> <span class="n">keys</span> <span class="n">k</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="k">keys</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="kr">DISTINCT</span> <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">key3</span>
+    <span class="kr">FROM</span> <span class="n">key_source</span>
+<span class="p">)</span> <span class="kr">SELECT</span> <span class="kr">DISTINCT</span> <span class="n">resultfieldlist</span>
+<span class="kr">FROM</span> <span class="k">keys</span> <span class="n">k</span>
 <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">sourcetable</span> <span class="n">s</span>
-    <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
+    <span class="kr">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="o">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="o">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
 </code></pre></div></div>
 <p>I can prove that in case of the query I was tuning, we are better off gathering a DISTINCT set of keys 
 before joining to <em>sourcetable</em>.
@@ -302,28 +302,28 @@ particular set of inputs, we are better off with two separate HASH UNIQUE operat
 
 <p>In this scenario you can force Oracle to do two separate HASH UNIQUE operations by using the NO_MERGE hint:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">keys</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="cm">/*+ NO_MERGE */</span> <span class="k">DISTINCT</span> 
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="k">keys</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="cm">/*+ NO_MERGE */</span> <span class="kr">DISTINCT</span> 
         <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">key3</span>
-    <span class="k">FROM</span> <span class="n">key_source</span>
-<span class="p">)</span> <span class="k">SELECT</span> <span class="k">DISTINCT</span> <span class="n">resultfieldlist</span>
-<span class="k">FROM</span> <span class="n">keys</span> <span class="n">k</span>
+    <span class="kr">FROM</span> <span class="n">key_source</span>
+<span class="p">)</span> <span class="kr">SELECT</span> <span class="kr">DISTINCT</span> <span class="n">resultfieldlist</span>
+<span class="kr">FROM</span> <span class="k">keys</span> <span class="n">k</span>
 <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">sourcetable</span> <span class="n">s</span>
-    <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
+    <span class="kr">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="o">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="o">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
 </code></pre></div></div>
 
 <p>I’ve also seen cases where Oracle chooses to merge in a subquery containing an analytic, doing the join first
 and then the analytic and the filter using the analytic column that was supposed to be applied before doing the join.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">keys</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="p">...</span>
-        <span class="p">,</span><span class="n">ROW_NUMBER</span><span class="p">()</span> <span class="n">OVER</span> <span class="p">(</span><span class="n">PARTITION</span> <span class="k">BY</span> <span class="n">xyz</span> <span class="k">ORDER</span> <span class="k">by</span> <span class="n">last_modified_dt</span> <span class="k">DESC</span><span class="p">)</span> <span class="k">AS</span> <span class="n">rn</span>
-    <span class="k">FROM</span> <span class="n">key_source</span>
-<span class="p">)</span> <span class="k">SELECT</span> <span class="n">resultfieldlist</span>
-<span class="k">FROM</span> <span class="n">keys</span> <span class="n">k</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="k">keys</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="o">..</span><span class="p">.</span>
+        <span class="p">,</span><span class="nf">ROW_NUMBER</span><span class="p">()</span> <span class="k">OVER</span> <span class="p">(</span><span class="k">PARTITION</span> <span class="kr">BY</span> <span class="n">xyz</span> <span class="kr">ORDER</span> <span class="kr">by</span> <span class="n">last_modified_dt</span> <span class="kr">DESC</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">rn</span>
+    <span class="kr">FROM</span> <span class="n">key_source</span>
+<span class="p">)</span> <span class="kr">SELECT</span> <span class="n">resultfieldlist</span>
+<span class="kr">FROM</span> <span class="k">keys</span> <span class="n">k</span>
 <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">sourcetable</span> <span class="n">s</span>
-    <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
-<span class="k">WHERE</span> <span class="n">k</span><span class="p">.</span><span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="kr">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="o">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="o">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
+<span class="kr">WHERE</span> <span class="n">k</span><span class="p">.</span><span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
 </code></pre></div></div>
 <p>The optimizer has determined that it can reduce the resultset better by doing the join first, shrinking the number
 of rows from key_source, then doing the analytic sort and filter. 
@@ -331,15 +331,15 @@ Maybe the optimizer is right.
 When it is wrong, you will notice a humongous hash join taking forever in order to save a little
 bit on that sort. That is when you can try making it do the sort first using NO_MERGE:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">keys</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="cm">/*+ NO_MERGE */</span> <span class="p">...</span>
-        <span class="p">,</span><span class="n">ROW_NUMBER</span><span class="p">()</span> <span class="n">OVER</span> <span class="p">(</span><span class="n">PARTITION</span> <span class="k">BY</span> <span class="n">xyz</span> <span class="k">ORDER</span> <span class="k">by</span> <span class="n">last_modified_dt</span> <span class="k">DESC</span><span class="p">)</span> <span class="k">AS</span> <span class="n">rn</span>
-    <span class="k">FROM</span> <span class="n">key_source</span>
-<span class="p">)</span> <span class="k">SELECT</span> <span class="n">resultfieldlist</span>
-<span class="k">FROM</span> <span class="n">keys</span> <span class="n">k</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="k">keys</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="cm">/*+ NO_MERGE */</span> <span class="o">..</span><span class="p">.</span>
+        <span class="p">,</span><span class="nf">ROW_NUMBER</span><span class="p">()</span> <span class="k">OVER</span> <span class="p">(</span><span class="k">PARTITION</span> <span class="kr">BY</span> <span class="n">xyz</span> <span class="kr">ORDER</span> <span class="kr">by</span> <span class="n">last_modified_dt</span> <span class="kr">DESC</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">rn</span>
+    <span class="kr">FROM</span> <span class="n">key_source</span>
+<span class="p">)</span> <span class="kr">SELECT</span> <span class="n">resultfieldlist</span>
+<span class="kr">FROM</span> <span class="k">keys</span> <span class="n">k</span>
 <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">sourcetable</span> <span class="n">s</span>
-    <span class="k">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
-<span class="k">WHERE</span> <span class="n">k</span><span class="p">.</span><span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="kr">ON</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key1</span> <span class="o">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key2</span> <span class="o">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">key3</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">key3</span>
+<span class="kr">WHERE</span> <span class="n">k</span><span class="p">.</span><span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
 </code></pre></div></div>
 
 <p>I do not advise reaching for the NO_MERGE hint until you suspect a problem, and even then you should try
@@ -380,47 +380,47 @@ from candidate rows) and join them to our source. We cannot avoid that first ful
 If we have a staging table, we can bring the <em>ROWID</em> along, 
 then use that for the MERGE ON clause join back into the staging table.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">MERGE</span> <span class="k">INTO</span> <span class="n">staging_table</span> <span class="n">t</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">MERGE</span> <span class="kr">INTO</span> <span class="n">staging_table</span> <span class="n">t</span>
 <span class="k">USING</span> <span class="p">(</span>
-    <span class="k">WITH</span> <span class="n">lkup_value</span> <span class="k">AS</span> <span class="p">(</span>
-        <span class="k">SELECT</span> <span class="n">s</span><span class="p">.</span><span class="n">rowid</span> <span class="k">AS</span> <span class="n">s_rowid</span><span class="p">,</span> <span class="n">lk</span><span class="p">.</span><span class="n">update_value</span>
-            <span class="n">ROW_NUMBER</span><span class="p">()</span> <span class="n">OVER</span> <span class="p">(</span><span class="n">PARTITION</span> <span class="k">BY</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span> <span class="k">DESC</span><span class="p">)</span> <span class="k">AS</span> <span class="n">rn</span>
-        <span class="k">FROM</span> <span class="n">staging_table</span> <span class="n">s</span>
+    <span class="kr">WITH</span> <span class="n">lkup_value</span> <span class="kr">AS</span> <span class="p">(</span>
+        <span class="kr">SELECT</span> <span class="n">s</span><span class="p">.</span><span class="kr">rowid</span> <span class="kr">AS</span> <span class="n">s_rowid</span><span class="p">,</span> <span class="n">lk</span><span class="p">.</span><span class="n">update_value</span>
+            <span class="nf">ROW_NUMBER</span><span class="p">()</span> <span class="k">OVER</span> <span class="p">(</span><span class="k">PARTITION</span> <span class="kr">BY</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span> <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span> <span class="kr">DESC</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">rn</span>
+        <span class="kr">FROM</span> <span class="n">staging_table</span> <span class="n">s</span>
         <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">lookup_table</span> <span class="n">lk</span>
-            <span class="k">ON</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">lk</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span><span class="p">...</span>
-                <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">create_dt</span> <span class="o">&gt;=</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span>
-    <span class="p">)</span> <span class="k">SELECT</span> <span class="n">s_rowid</span><span class="p">,</span> <span class="n">update_value</span>
-    <span class="k">FROM</span> <span class="n">lkup_value</span>
-    <span class="k">WHERE</span> <span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="kr">ON</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">key1</span> <span class="o">AND</span> <span class="n">lk</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">key2</span><span class="o">..</span><span class="p">.</span>
+                <span class="o">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">create_dt</span> <span class="o">&gt;=</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span>
+    <span class="p">)</span> <span class="kr">SELECT</span> <span class="n">s_rowid</span><span class="p">,</span> <span class="n">update_value</span>
+    <span class="kr">FROM</span> <span class="n">lkup_value</span>
+    <span class="kr">WHERE</span> <span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="p">)</span> <span class="n">q</span>
-<span class="k">ON</span> <span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">rowid</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">s_rowid</span><span class="p">)</span>
-<span class="k">WHEN</span> <span class="n">MATCHED</span> <span class="k">THEN</span> <span class="k">UPDATE</span> <span class="k">SET</span>
+<span class="kr">ON</span> <span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="kr">rowid</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">s_rowid</span><span class="p">)</span>
+<span class="k">WHEN</span> <span class="k">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="nf">SET</span>
     <span class="n">update_value</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">update_value</span>
 </code></pre></div></div>
 
 <p>Consider how we would do this in a series of steps using WITH clause CTEs in a single INSERT without the staging
 table:</p>
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">staging_table</span>
-<span class="k">WITH</span> <span class="n">x</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="p">...</span>
-<span class="p">),</span> <span class="n">lkup_value_1</span> <span class="k">AS</span> <span class="p">(</span>
-        <span class="k">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span><span class="p">,</span> <span class="n">lk</span><span class="p">.</span><span class="n">update_value</span>
-            <span class="n">ROW_NUMBER</span><span class="p">()</span> <span class="n">OVER</span> <span class="p">(</span><span class="n">PARTITION</span> <span class="k">BY</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span> <span class="k">DESC</span><span class="p">)</span> <span class="k">AS</span> <span class="n">rn</span>
-        <span class="k">FROM</span> <span class="n">x</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">INSERT</span> <span class="kr">INTO</span> <span class="n">staging_table</span>
+<span class="kr">WITH</span> <span class="n">x</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="o">..</span><span class="p">.</span>
+<span class="p">),</span> <span class="n">lkup_value_1</span> <span class="kr">AS</span> <span class="p">(</span>
+        <span class="kr">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span><span class="p">,</span> <span class="n">lk</span><span class="p">.</span><span class="n">update_value</span>
+            <span class="nf">ROW_NUMBER</span><span class="p">()</span> <span class="k">OVER</span> <span class="p">(</span><span class="k">PARTITION</span> <span class="kr">BY</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span> <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span> <span class="kr">DESC</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">rn</span>
+        <span class="kr">FROM</span> <span class="n">x</span>
         <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">lookup_table</span> <span class="n">lk</span>
-            <span class="k">ON</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">lk</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span><span class="p">...</span>
-                <span class="k">AND</span> <span class="n">x</span><span class="p">.</span><span class="n">create_dt</span> <span class="o">&gt;=</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span>
-<span class="p">),</span> <span class="n">lkup_value</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">update_value</span>
-    <span class="k">FROM</span> <span class="n">lkup_value_1</span>
-    <span class="k">WHERE</span> <span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="p">),</span> <span class="n">y</span> <span class="k">AS</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">field1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">field2</span><span class="p">...</span>
-        <span class="p">,</span><span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="k">IS</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="k">THEN</span> <span class="n">lk</span><span class="p">.</span><span class="n">update_value</span> <span class="k">ELSE</span> <span class="n">x</span><span class="p">.</span><span class="n">update_value</span> <span class="k">END</span> <span class="k">AS</span> <span class="n">update_value</span>
-    <span class="k">FROM</span> <span class="n">x</span>
+            <span class="kr">ON</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span> <span class="o">AND</span> <span class="n">lk</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span><span class="o">..</span><span class="p">.</span>
+                <span class="o">AND</span> <span class="n">x</span><span class="p">.</span><span class="n">create_dt</span> <span class="o">&gt;=</span> <span class="n">lk</span><span class="p">.</span><span class="n">effective_date</span>
+<span class="p">),</span> <span class="n">lkup_value</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="n">key1</span><span class="p">,</span> <span class="n">key2</span><span class="p">,</span> <span class="n">update_value</span>
+    <span class="kr">FROM</span> <span class="n">lkup_value_1</span>
+    <span class="kr">WHERE</span> <span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">),</span> <span class="n">y</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">field1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">field2</span><span class="o">..</span><span class="p">.</span>
+        <span class="p">,</span><span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="o">IS</span> <span class="o">NOT</span> <span class="o">NULL</span> <span class="kr">THEN</span> <span class="n">lk</span><span class="p">.</span><span class="n">update_value</span> <span class="kr">ELSE</span> <span class="n">x</span><span class="p">.</span><span class="n">update_value</span> <span class="k">END</span> <span class="kr">AS</span> <span class="n">update_value</span>
+    <span class="kr">FROM</span> <span class="n">x</span>
     <span class="k">LEFT</span> <span class="k">OUTER</span> <span class="k">JOIN</span> <span class="n">lkup_value</span> <span class="n">lk</span>
-        <span class="k">ON</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span> <span class="k">AND</span> <span class="n">lk</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span>
-<span class="p">)...</span>
+        <span class="kr">ON</span> <span class="n">lk</span><span class="p">.</span><span class="n">key1</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key1</span> <span class="o">AND</span> <span class="n">lk</span><span class="p">.</span><span class="n">key2</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">key2</span>
+<span class="p">)</span><span class="o">..</span><span class="p">.</span>
 </code></pre></div></div>
 
 <p>Even though we are only changing a few rows with clause ‘y’, we must run all of the rows from ‘x’ through
@@ -456,20 +456,45 @@ help you design non-obvious solutions for very large dataset operations.</p>
           
       
           
-      
-    
-  
-    
-      
-        
-          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -506,7 +531,7 @@ help you design non-obvious solutions for very large dataset operations.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -543,7 +568,7 @@ help you design non-obvious solutions for very large dataset operations.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -574,7 +599,7 @@ help you design non-obvious solutions for very large dataset operations.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -605,7 +630,7 @@ help you design non-obvious solutions for very large dataset operations.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -634,16 +659,6 @@ help you design non-obvious solutions for very large dataset operations.</p>
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/09/More-CSV-Fun.html">More CSV Fun - Turn CSV into SQL Resultset</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -896,6 +911,8 @@ help you design non-obvious solutions for very large dataset operations.</p>
     <a class="prev" href="/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">&laquo; Inline External Tables for CSV Load</a>
   
   
+    <a class="next" href="/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL &raquo;</a>
+  
 </div>
 
 <div class="disqus-comments">
@@ -903,7 +920,7 @@ help you design non-obvious solutions for very large dataset operations.</p>
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_Staging Tables vs Single SQL";
+    var disqus_identifier = "https://lee-lindley.github.io_Staging Tables vs Single SQL";
     var disqus_title = "Staging Tables vs Single SQL";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html" property="og:url">
     
 
     
       <meta content="2022-01-22T10:30:00-05:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -66,7 +66,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">
     
 
     
@@ -247,22 +247,22 @@ but that seems draconian. Tracking everything by the <em>user</em> identificatio
 
 <h3 id="as_sftp_private_keys-table">as_sftp_private_keys Table</h3>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">as_sftp_private_keys</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="kr">TABLE</span> <span class="n">as_sftp_private_keys</span>
 <span class="p">(</span>
-    <span class="k">host</span>  <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span>
-    <span class="p">,</span><span class="n">id</span>   <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span>
-    <span class="p">,</span><span class="k">key</span>  <span class="k">CLOB</span> <span class="k">NOT</span> <span class="k">NULL</span>
-    <span class="p">,</span><span class="k">CONSTRAINT</span> <span class="n">as_sftp_private_keys_pk</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">(</span><span class="k">host</span><span class="p">,</span> <span class="n">id</span><span class="p">)</span>
+    <span class="k">host</span>  <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span> <span class="o">NOT</span> <span class="kr">NULL</span>
+    <span class="p">,</span><span class="k">id</span>   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span> <span class="o">NOT</span> <span class="kr">NULL</span>
+    <span class="p">,</span><span class="k">key</span>  <span class="kt">CLOB</span> <span class="o">NOT</span> <span class="kr">NULL</span>
+    <span class="p">,</span><span class="k">CONSTRAINT</span> <span class="n">as_sftp_private_keys_pk</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">(</span><span class="k">host</span><span class="p">,</span> <span class="k">id</span><span class="p">)</span>
 <span class="p">);</span>
 </code></pre></div></div>
 
 <h3 id="as_sftp_keymgmt-package-specfication">as_sftp_keymgmt Package Specfication</h3>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="n">PACKAGE</span> <span class="n">as_sftp_keymgmt</span> <span class="k">AS</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">as_sftp_keymgmt</span> <span class="kr">AS</span>
     <span class="c1">--</span>
     <span class="c1">-- Important! The private key lookup is case sensitive on i_host and i_user.</span>
     <span class="c1">--</span>
-    <span class="k">PROCEDURE</span> <span class="n">login</span><span class="p">(</span><span class="n">i_host</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_passphrase</span> <span class="n">VARCHAR2</span> <span class="p">:</span><span class="o">=</span> <span class="k">NULL</span><span class="p">,</span> <span class="n">i_log_level</span> <span class="n">pls_integer</span> <span class="p">:</span><span class="o">=</span> <span class="k">null</span><span class="p">);</span>
+    <span class="kr">PROCEDURE</span> <span class="n">login</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_passphrase</span> <span class="kt">VARCHAR2</span> <span class="o">:=</span> <span class="kr">NULL</span><span class="p">,</span> <span class="n">i_log_level</span> <span class="kt">pls_integer</span> <span class="o">:=</span> <span class="kr">null</span><span class="p">);</span>
 <span class="c1">-- comment out this function when done testing. It should not be public</span>
     <span class="c1">--FUNCTION get_priv_key(i_host VARCHAR2, i_user VARCHAR2) RETURN CLOB;</span>
     <span class="c1">--</span>
@@ -271,9 +271,9 @@ but that seems draconian. Tracking everything by the <em>user</em> identificatio
     <span class="c1">-- other than to truncate it or do the task as sysdba.</span>
     <span class="c1">-- You cannot read the data at all as get_priv_key is a private function that only login() can call.</span>
     <span class="c1">--</span>
-    <span class="k">PROCEDURE</span> <span class="n">insert_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="k">CLOB</span><span class="p">);</span>
-    <span class="k">PROCEDURE</span> <span class="n">update_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="k">CLOB</span><span class="p">);</span>
-    <span class="k">PROCEDURE</span> <span class="n">delete_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="n">VARCHAR2</span><span class="p">);</span>
+    <span class="kr">PROCEDURE</span> <span class="n">insert_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">);</span>
+    <span class="kr">PROCEDURE</span> <span class="n">update_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">);</span>
+    <span class="kr">PROCEDURE</span> <span class="n">delete_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">);</span>
 <span class="k">END</span> <span class="n">as_sftp_keymgmt</span><span class="p">;</span>
 </code></pre></div></div>
 <p>While testing I made the function <em>get_priv_key</em> public so that I could validate what it was doing.
@@ -293,19 +293,19 @@ during login will work much like SSH/SFTP does on Unix by looking up the key.</p
 <p><em>as_sftp_keymgmt_security</em> package implements the policy checks that will, when installed via <em>DBMS_RLS</em>, control
 whether access to table <em>as_sftp_private_keys</em> is permitted.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="n">PACKAGE</span> <span class="n">as_sftp_keymgmt_security</span>
-<span class="k">AS</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">as_sftp_keymgmt_security</span>
+<span class="kr">AS</span>
     <span class="c1">--</span>
     <span class="c1">-- These control access to records in the table as_sftp_private_keys</span>
     <span class="c1">--</span>
-    <span class="k">FUNCTION</span> <span class="n">user_data_select_security</span> <span class="p">(</span><span class="k">owner</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="n">VARCHAR2</span><span class="p">;</span>
-    <span class="k">FUNCTION</span> <span class="n">user_data_insert_security</span> <span class="p">(</span><span class="k">owner</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="n">VARCHAR2</span><span class="p">;</span>
-    <span class="k">FUNCTION</span> <span class="n">user_data_update_security</span> <span class="p">(</span><span class="k">owner</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="n">VARCHAR2</span><span class="p">;</span>
-    <span class="k">FUNCTION</span> <span class="n">user_data_delete_security</span> <span class="p">(</span><span class="k">owner</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="n">VARCHAR2</span><span class="p">;</span>
+    <span class="kr">FUNCTION</span> <span class="n">user_data_select_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">VARCHAR2</span><span class="p">;</span>
+    <span class="kr">FUNCTION</span> <span class="n">user_data_insert_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">VARCHAR2</span><span class="p">;</span>
+    <span class="kr">FUNCTION</span> <span class="n">user_data_update_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">VARCHAR2</span><span class="p">;</span>
+    <span class="kr">FUNCTION</span> <span class="n">user_data_delete_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">VARCHAR2</span><span class="p">;</span>
 <span class="k">END</span> <span class="n">as_sftp_keymgmt_security</span><span class="p">;</span>
 </code></pre></div></div>
 
@@ -328,39 +328,39 @@ not have ‘WHERE’ clauses. The implementation checks your condition after the
 if the operation is not allowed. This is different than the others where it quietly adds a WHERE condition
 to cause your operation to not match any rows.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">GRANT</span> <span class="k">EXECUTE</span> <span class="k">ON</span> <span class="n">as_sftp_keymgmt_security</span> <span class="k">TO</span> <span class="k">public</span><span class="p">;</span>
-<span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">PUBLIC</span> <span class="n">SYNONYM</span> <span class="n">as_sftp_keymgmt_security</span> <span class="k">FOR</span> <span class="n">lee</span><span class="p">.</span><span class="n">as_sftp_keymgmt_security</span> <span class="p">;</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">GRANT</span> <span class="k">EXECUTE</span> <span class="kr">ON</span> <span class="n">as_sftp_keymgmt_security</span> <span class="kt">TO</span> <span class="kr">public</span><span class="p">;</span>
+<span class="kr">CREATE</span> <span class="o">OR</span> <span class="nf">REPLACE</span> <span class="kr">PUBLIC</span> <span class="kr">SYNONYM</span> <span class="n">as_sftp_keymgmt_security</span> <span class="kr">FOR</span> <span class="n">lee</span><span class="p">.</span><span class="n">as_sftp_keymgmt_security</span> <span class="p">;</span>
 <span class="k">BEGIN</span>
     <span class="k">BEGIN</span>
-        <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">drop_policy</span><span class="p">(</span><span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_PRIVATE_KEYS'</span><span class="p">,</span> <span class="s1">'USER_DATA_SELECT_POLICY'</span><span class="p">);</span>
-    <span class="n">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">OTHERS</span> <span class="k">THEN</span> <span class="k">NULL</span><span class="p">;</span>
+        <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">drop_policy</span><span class="p">(</span><span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_PRIVATE_KEYS</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">USER_DATA_SELECT_POLICY</span><span class="o">'</span><span class="p">);</span>
+    <span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="k">OTHERS</span> <span class="kr">THEN</span> <span class="kr">NULL</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
-    <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">add_policy</span><span class="p">(</span><span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_PRIVATE_KEYS'</span><span class="p">,</span> <span class="s1">'USER_DATA_SELECT_POLICY'</span><span class="p">,</span>
-                      <span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_KEYMGMT_SECURITY.USER_DATA_SELECT_SECURITY'</span><span class="p">,</span>
-                      <span class="s1">'SELECT'</span><span class="p">);</span>
+    <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">add_policy</span><span class="p">(</span><span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_PRIVATE_KEYS</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">USER_DATA_SELECT_POLICY</span><span class="o">'</span><span class="p">,</span>
+                      <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT_SECURITY.USER_DATA_SELECT_SECURITY</span><span class="o">'</span><span class="p">,</span>
+                      <span class="o">'</span><span class="s1">SELECT</span><span class="o">'</span><span class="p">);</span>
     <span class="k">BEGIN</span>
-        <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">drop_policy</span><span class="p">(</span><span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_PRIVATE_KEYS'</span><span class="p">,</span> <span class="s1">'USER_DATA_INSERT_POLICY'</span><span class="p">);</span>
-    <span class="n">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">OTHERS</span> <span class="k">THEN</span> <span class="k">NULL</span><span class="p">;</span>
+        <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">drop_policy</span><span class="p">(</span><span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_PRIVATE_KEYS</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">USER_DATA_INSERT_POLICY</span><span class="o">'</span><span class="p">);</span>
+    <span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="k">OTHERS</span> <span class="kr">THEN</span> <span class="kr">NULL</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
-    <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">add_policy</span><span class="p">(</span><span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_PRIVATE_KEYS'</span><span class="p">,</span> <span class="s1">'USER_DATA_INSERT_POLICY'</span><span class="p">,</span>
-                      <span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_KEYMGMT_SECURITY.USER_DATA_INSERT_SECURITY'</span><span class="p">,</span>
-                      <span class="s1">'INSERT'</span>
+    <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">add_policy</span><span class="p">(</span><span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_PRIVATE_KEYS</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">USER_DATA_INSERT_POLICY</span><span class="o">'</span><span class="p">,</span>
+                      <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT_SECURITY.USER_DATA_INSERT_SECURITY</span><span class="o">'</span><span class="p">,</span>
+                      <span class="o">'</span><span class="s1">INSERT</span><span class="o">'</span>
                     <span class="p">,</span><span class="k">TRUE</span> <span class="c1">-- needed because insert does not have where clause. check condition after insert</span>
                 <span class="p">);</span>
     <span class="k">BEGIN</span>
-        <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">drop_policy</span><span class="p">(</span><span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_PRIVATE_KEYS'</span><span class="p">,</span> <span class="s1">'USER_DATA_UPDATE_POLICY'</span><span class="p">);</span>
-    <span class="n">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">OTHERS</span> <span class="k">THEN</span> <span class="k">NULL</span><span class="p">;</span>
+        <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">drop_policy</span><span class="p">(</span><span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_PRIVATE_KEYS</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">USER_DATA_UPDATE_POLICY</span><span class="o">'</span><span class="p">);</span>
+    <span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="k">OTHERS</span> <span class="kr">THEN</span> <span class="kr">NULL</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
-    <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">add_policy</span><span class="p">(</span><span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_PRIVATE_KEYS'</span><span class="p">,</span> <span class="s1">'USER_DATA_UPDATE_POLICY'</span><span class="p">,</span>
-                      <span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_KEYMGMT_SECURITY.USER_DATA_UPDATE_SECURITY'</span><span class="p">,</span>
-                      <span class="s1">'UPDATE'</span><span class="p">);</span>
+    <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">add_policy</span><span class="p">(</span><span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_PRIVATE_KEYS</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">USER_DATA_UPDATE_POLICY</span><span class="o">'</span><span class="p">,</span>
+                      <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT_SECURITY.USER_DATA_UPDATE_SECURITY</span><span class="o">'</span><span class="p">,</span>
+                      <span class="o">'</span><span class="s1">UPDATE</span><span class="o">'</span><span class="p">);</span>
     <span class="k">BEGIN</span>
-        <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">drop_policy</span><span class="p">(</span><span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_PRIVATE_KEYS'</span><span class="p">,</span> <span class="s1">'USER_DATA_DELETE_POLICY'</span><span class="p">);</span>
-    <span class="n">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">OTHERS</span> <span class="k">THEN</span> <span class="k">NULL</span><span class="p">;</span>
+        <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">drop_policy</span><span class="p">(</span><span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_PRIVATE_KEYS</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">USER_DATA_DELETE_POLICY</span><span class="o">'</span><span class="p">);</span>
+    <span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="k">OTHERS</span> <span class="kr">THEN</span> <span class="kr">NULL</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
-    <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">add_policy</span><span class="p">(</span><span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_PRIVATE_KEYS'</span><span class="p">,</span> <span class="s1">'USER_DATA_DELETE_POLICY'</span><span class="p">,</span>
-                      <span class="s1">'LEE'</span><span class="p">,</span> <span class="s1">'AS_SFTP_KEYMGMT_SECURITY.USER_DATA_DELETE_SECURITY'</span><span class="p">,</span>
-                      <span class="s1">'DELETE'</span><span class="p">);</span>
+    <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">add_policy</span><span class="p">(</span><span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_PRIVATE_KEYS</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">USER_DATA_DELETE_POLICY</span><span class="o">'</span><span class="p">,</span>
+                      <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT_SECURITY.USER_DATA_DELETE_SECURITY</span><span class="o">'</span><span class="p">,</span>
+                      <span class="o">'</span><span class="s1">DELETE</span><span class="o">'</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 </code></pre></div></div>
 
@@ -370,23 +370,23 @@ to cause your operation to not match any rows.</p>
 We look at the call stack. It is tricky though because the <em>DBMS_RLS</em> operations insert themselves into the
 call stack! You must look back a few levels to find the original caller.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="n">PACKAGE</span> <span class="n">BODY</span> <span class="n">as_sftp_keymgmt_security</span> <span class="k">IS</span>
-    <span class="k">FUNCTION</span> <span class="n">user_data_select_security</span> <span class="p">(</span><span class="k">owner</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
-    <span class="k">IS</span>
-        <span class="n">v_owner</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
-        <span class="n">v_name</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
-        <span class="n">v_lineno</span> <span class="n">number</span><span class="p">;</span>
-        <span class="n">v_caller_t</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">as_sftp_keymgmt_security</span> <span class="kr">IS</span>
+    <span class="kr">FUNCTION</span> <span class="n">user_data_select_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+    <span class="kr">IS</span>
+        <span class="n">v_owner</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+        <span class="n">v_name</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+        <span class="n">v_lineno</span> <span class="kt">number</span><span class="p">;</span>
+        <span class="n">v_caller_t</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
 
-        <span class="n">v_depth</span> <span class="n">BINARY_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">dynamic_depth</span><span class="p">;</span>
+        <span class="n">v_depth</span> <span class="kt">BINARY_INTEGER</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">dynamic_depth</span><span class="p">;</span>
     <span class="k">BEGIN</span>
-        <span class="n">IF</span> <span class="n">v_depth</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="k">THEN</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'security check found not called by LEE.AS_SFTP_KEYMGMT.GET_PRIV_KEY.'</span><span class="p">);</span>
-            <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'call stack less than 4: '</span><span class="o">||</span><span class="n">v_depth</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'Not allowing rows to be selected.'</span><span class="p">);</span>
-            <span class="k">RETURN</span> <span class="s1">'1=0'</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+        <span class="k">IF</span> <span class="n">v_depth</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="kr">THEN</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.GET_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
+            <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">call stack less than 4: </span><span class="o">'||</span><span class="n">v_depth</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">Not allowing rows to be selected.</span><span class="o">'</span><span class="p">);</span>
+            <span class="k">RETURN</span> <span class="o">'</span><span class="s1">1=0</span><span class="o">'</span><span class="p">;</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="cm">/*
         FOR i in 1..v_depth
         LOOP
@@ -395,40 +395,40 @@ call stack! You must look back a few levels to find the original caller.</p>
             dbms_output.put_line('i='||i||' owner: '||v_owner||' name: '||v_name);
         END LOOP;
         */</span>
-        <span class="n">v_owner</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
-        <span class="n">v_name</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
+        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+        <span class="n">v_name</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name);</span>
         <span class="c1">--owa_util.who_called_me(v_owner, v_name, v_lineno, v_caller_t);</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name||' lineno: '||v_lineno||' caller_t: '||v_caller_t);</span>
         <span class="c1">--dbms_output.put_line(DBMS_UTILITY.format_call_stack);</span>
-        <span class="n">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="s1">'LEE'</span> <span class="k">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="s1">'AS_SFTP_KEYMGMT.GET_PRIV_KEY'</span> <span class="k">THEN</span>
-            <span class="k">RETURN</span> <span class="k">NULL</span><span class="p">;</span>
-        <span class="k">ELSE</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'security check found not called by LEE.AS_SFTP_KEYMGMT.GET_PRIV_KEY.'</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'was called by owner: '</span><span class="o">||</span><span class="n">v_owner</span><span class="o">||</span><span class="s1">' name: '</span><span class="o">||</span><span class="n">v_name</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'Not allowing rows to be selected.'</span><span class="p">);</span>
-            <span class="k">RETURN</span> <span class="s1">'1=0'</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="o">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.GET_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
+            <span class="k">RETURN</span> <span class="kr">NULL</span><span class="p">;</span>
+        <span class="kr">ELSE</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.GET_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">was called by owner: </span><span class="o">'||</span><span class="n">v_owner</span><span class="o">||'</span><span class="s1"> name: </span><span class="o">'||</span><span class="n">v_name</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">Not allowing rows to be selected.</span><span class="o">'</span><span class="p">);</span>
+            <span class="k">RETURN</span> <span class="o">'</span><span class="s1">1=0</span><span class="o">'</span><span class="p">;</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="c1">--RETURN NULL;</span>
     <span class="k">END</span> <span class="n">user_data_select_security</span>
     <span class="p">;</span>
 
-    <span class="k">FUNCTION</span> <span class="n">user_data_insert_security</span> <span class="p">(</span><span class="k">owner</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
-    <span class="k">IS</span>
-        <span class="n">v_owner</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
-        <span class="n">v_name</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
-        <span class="n">v_lineno</span> <span class="n">number</span><span class="p">;</span>
-        <span class="n">v_caller_t</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+    <span class="kr">FUNCTION</span> <span class="n">user_data_insert_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+    <span class="kr">IS</span>
+        <span class="n">v_owner</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+        <span class="n">v_name</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+        <span class="n">v_lineno</span> <span class="kt">number</span><span class="p">;</span>
+        <span class="n">v_caller_t</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
 
-        <span class="n">v_depth</span> <span class="n">BINARY_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">dynamic_depth</span><span class="p">;</span>
+        <span class="n">v_depth</span> <span class="kt">BINARY_INTEGER</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">dynamic_depth</span><span class="p">;</span>
     <span class="k">BEGIN</span>
-        <span class="n">IF</span> <span class="n">v_depth</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="k">THEN</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'security check found not called by LEE.AS_SFTP_KEYMGMT.INSERT_PRIV_KEY.'</span><span class="p">);</span>
-            <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'call stack less than 4: '</span><span class="o">||</span><span class="n">v_depth</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'Not allowing rows to be selected.'</span><span class="p">);</span>
-            <span class="k">RETURN</span> <span class="s1">'1=0'</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+        <span class="k">IF</span> <span class="n">v_depth</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="kr">THEN</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.INSERT_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
+            <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">call stack less than 4: </span><span class="o">'||</span><span class="n">v_depth</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">Not allowing rows to be selected.</span><span class="o">'</span><span class="p">);</span>
+            <span class="k">RETURN</span> <span class="o">'</span><span class="s1">1=0</span><span class="o">'</span><span class="p">;</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="cm">/*
         FOR i in 1..v_depth
         LOOP
@@ -437,39 +437,39 @@ call stack! You must look back a few levels to find the original caller.</p>
             dbms_output.put_line('i='||i||' owner: '||v_owner||' name: '||v_name);
         END LOOP;
         */</span>
-        <span class="n">v_owner</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
-        <span class="n">v_name</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
+        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+        <span class="n">v_name</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name);</span>
         <span class="c1">--owa_util.who_called_me(v_owner, v_name, v_lineno, v_caller_t);</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name||' lineno: '||v_lineno||' caller_t: '||v_caller_t);</span>
         <span class="c1">--dbms_output.put_line(DBMS_UTILITY.format_call_stack);</span>
-        <span class="n">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="s1">'LEE'</span> <span class="k">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="s1">'AS_SFTP_KEYMGMT.INSERT_PRIV_KEY'</span> <span class="k">THEN</span>
-            <span class="k">RETURN</span> <span class="k">NULL</span><span class="p">;</span>
-        <span class="k">ELSE</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'security check found not called by LEE.AS_SFTP_KEYMGMT.INSERT_PRIV_KEY.'</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'was called by owner: '</span><span class="o">||</span><span class="n">v_owner</span><span class="o">||</span><span class="s1">' name: '</span><span class="o">||</span><span class="n">v_name</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'Not allowing rows to be inserted.'</span><span class="p">);</span>
-            <span class="k">RETURN</span> <span class="s1">'1=0'</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="o">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.INSERT_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
+            <span class="k">RETURN</span> <span class="kr">NULL</span><span class="p">;</span>
+        <span class="kr">ELSE</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.INSERT_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">was called by owner: </span><span class="o">'||</span><span class="n">v_owner</span><span class="o">||'</span><span class="s1"> name: </span><span class="o">'||</span><span class="n">v_name</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">Not allowing rows to be inserted.</span><span class="o">'</span><span class="p">);</span>
+            <span class="k">RETURN</span> <span class="o">'</span><span class="s1">1=0</span><span class="o">'</span><span class="p">;</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="c1">--RETURN NULL;</span>
     <span class="k">END</span> <span class="n">user_data_insert_security</span>
     <span class="p">;</span>
-    <span class="k">FUNCTION</span> <span class="n">user_data_update_security</span> <span class="p">(</span><span class="k">owner</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
-    <span class="k">IS</span>
-        <span class="n">v_owner</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
-        <span class="n">v_name</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
-        <span class="n">v_lineno</span> <span class="n">number</span><span class="p">;</span>
-        <span class="n">v_caller_t</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+    <span class="kr">FUNCTION</span> <span class="n">user_data_update_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+    <span class="kr">IS</span>
+        <span class="n">v_owner</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+        <span class="n">v_name</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+        <span class="n">v_lineno</span> <span class="kt">number</span><span class="p">;</span>
+        <span class="n">v_caller_t</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
 
-        <span class="n">v_depth</span> <span class="n">BINARY_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">dynamic_depth</span><span class="p">;</span>
+        <span class="n">v_depth</span> <span class="kt">BINARY_INTEGER</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">dynamic_depth</span><span class="p">;</span>
     <span class="k">BEGIN</span>
-        <span class="n">IF</span> <span class="n">v_depth</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="k">THEN</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'security check found not called by LEE.AS_SFTP_KEYMGMT.UPDATE_PRIV_KEY.'</span><span class="p">);</span>
-            <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'call stack less than 4: '</span><span class="o">||</span><span class="n">v_depth</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'Not allowing rows to be selected.'</span><span class="p">);</span>
-            <span class="k">RETURN</span> <span class="s1">'1=0'</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+        <span class="k">IF</span> <span class="n">v_depth</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="kr">THEN</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.UPDATE_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
+            <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">call stack less than 4: </span><span class="o">'||</span><span class="n">v_depth</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">Not allowing rows to be selected.</span><span class="o">'</span><span class="p">);</span>
+            <span class="k">RETURN</span> <span class="o">'</span><span class="s1">1=0</span><span class="o">'</span><span class="p">;</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="cm">/*
         FOR i in 1..v_depth
         LOOP
@@ -478,40 +478,40 @@ call stack! You must look back a few levels to find the original caller.</p>
             dbms_output.put_line('i='||i||' owner: '||v_owner||' name: '||v_name);
         END LOOP;
         */</span>
-        <span class="n">v_owner</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
-        <span class="n">v_name</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
+        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+        <span class="n">v_name</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name);</span>
         <span class="c1">--owa_util.who_called_me(v_owner, v_name, v_lineno, v_caller_t);</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name||' lineno: '||v_lineno||' caller_t: '||v_caller_t);</span>
         <span class="c1">--dbms_output.put_line(DBMS_UTILITY.format_call_stack);</span>
-        <span class="n">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="s1">'LEE'</span> <span class="k">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="s1">'AS_SFTP_KEYMGMT.UPDATE_PRIV_KEY'</span> <span class="k">THEN</span>
-            <span class="k">RETURN</span> <span class="k">NULL</span><span class="p">;</span>
-        <span class="k">ELSE</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'security check found not called by LEE.AS_SFTP_KEYMGMT.UPDATE_PRIV_KEY.'</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'was called by owner: '</span><span class="o">||</span><span class="n">v_owner</span><span class="o">||</span><span class="s1">' name: '</span><span class="o">||</span><span class="n">v_name</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'Not allowing rows to be updated.'</span><span class="p">);</span>
-            <span class="k">RETURN</span> <span class="s1">'1=0'</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="o">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.UPDATE_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
+            <span class="k">RETURN</span> <span class="kr">NULL</span><span class="p">;</span>
+        <span class="kr">ELSE</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.UPDATE_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">was called by owner: </span><span class="o">'||</span><span class="n">v_owner</span><span class="o">||'</span><span class="s1"> name: </span><span class="o">'||</span><span class="n">v_name</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">Not allowing rows to be updated.</span><span class="o">'</span><span class="p">);</span>
+            <span class="k">RETURN</span> <span class="o">'</span><span class="s1">1=0</span><span class="o">'</span><span class="p">;</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="c1">--RETURN NULL;</span>
     <span class="k">END</span> <span class="n">user_data_update_security</span>
     <span class="p">;</span>
 
-    <span class="k">FUNCTION</span> <span class="n">user_data_delete_security</span> <span class="p">(</span><span class="k">owner</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
-    <span class="k">IS</span>
-        <span class="n">v_owner</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
-        <span class="n">v_name</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
-        <span class="n">v_lineno</span> <span class="n">number</span><span class="p">;</span>
-        <span class="n">v_caller_t</span> <span class="n">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+    <span class="kr">FUNCTION</span> <span class="n">user_data_delete_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+    <span class="kr">IS</span>
+        <span class="n">v_owner</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+        <span class="n">v_name</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
+        <span class="n">v_lineno</span> <span class="kt">number</span><span class="p">;</span>
+        <span class="n">v_caller_t</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
 
-        <span class="n">v_depth</span> <span class="n">BINARY_INTEGER</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">dynamic_depth</span><span class="p">;</span>
+        <span class="n">v_depth</span> <span class="kt">BINARY_INTEGER</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">dynamic_depth</span><span class="p">;</span>
     <span class="k">BEGIN</span>
-        <span class="n">IF</span> <span class="n">v_depth</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="k">THEN</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'security check found not called by LEE.AS_SFTP_KEYMGMT.DELETE_PRIV_KEY.'</span><span class="p">);</span>
-            <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'call stack less than 4: '</span><span class="o">||</span><span class="n">v_depth</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'Not allowing rows to be selected.'</span><span class="p">);</span>
-            <span class="k">RETURN</span> <span class="s1">'1=0'</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+        <span class="k">IF</span> <span class="n">v_depth</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="kr">THEN</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.DELETE_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
+            <span class="n">dbms_output</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">call stack less than 4: </span><span class="o">'||</span><span class="n">v_depth</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">Not allowing rows to be selected.</span><span class="o">'</span><span class="p">);</span>
+            <span class="k">RETURN</span> <span class="o">'</span><span class="s1">1=0</span><span class="o">'</span><span class="p">;</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="cm">/*
         FOR i in 1..v_depth
         LOOP
@@ -520,20 +520,20 @@ call stack! You must look back a few levels to find the original caller.</p>
             dbms_output.put_line('i='||i||' owner: '||v_owner||' name: '||v_name);
         END LOOP;
         */</span>
-        <span class="n">v_owner</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
-        <span class="n">v_name</span> <span class="p">:</span><span class="o">=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
+        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+        <span class="n">v_name</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name);</span>
         <span class="c1">--owa_util.who_called_me(v_owner, v_name, v_lineno, v_caller_t);</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name||' lineno: '||v_lineno||' caller_t: '||v_caller_t);</span>
         <span class="c1">--dbms_output.put_line(DBMS_UTILITY.format_call_stack);</span>
-        <span class="n">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="s1">'LEE'</span> <span class="k">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="s1">'AS_SFTP_KEYMGMT.DELETE_PRIV_KEY'</span> <span class="k">THEN</span>
-            <span class="k">RETURN</span> <span class="k">NULL</span><span class="p">;</span>
-        <span class="k">ELSE</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'security check found not called by LEE.AS_SFTP_KEYMGMT.DELETE_PRIV_KEY.'</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'was called by owner: '</span><span class="o">||</span><span class="n">v_owner</span><span class="o">||</span><span class="s1">' name: '</span><span class="o">||</span><span class="n">v_name</span><span class="p">);</span>
-            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="s1">'Not allowing rows to be deleted.'</span><span class="p">);</span>
-            <span class="k">RETURN</span> <span class="s1">'1=0'</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">IF</span><span class="p">;</span>
+        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="o">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.DELETE_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
+            <span class="k">RETURN</span> <span class="kr">NULL</span><span class="p">;</span>
+        <span class="kr">ELSE</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.DELETE_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">was called by owner: </span><span class="o">'||</span><span class="n">v_owner</span><span class="o">||'</span><span class="s1"> name: </span><span class="o">'||</span><span class="n">v_name</span><span class="p">);</span>
+            <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">Not allowing rows to be deleted.</span><span class="o">'</span><span class="p">);</span>
+            <span class="k">RETURN</span> <span class="o">'</span><span class="s1">1=0</span><span class="o">'</span><span class="p">;</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="c1">--RETURN NULL;</span>
     <span class="k">END</span> <span class="n">user_data_delete_security</span>
     <span class="p">;</span>
@@ -546,32 +546,32 @@ call stack! You must look back a few levels to find the original caller.</p>
 
 <p>Implementation of the methods to do the login and DML is anticlimatic.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="n">PACKAGE</span> <span class="n">BODY</span> <span class="n">as_sftp_keymgmt</span> <span class="k">AS</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">as_sftp_keymgmt</span> <span class="kr">AS</span>
     <span class="c1">--</span>
     <span class="c1">-- This is the only method to select the private key when fine grained access control is added to the table</span>
     <span class="c1">-- with as_sftp_keymgt_security package. It is a package private function only called by login()</span>
     <span class="c1">--</span>
-    <span class="k">FUNCTION</span> <span class="n">get_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">RETURN</span> <span class="k">CLOB</span>
-    <span class="k">IS</span>
-        <span class="n">v_clob</span> <span class="k">CLOB</span><span class="p">;</span>
+    <span class="kr">FUNCTION</span> <span class="n">get_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">RETURN</span> <span class="kt">CLOB</span>
+    <span class="kr">IS</span>
+        <span class="n">v_clob</span> <span class="kt">CLOB</span><span class="p">;</span>
     <span class="k">BEGIN</span>
-        <span class="k">SELECT</span> <span class="k">key</span> <span class="k">INTO</span> <span class="n">v_clob</span>
-        <span class="k">FROM</span> <span class="n">as_sftp_private_keys</span> <span class="n">k</span>
-        <span class="k">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="k">AND</span> <span class="n">k</span><span class="p">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">i_user</span>
+        <span class="kr">SELECT</span> <span class="k">key</span> <span class="kr">INTO</span> <span class="n">v_clob</span>
+        <span class="kr">FROM</span> <span class="n">as_sftp_private_keys</span> <span class="n">k</span>
+        <span class="kr">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="o">AND</span> <span class="n">k</span><span class="p">.</span><span class="k">id</span> <span class="o">=</span> <span class="n">i_user</span>
         <span class="p">;</span>
         <span class="k">RETURN</span> <span class="n">v_clob</span><span class="p">;</span>
-    <span class="n">EXCEPTION</span>
-        <span class="k">WHEN</span> <span class="n">NO_DATA_FOUND</span> <span class="k">THEN</span>
-            <span class="n">raise_application_error</span><span class="p">(</span><span class="o">-</span><span class="mi">20713</span><span class="p">,</span> <span class="s1">'no record found in table as_sftp_private_keys for host='</span><span class="o">||</span><span class="n">i_host</span><span class="o">||</span><span class="s1">', id='</span><span class="o">||</span><span class="n">i_user</span><span class="p">);</span>
+    <span class="k">EXCEPTION</span>
+        <span class="k">WHEN</span> <span class="n">NO_DATA_FOUND</span> <span class="kr">THEN</span>
+            <span class="n">raise_application_error</span><span class="p">(</span><span class="mi">-20713</span><span class="p">,</span> <span class="o">'</span><span class="s1">no record found in table as_sftp_private_keys for host=</span><span class="o">'||</span><span class="n">i_host</span><span class="o">||'</span><span class="s1">, id=</span><span class="o">'||</span><span class="n">i_user</span><span class="p">);</span>
     <span class="k">END</span> <span class="p">;</span>
 
     <span class="c1">--</span>
     <span class="c1">-- The method for obtaining the private key and using it to call as_sftp.login</span>
     <span class="c1">--</span>
-    <span class="k">PROCEDURE</span> <span class="n">login</span><span class="p">(</span><span class="n">i_host</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_passphrase</span> <span class="n">VARCHAR2</span> <span class="p">:</span><span class="o">=</span> <span class="k">NULL</span><span class="p">,</span> <span class="n">i_log_level</span> <span class="n">pls_integer</span> <span class="p">:</span><span class="o">=</span> <span class="k">null</span><span class="p">)</span>
-    <span class="k">IS</span>
-        <span class="n">v_priv_key</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">)</span> <span class="p">:</span><span class="o">=</span> <span class="n">get_priv_key</span><span class="p">(</span><span class="n">i_host</span><span class="p">,</span> <span class="n">i_user</span><span class="p">);</span>
+    <span class="kr">PROCEDURE</span> <span class="n">login</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_passphrase</span> <span class="kt">VARCHAR2</span> <span class="o">:=</span> <span class="kr">NULL</span><span class="p">,</span> <span class="n">i_log_level</span> <span class="kt">pls_integer</span> <span class="o">:=</span> <span class="kr">null</span><span class="p">)</span>
+    <span class="kr">IS</span>
+        <span class="n">v_priv_key</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">)</span> <span class="o">:=</span> <span class="n">get_priv_key</span><span class="p">(</span><span class="n">i_host</span><span class="p">,</span> <span class="n">i_user</span><span class="p">);</span>
     <span class="k">BEGIN</span>
         <span class="n">as_sftp</span><span class="p">.</span><span class="n">login</span><span class="p">(</span><span class="n">i_log_level</span> <span class="o">=&gt;</span> <span class="n">i_log_level</span><span class="p">,</span> <span class="n">i_user</span> <span class="o">=&gt;</span> <span class="n">i_user</span><span class="p">,</span> <span class="n">i_priv_key</span> <span class="o">=&gt;</span> <span class="n">v_priv_key</span><span class="p">,</span> <span class="n">i_passphrase</span> <span class="o">=&gt;</span> <span class="n">i_passphrase</span><span class="p">);</span>
     <span class="k">END</span><span class="p">;</span>
@@ -579,28 +579,28 @@ call stack! You must look back a few levels to find the original caller.</p>
     <span class="c1">--</span>
     <span class="c1">-- 3 DML methods for manipulating the key table records</span>
     <span class="c1">--</span>
-    <span class="k">PROCEDURE</span> <span class="n">insert_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="k">CLOB</span><span class="p">)</span>
-    <span class="k">IS</span>
+    <span class="kr">PROCEDURE</span> <span class="n">insert_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">)</span>
+    <span class="kr">IS</span>
     <span class="k">BEGIN</span>
-        <span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">as_sftp_private_keys</span><span class="p">(</span><span class="k">host</span><span class="p">,</span> <span class="n">id</span><span class="p">,</span> <span class="k">key</span><span class="p">)</span> <span class="k">VALUES</span><span class="p">(</span><span class="n">i_host</span><span class="p">,</span> <span class="n">i_user</span><span class="p">,</span> <span class="n">i_key</span><span class="p">);</span>
+        <span class="kr">INSERT</span> <span class="kr">INTO</span> <span class="n">as_sftp_private_keys</span><span class="p">(</span><span class="k">host</span><span class="p">,</span> <span class="k">id</span><span class="p">,</span> <span class="k">key</span><span class="p">)</span> <span class="kr">VALUES</span><span class="p">(</span><span class="n">i_host</span><span class="p">,</span> <span class="n">i_user</span><span class="p">,</span> <span class="n">i_key</span><span class="p">);</span>
         <span class="k">COMMIT</span><span class="p">;</span>
     <span class="k">END</span> <span class="n">insert_priv_key</span><span class="p">;</span>
 
-    <span class="k">PROCEDURE</span> <span class="n">update_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="k">CLOB</span><span class="p">)</span>
-    <span class="k">IS</span>
+    <span class="kr">PROCEDURE</span> <span class="n">update_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">)</span>
+    <span class="kr">IS</span>
     <span class="k">BEGIN</span>
-        <span class="k">UPDATE</span> <span class="n">as_sftp_private_keys</span>
-            <span class="k">SET</span> <span class="k">key</span> <span class="o">=</span> <span class="n">i_key</span>
-            <span class="k">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="k">AND</span> <span class="n">id</span> <span class="o">=</span> <span class="n">i_user</span>
+        <span class="kr">UPDATE</span> <span class="n">as_sftp_private_keys</span>
+            <span class="nf">SET</span> <span class="k">key</span> <span class="o">=</span> <span class="n">i_key</span>
+            <span class="kr">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="o">AND</span> <span class="k">id</span> <span class="o">=</span> <span class="n">i_user</span>
             <span class="p">;</span>
         <span class="k">COMMIT</span><span class="p">;</span>
     <span class="k">END</span> <span class="n">update_priv_key</span><span class="p">;</span>
 
-    <span class="k">PROCEDURE</span> <span class="n">delete_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="n">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="n">VARCHAR2</span><span class="p">)</span>
-    <span class="k">IS</span>
+    <span class="kr">PROCEDURE</span> <span class="n">delete_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="kr">IS</span>
     <span class="k">BEGIN</span>
-        <span class="k">DELETE</span> <span class="k">FROM</span> <span class="n">as_sftp_private_keys</span>
-            <span class="k">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="k">AND</span> <span class="n">id</span> <span class="o">=</span> <span class="n">i_user</span>
+        <span class="kr">DELETE</span> <span class="kr">FROM</span> <span class="n">as_sftp_private_keys</span>
+            <span class="kr">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="o">AND</span> <span class="k">id</span> <span class="o">=</span> <span class="n">i_user</span>
             <span class="p">;</span>
         <span class="k">COMMIT</span><span class="p">;</span>
     <span class="k">END</span> <span class="n">delete_priv_key</span><span class="p">;</span>
@@ -626,13 +626,42 @@ my goal. Hope it was helpful.</p>
       
         
           
+      
+          
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -661,7 +690,7 @@ my goal. Hope it was helpful.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -706,7 +735,7 @@ my goal. Hope it was helpful.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -778,7 +807,7 @@ my goal. Hope it was helpful.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -815,7 +844,7 @@ my goal. Hope it was helpful.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -850,16 +879,6 @@ my goal. Hope it was helpful.</p>
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/09/More-CSV-Fun.html">More CSV Fun - Turn CSV into SQL Resultset</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -1191,7 +1210,7 @@ my goal. Hope it was helpful.</p>
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_Protecting/Hiding Data in Oracle";
+    var disqus_identifier = "https://lee-lindley.github.io_Protecting/Hiding Data in Oracle";
     var disqus_title = "Protecting/Hiding Data in Oracle";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/plsql/perl/2022/01/02/Perl-Like-Operations-PLSQL.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/plsql/perl/2022/01/02/Perl-Like-Operations-PLSQL.html" property="og:url">
     
 
     
       <meta content="2022-01-02T10:30:00-05:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -62,7 +62,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/plsql/perl/2022/01/02/Perl-Like-Operations-PLSQL.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/plsql/perl/2022/01/02/Perl-Like-Operations-PLSQL.html">
     
 
     
@@ -170,8 +170,6 @@ with the INSERT(…) clause of the MERGE.</p>
         <span class="n">v_s</span> <span class="o">:=</span> <span class="n">v_s</span><span class="o">||'</span><span class="s1">, </span><span class="o">'||</span><span class="n">v_arr_cols</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
     <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
     <span class="n">v_s</span> <span class="o">:=</span> <span class="n">v_s</span><span class="o">||'</span><span class="s1">)</span><span class="o">'</span><span class="p">;</span>
-
-    <span class="n">v_s</span> <span class="o">:=</span> <span class="nf">REGEXP_SUBSTR</span><span class="p">(</span><span class="n">v_s</span><span class="p">,</span> <span class="o">'</span><span class="s1">match</span><span class="o">'</span><span class="p">);</span>
 </code></pre></div></div>
 <p>Phew, that is ugly. Or how about the MERGE UPDATE clause? We need to write:</p>
 
@@ -189,21 +187,7 @@ It was sort of a meld between the Perl <em>join</em> and <em>map</em> methods.</
         <span class="p">,</span><span class="n">p_template</span>     <span class="kt">VARCHAR2</span> <span class="kr">DEFAULT</span> <span class="kr">NULL</span>
     <span class="p">)</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="kr">IS</span>
-        <span class="o">"</span><span class="nv">l_x</span><span class="o">"</span> <span class="kt">number</span><span class="o">:=</span><span class="mf">123.34e-3</span><span class="p">;</span>
-        <span class="c1">-- single line comment -- and more</span>
-        <span class="cm">/* multi
-        line comment /*
-        */</span>
-        <span class="n">l_s</span>     <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span> <span class="o">:=</span> <span class="o">q'!</span><span class="sx">This is a string on one line with a ! </span><span class="o">!'</span>
-        <span class="o">||q'^</span><span class="sx"> and a caret ^ </span><span class="o">^'||q'%</span><span class="sx"> and a percent % </span><span class="o">%'||q'#</span><span class="sx"> and a hash # </span><span class="o">#'||q'+</span><span class="sx"> and a plus + </span><span class="o">+'</span>
-            <span class="o">||q'[</span><span class="sx">this one ]
-is multipline</span><span class="o">]'</span>
-            <span class="o">||q'(</span><span class="sx">and another )
-on 2 lines</span><span class="o">)'</span>
-            <span class="o">||q'{</span><span class="sx">one more }
-on 3
-lines</span><span class="o">}'</span>
-            <span class="p">;</span>
+        <span class="n">l_s</span>     <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">);</span>
         <span class="kr">FUNCTION</span> <span class="n">apply_template</span><span class="p">(</span>
             <span class="n">p_val</span>   <span class="kt">VARCHAR2</span>
         <span class="p">)</span>
@@ -211,7 +195,7 @@ lines</span><span class="o">}'</span>
         <span class="kr">IS</span>
             <span class="n">l_t</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">);</span>
         <span class="k">BEGIN</span>
-            <span class="k">IF</span> <span class="n">p_template</span> <span class="kr">IS</span> <span class="kr">NULL</span> <span class="kr">THEN</span>
+            <span class="k">IF</span> <span class="n">p_template</span> <span class="o">IS</span> <span class="o">NULL</span> <span class="kr">THEN</span>
                 <span class="n">l_t</span> <span class="o">:=</span> <span class="n">p_val</span><span class="p">;</span>
             <span class="kr">ELSE</span> 
                 <span class="n">l_t</span> <span class="o">:=</span> <span class="nf">REPLACE</span><span class="p">(</span><span class="n">p_template</span><span class="p">,</span> <span class="o">'</span><span class="s1">__PLACEHOLDER__</span><span class="o">'</span><span class="p">,</span> <span class="n">p_val</span><span class="p">);</span>
@@ -311,13 +295,42 @@ can suck a little less for hacking strings and lists.</p>
       
         
           
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -346,7 +359,7 @@ can suck a little less for hacking strings and lists.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -391,7 +404,7 @@ can suck a little less for hacking strings and lists.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -436,7 +449,7 @@ can suck a little less for hacking strings and lists.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -473,7 +486,7 @@ can suck a little less for hacking strings and lists.</p>
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -508,16 +521,6 @@ can suck a little less for hacking strings and lists.</p>
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -876,7 +879,7 @@ can suck a little less for hacking strings and lists.</p>
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_Perl Like Operations in PL/SQL";
+    var disqus_identifier = "https://lee-lindley.github.io_Perl Like Operations in PL/SQL";
     var disqus_title = "Perl Like Operations in PL/SQL";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */

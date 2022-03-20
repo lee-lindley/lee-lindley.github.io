@@ -25,12 +25,12 @@
     
 
     
-      <meta content="http://localhost:4000/oracle/sql/plsql/2021/09/09/Oracle-Objects-AppInterface.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/2021/09/09/Oracle-Objects-AppInterface.html" property="og:url">
     
 
     
       <meta content="2021-09-09T11:30:00-04:00" property="article:published_time">
-      <meta content="http://localhost:4000/about/" property="article:author">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
     
@@ -62,7 +62,7 @@
     
 
     
-      <meta name="twitter:url" content="http://localhost:4000/oracle/sql/plsql/2021/09/09/Oracle-Objects-AppInterface.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/2021/09/09/Oracle-Objects-AppInterface.html">
     
 
     
@@ -173,63 +173,63 @@
 
 <p>We will use the <em>HR</em> sample schema for the demonstration. The example is contrived in that the overhead of putting the <em>department</em> data into a flattened row or running two separate queries, is minimal, and we would not bother normally. Pretend that we have a much larger common object, perhaps multiple disparate child arrays, and/or extremely high volume that will justify the added complexity.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TYPE</span> <span class="n">employee_udt</span> <span class="k">AS</span> <span class="k">OBJECT</span> <span class="p">(</span>
-     <span class="n">last_name</span>          <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
-    <span class="p">,</span><span class="n">first_name</span>         <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
-    <span class="p">,</span><span class="n">email</span>              <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
-    <span class="p">,</span><span class="n">phone_number</span>       <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
-    <span class="p">,</span><span class="n">hire_date</span>          <span class="nb">DATE</span>
-    <span class="p">,</span><span class="n">salary</span>             <span class="n">NUMBER</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">employee_udt</span> <span class="kr">AS</span> <span class="k">OBJECT</span> <span class="p">(</span>
+     <span class="n">last_name</span>          <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
+    <span class="p">,</span><span class="n">first_name</span>         <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+    <span class="p">,</span><span class="n">email</span>              <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
+    <span class="p">,</span><span class="n">phone_number</span>       <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+    <span class="p">,</span><span class="n">hire_date</span>          <span class="kt">DATE</span>
+    <span class="p">,</span><span class="n">salary</span>             <span class="kt">NUMBER</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
     <span class="c1">-- for sorting</span>
-    <span class="p">,</span><span class="k">MAP</span> <span class="n">MEMBER</span> <span class="k">FUNCTION</span> <span class="n">full_name</span> <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
+    <span class="p">,</span><span class="k">MAP</span> <span class="k">MEMBER</span> <span class="kr">FUNCTION</span> <span class="n">full_name</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
 <span class="p">);</span>
 <span class="o">/</span>
-<span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TYPE</span> <span class="n">BODY</span> <span class="n">employee_udt</span> <span class="k">AS</span>
-    <span class="k">MAP</span> <span class="n">MEMBER</span> <span class="k">FUNCTION</span> <span class="n">full_name</span> <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
-    <span class="k">IS</span>
+<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="kr">BODY</span> <span class="n">employee_udt</span> <span class="kr">AS</span>
+    <span class="k">MAP</span> <span class="k">MEMBER</span> <span class="kr">FUNCTION</span> <span class="n">full_name</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+    <span class="kr">IS</span>
     <span class="k">BEGIN</span>
-        <span class="k">RETURN</span> <span class="n">last_name</span><span class="o">||</span><span class="s1">', '</span><span class="o">||</span><span class="n">first_name</span><span class="p">;</span>
+        <span class="k">RETURN</span> <span class="n">last_name</span><span class="o">||'</span><span class="s1">, </span><span class="o">'||</span><span class="n">first_name</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TYPE</span> <span class="n">arr_employee_udt</span> <span class="k">AS</span> <span class="k">TABLE</span> <span class="k">OF</span> <span class="n">employee_udt</span><span class="p">;</span>
+<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">arr_employee_udt</span> <span class="kr">AS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">employee_udt</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TYPE</span> <span class="n">department_udt</span> <span class="k">AS</span> <span class="k">OBJECT</span> <span class="p">(</span>
-     <span class="n">department_name</span>    <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>
-    <span class="p">,</span><span class="n">manager_last_name</span>  <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
-    <span class="p">,</span><span class="n">manager_first_name</span> <span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">department_udt</span> <span class="kr">AS</span> <span class="k">OBJECT</span> <span class="p">(</span>
+     <span class="n">department_name</span>    <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>
+    <span class="p">,</span><span class="n">manager_last_name</span>  <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
+    <span class="p">,</span><span class="n">manager_first_name</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
     <span class="p">,</span><span class="n">arr_employee</span>       <span class="n">arr_employee_udt</span>
-    <span class="p">,</span><span class="k">MAP</span> <span class="n">MEMBER</span> <span class="k">FUNCTION</span> <span class="n">dmap</span> <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
+    <span class="p">,</span><span class="k">MAP</span> <span class="k">MEMBER</span> <span class="kr">FUNCTION</span> <span class="n">dmap</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
 <span class="p">);</span>
 <span class="o">/</span>
-<span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TYPE</span> <span class="n">BODY</span> <span class="n">department_udt</span> <span class="k">AS</span> 
-    <span class="k">MAP</span> <span class="n">MEMBER</span> <span class="k">FUNCTION</span> <span class="n">dmap</span> <span class="k">RETURN</span> <span class="n">VARCHAR2</span>
-    <span class="k">IS</span>
+<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="kr">BODY</span> <span class="n">department_udt</span> <span class="kr">AS</span> 
+    <span class="k">MAP</span> <span class="k">MEMBER</span> <span class="kr">FUNCTION</span> <span class="n">dmap</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+    <span class="kr">IS</span>
     <span class="k">BEGIN</span>
         <span class="k">RETURN</span> <span class="n">department_name</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TYPE</span> <span class="n">arr_department_udt</span> <span class="k">AS</span> <span class="k">TABLE</span> <span class="k">OF</span> <span class="n">department_udt</span><span class="p">;</span>
+<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">arr_department_udt</span> <span class="kr">AS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">department_udt</span><span class="p">;</span>
 <span class="o">/</span>
 </code></pre></div></div>
 
 <p>Each department object will contain all of the employees in the department. The top level array of departments object is a single unit that can be transferred in one database call. Alternatively, if that object could be too large to be efficient, a cursor can return rows of <em>department_udt</em> objects, perhaps bulk fetched depending on how it is called. Here is a package that provides both. The query is written in multiple pieces using <em>WITH</em> subquery factoring to make it easier to follow (a practice I recommend to keep large queries easier to understand).</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="n">PACKAGE</span> <span class="n">employees_by_dept_pkg</span> <span class="k">AS</span>
-    <span class="k">PROCEDURE</span> <span class="k">get</span><span class="p">(</span><span class="n">p_arr_department</span> <span class="k">OUT</span> <span class="n">arr_department_udt</span><span class="p">);</span>
-    <span class="k">FUNCTION</span> <span class="k">get</span> <span class="k">RETURN</span> <span class="n">arr_department_udt</span> <span class="n">PIPELINED</span><span class="p">;</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">employees_by_dept_pkg</span> <span class="kr">AS</span>
+    <span class="kr">PROCEDURE</span> <span class="n">get</span><span class="p">(</span><span class="n">p_arr_department</span> <span class="kr">OUT</span> <span class="n">arr_department_udt</span><span class="p">);</span>
+    <span class="kr">FUNCTION</span> <span class="n">get</span> <span class="k">RETURN</span> <span class="n">arr_department_udt</span> <span class="kr">PIPELINED</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="n">PACKAGE</span> <span class="n">BODY</span> <span class="n">employees_by_dept_pkg</span> <span class="k">AS</span>
-    <span class="k">CURSOR</span> <span class="n">g_c</span> <span class="k">IS</span>
-        <span class="k">WITH</span> <span class="n">d</span> <span class="k">AS</span> <span class="p">(</span>
-            <span class="k">SELECT</span> <span class="n">hd</span><span class="p">.</span><span class="n">department_id</span><span class="p">,</span> <span class="n">hd</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">he</span><span class="p">.</span><span class="n">last_name</span> <span class="k">AS</span> <span class="n">manager_last_name</span><span class="p">,</span> <span class="n">he</span><span class="p">.</span><span class="n">first_name</span> <span class="k">AS</span> <span class="n">manager_first_name</span>
-            <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> <span class="n">hd</span>
+<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">employees_by_dept_pkg</span> <span class="kr">AS</span>
+    <span class="k">CURSOR</span> <span class="n">g_c</span> <span class="kr">IS</span>
+        <span class="kr">WITH</span> <span class="n">d</span> <span class="kr">AS</span> <span class="p">(</span>
+            <span class="kr">SELECT</span> <span class="n">hd</span><span class="p">.</span><span class="n">department_id</span><span class="p">,</span> <span class="n">hd</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">he</span><span class="p">.</span><span class="n">last_name</span> <span class="kr">AS</span> <span class="n">manager_last_name</span><span class="p">,</span> <span class="n">he</span><span class="p">.</span><span class="n">first_name</span> <span class="kr">AS</span> <span class="n">manager_first_name</span>
+            <span class="kr">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">departments</span> <span class="n">hd</span>
             <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">he</span>
-                <span class="k">ON</span> <span class="n">he</span><span class="p">.</span><span class="n">employee_id</span> <span class="o">=</span> <span class="n">hd</span><span class="p">.</span><span class="n">manager_id</span>
-        <span class="p">),</span> <span class="n">e</span> <span class="k">AS</span> <span class="p">(</span>
-            <span class="k">SELECT</span> <span class="n">department_id</span>
+                <span class="kr">ON</span> <span class="n">he</span><span class="p">.</span><span class="n">employee_id</span> <span class="o">=</span> <span class="n">hd</span><span class="p">.</span><span class="n">manager_id</span>
+        <span class="p">),</span> <span class="n">e</span> <span class="kr">AS</span> <span class="p">(</span>
+            <span class="kr">SELECT</span> <span class="n">department_id</span>
                 <span class="p">,</span><span class="n">employee_udt</span><span class="p">(</span>
                     <span class="n">last_name</span>       <span class="o">=&gt;</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span>
                     <span class="p">,</span><span class="n">first_name</span>     <span class="o">=&gt;</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span>
@@ -237,71 +237,71 @@
                     <span class="p">,</span><span class="n">phone_number</span>   <span class="o">=&gt;</span> <span class="n">e</span><span class="p">.</span><span class="n">phone_number</span>
                     <span class="p">,</span><span class="n">hire_date</span>      <span class="o">=&gt;</span> <span class="n">e</span><span class="p">.</span><span class="n">hire_date</span>
                     <span class="p">,</span><span class="n">salary</span>         <span class="o">=&gt;</span> <span class="n">e</span><span class="p">.</span><span class="n">salary</span>
-                <span class="p">)</span> <span class="k">AS</span> <span class="n">emp</span>
-            <span class="k">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
-        <span class="p">),</span> <span class="n">e2</span> <span class="k">AS</span> <span class="p">(</span>
-            <span class="k">SELECT</span> <span class="n">department_id</span>
+                <span class="p">)</span> <span class="kr">AS</span> <span class="n">emp</span>
+            <span class="kr">FROM</span> <span class="n">hr</span><span class="p">.</span><span class="n">employees</span> <span class="n">e</span>
+        <span class="p">),</span> <span class="n">e2</span> <span class="kr">AS</span> <span class="p">(</span>
+            <span class="kr">SELECT</span> <span class="n">department_id</span>
                 <span class="c1">-- uses employee_udt.map method to sort</span>
-                <span class="p">,</span><span class="k">CAST</span><span class="p">(</span><span class="n">COLLECT</span><span class="p">(</span><span class="n">emp</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">emp</span><span class="p">)</span> <span class="k">AS</span> <span class="n">arr_employee_udt</span><span class="p">)</span> <span class="k">AS</span> <span class="n">arr_employee</span>
-            <span class="k">FROM</span> <span class="n">e</span>
-            <span class="k">GROUP</span> <span class="k">BY</span> <span class="n">department_id</span>
-        <span class="p">),</span> <span class="n">d2</span> <span class="k">AS</span> <span class="p">(</span>
-            <span class="k">SELECT</span> <span class="n">department_udt</span><span class="p">(</span>
+                <span class="p">,</span><span class="nf">CAST</span><span class="p">(</span><span class="nf">COLLECT</span><span class="p">(</span><span class="n">emp</span> <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">emp</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">arr_employee_udt</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">arr_employee</span>
+            <span class="kr">FROM</span> <span class="n">e</span>
+            <span class="kr">GROUP</span> <span class="kr">BY</span> <span class="n">department_id</span>
+        <span class="p">),</span> <span class="n">d2</span> <span class="kr">AS</span> <span class="p">(</span>
+            <span class="kr">SELECT</span> <span class="n">department_udt</span><span class="p">(</span>
                      <span class="n">department_name</span>    <span class="o">=&gt;</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span>
                     <span class="p">,</span><span class="n">manager_last_name</span>  <span class="o">=&gt;</span> <span class="n">d</span><span class="p">.</span><span class="n">manager_last_name</span>
                     <span class="p">,</span><span class="n">manager_first_name</span> <span class="o">=&gt;</span> <span class="n">d</span><span class="p">.</span><span class="n">manager_first_name</span>
                     <span class="p">,</span><span class="n">arr_employee</span>       <span class="o">=&gt;</span> <span class="n">e2</span><span class="p">.</span><span class="n">arr_employee</span>
-                <span class="p">)</span> <span class="k">AS</span> <span class="n">dept</span>
-            <span class="k">FROM</span> <span class="n">d</span>
+                <span class="p">)</span> <span class="kr">AS</span> <span class="n">dept</span>
+            <span class="kr">FROM</span> <span class="n">d</span>
             <span class="k">INNER</span> <span class="k">JOIN</span> <span class="n">e2</span>
-                <span class="k">ON</span> <span class="n">e2</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span>
-        <span class="p">)</span> <span class="k">SELECT</span> <span class="n">dept</span>
-        <span class="k">FROM</span> <span class="n">d2</span>
-        <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">dept</span>
+                <span class="kr">ON</span> <span class="n">e2</span><span class="p">.</span><span class="n">department_id</span> <span class="o">=</span> <span class="n">d</span><span class="p">.</span><span class="n">department_id</span>
+        <span class="p">)</span> <span class="kr">SELECT</span> <span class="n">dept</span>
+        <span class="kr">FROM</span> <span class="n">d2</span>
+        <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">dept</span>
         <span class="p">;</span>
 
-    <span class="k">PROCEDURE</span> <span class="k">get</span><span class="p">(</span>
-        <span class="n">p_arr_department</span>    <span class="k">OUT</span> <span class="n">arr_department_udt</span>
-    <span class="p">)</span> <span class="k">AS</span>
+    <span class="kr">PROCEDURE</span> <span class="n">get</span><span class="p">(</span>
+        <span class="n">p_arr_department</span>    <span class="kr">OUT</span> <span class="n">arr_department_udt</span>
+    <span class="p">)</span> <span class="kr">AS</span>
     <span class="k">BEGIN</span>
-        <span class="n">LOOP</span>
+        <span class="kr">LOOP</span>
             <span class="c1">-- if the cursor was previsously opened and not yet closed in this session</span>
             <span class="c1">-- then close it and try again. </span>
             <span class="k">BEGIN</span>
                 <span class="k">OPEN</span> <span class="n">g_c</span><span class="p">;</span>
-                <span class="n">EXIT</span><span class="p">;</span>
-            <span class="n">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">CURSOR_ALREADY_OPEN</span>
-                <span class="k">THEN</span> <span class="k">CLOSE</span> <span class="n">g_c</span><span class="p">;</span>
+                <span class="kr">EXIT</span><span class="p">;</span>
+            <span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">CURSOR_ALREADY_OPEN</span>
+                <span class="kr">THEN</span> <span class="k">CLOSE</span> <span class="n">g_c</span><span class="p">;</span>
             <span class="k">END</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
-        <span class="k">FETCH</span> <span class="n">g_c</span> <span class="n">BULK</span> <span class="n">COLLECT</span> <span class="k">INTO</span> <span class="n">p_arr_department</span><span class="p">;</span>
+        <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+        <span class="k">FETCH</span> <span class="n">g_c</span> <span class="k">BULK</span> <span class="nf">COLLECT</span> <span class="kr">INTO</span> <span class="n">p_arr_department</span><span class="p">;</span>
         <span class="k">CLOSE</span> <span class="n">g_c</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
 
-    <span class="k">FUNCTION</span> <span class="k">get</span> <span class="k">RETURN</span> <span class="n">arr_department_udt</span> <span class="n">PIPELINED</span>
-    <span class="k">AS</span>
+    <span class="kr">FUNCTION</span> <span class="n">get</span> <span class="k">RETURN</span> <span class="n">arr_department_udt</span> <span class="kr">PIPELINED</span>
+    <span class="kr">AS</span>
         <span class="n">v_arr_department</span>    <span class="n">arr_department_udt</span><span class="p">;</span>
     <span class="k">BEGIN</span>
-        <span class="n">LOOP</span>
+        <span class="kr">LOOP</span>
             <span class="c1">-- if the cursor was previsously opened and not yet closed in this session</span>
             <span class="c1">-- then close it and try again. </span>
             <span class="k">BEGIN</span>
                 <span class="k">OPEN</span> <span class="n">g_c</span><span class="p">;</span>
-                <span class="n">EXIT</span><span class="p">;</span>
-            <span class="n">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">CURSOR_ALREADY_OPEN</span>
-                <span class="k">THEN</span> <span class="k">CLOSE</span> <span class="n">g_c</span><span class="p">;</span>
+                <span class="kr">EXIT</span><span class="p">;</span>
+            <span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">CURSOR_ALREADY_OPEN</span>
+                <span class="kr">THEN</span> <span class="k">CLOSE</span> <span class="n">g_c</span><span class="p">;</span>
             <span class="k">END</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
+        <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
 
-        <span class="n">LOOP</span>
+        <span class="kr">LOOP</span>
             <span class="c1">-- pretending object is very large, thus small limit</span>
-            <span class="k">FETCH</span> <span class="n">g_c</span> <span class="n">BULK</span> <span class="n">COLLECT</span> <span class="k">INTO</span> <span class="n">v_arr_department</span> <span class="k">LIMIT</span> <span class="mi">20</span><span class="p">;</span>
-            <span class="n">EXIT</span> <span class="k">WHEN</span> <span class="n">v_arr_department</span><span class="p">.</span><span class="k">COUNT</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-            <span class="k">FOR</span> <span class="n">i</span> <span class="k">IN</span> <span class="mi">1</span><span class="p">..</span><span class="n">v_arr_department</span><span class="p">.</span><span class="k">COUNT</span>
-            <span class="n">LOOP</span>
-                <span class="n">PIPE</span> <span class="k">ROW</span><span class="p">(</span><span class="n">v_arr_department</span><span class="p">(</span><span class="n">i</span><span class="p">));</span>
-            <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
-        <span class="k">END</span> <span class="n">LOOP</span><span class="p">;</span>
+            <span class="k">FETCH</span> <span class="n">g_c</span> <span class="k">BULK</span> <span class="nf">COLLECT</span> <span class="kr">INTO</span> <span class="n">v_arr_department</span> <span class="k">LIMIT</span> <span class="mi">20</span><span class="p">;</span>
+            <span class="kr">EXIT</span> <span class="k">WHEN</span> <span class="n">v_arr_department</span><span class="p">.</span><span class="nf">COUNT</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_arr_department</span><span class="p">.</span><span class="nf">COUNT</span>
+            <span class="kr">LOOP</span>
+                <span class="kr">PIPE</span> <span class="k">ROW</span><span class="p">(</span><span class="n">v_arr_department</span><span class="p">(</span><span class="n">i</span><span class="p">));</span>
+            <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+        <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
         <span class="k">CLOSE</span> <span class="n">g_c</span><span class="p">;</span>
         <span class="k">RETURN</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
@@ -311,8 +311,8 @@
 
 <p>To call the procedure version from a language using an Oracle database driver you would typically find the package in your IDE interface and allow it to help you build a class to call the procedure and populate an internal structure via the OUT parameter. For us mere mortals restricted to standard database tools such as sqldeveloper, we can use the pipelined table function</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span>
-<span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">employees_by_dept_pkg</span><span class="p">.</span><span class="k">get</span><span class="p">);</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="o">*</span>
+<span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span><span class="n">employees_by_dept_pkg</span><span class="p">.</span><span class="k">get</span><span class="p">);</span>
 </code></pre></div></div>
 <p>Here is one row as represented in sqldeveloper query result window:</p>
 
@@ -341,10 +341,10 @@
 
 <p>A query that joins back to the employee object column flattens it back out to one record per employee with duplication of the department information, but at least we can see everything.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">department_name</span><span class="p">,</span> <span class="n">manager_last_name</span><span class="p">,</span> <span class="n">manager_first_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="o">*</span>
-<span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">employees_by_dept_pkg</span><span class="p">.</span><span class="k">get</span><span class="p">)</span> <span class="n">d</span>
-<span class="k">INNER</span> <span class="k">JOIN</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">arr_employee</span><span class="p">)</span> <span class="n">e</span> <span class="k">ON</span> <span class="mi">1</span><span class="o">=</span><span class="mi">1</span>
-<span class="k">WHERE</span> <span class="n">rownum</span> <span class="o">&lt;=</span> <span class="mi">10</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="n">department_name</span><span class="p">,</span> <span class="n">manager_last_name</span><span class="p">,</span> <span class="n">manager_first_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="o">*</span>
+<span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span><span class="n">employees_by_dept_pkg</span><span class="p">.</span><span class="k">get</span><span class="p">)</span> <span class="n">d</span>
+<span class="k">INNER</span> <span class="k">JOIN</span> <span class="kr">TABLE</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">arr_employee</span><span class="p">)</span> <span class="n">e</span> <span class="kr">ON</span> <span class="mi">1</span><span class="o">=</span><span class="mi">1</span>
+<span class="kr">WHERE</span> <span class="k">rownum</span> <span class="o">&lt;=</span> <span class="mi">10</span>
 <span class="p">;</span>
 </code></pre></div></div>
 
@@ -492,13 +492,42 @@
       
         
           
+      
+          
+      
+          
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
                   
@@ -527,7 +556,7 @@
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -572,7 +601,7 @@
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
                   
@@ -617,7 +646,7 @@
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
                   
@@ -654,7 +683,7 @@
           
             
                 <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
+                  <a href="https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html">HTML Table Markup Redux</a>
                   
                     (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
                   
@@ -689,16 +718,6 @@
       
         
           
-            
-                <li class="relatedPost">
-                  <a href="http://localhost:4000/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html">HTML Table Markup in Oracle</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/html">html</a>)
-                  
-                </li>
-          
-          
-        
       
           
       
@@ -1057,7 +1076,7 @@
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "http://localhost:4000_Oracle Object Types as Application Interface";
+    var disqus_identifier = "https://lee-lindley.github.io_Oracle Object Types as Application Interface";
     var disqus_title = "Oracle Object Types as Application Interface";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */
