@@ -258,11 +258,11 @@ but that seems draconian. Tracking everything by the <em>user</em> identificatio
 
 <h3 id="as_sftp_keymgmt-package-specfication">as_sftp_keymgmt Package Specfication</h3>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">as_sftp_keymgmt</span> <span class="kr">AS</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">as_sftp_keymgmt</span> <span class="kr">AS</span>
     <span class="c1">--</span>
     <span class="c1">-- Important! The private key lookup is case sensitive on i_host and i_user.</span>
     <span class="c1">--</span>
-    <span class="kr">PROCEDURE</span> <span class="n">login</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_passphrase</span> <span class="kt">VARCHAR2</span> <span class="o">:=</span> <span class="kr">NULL</span><span class="p">,</span> <span class="n">i_log_level</span> <span class="kt">pls_integer</span> <span class="o">:=</span> <span class="kr">null</span><span class="p">);</span>
+    <span class="k">PROCEDURE</span> <span class="n">login</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_passphrase</span> <span class="kt">VARCHAR2</span> <span class="o">:=</span> <span class="kr">NULL</span><span class="p">,</span> <span class="n">i_log_level</span> <span class="kt">pls_integer</span> <span class="o">:=</span> <span class="kr">null</span><span class="p">);</span>
 <span class="c1">-- comment out this function when done testing. It should not be public</span>
     <span class="c1">--FUNCTION get_priv_key(i_host VARCHAR2, i_user VARCHAR2) RETURN CLOB;</span>
     <span class="c1">--</span>
@@ -271,9 +271,9 @@ but that seems draconian. Tracking everything by the <em>user</em> identificatio
     <span class="c1">-- other than to truncate it or do the task as sysdba.</span>
     <span class="c1">-- You cannot read the data at all as get_priv_key is a private function that only login() can call.</span>
     <span class="c1">--</span>
-    <span class="kr">PROCEDURE</span> <span class="n">insert_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">);</span>
-    <span class="kr">PROCEDURE</span> <span class="n">update_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">);</span>
-    <span class="kr">PROCEDURE</span> <span class="n">delete_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">);</span>
+    <span class="k">PROCEDURE</span> <span class="n">insert_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">);</span>
+    <span class="k">PROCEDURE</span> <span class="n">update_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">);</span>
+    <span class="k">PROCEDURE</span> <span class="n">delete_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">);</span>
 <span class="k">END</span> <span class="n">as_sftp_keymgmt</span><span class="p">;</span>
 </code></pre></div></div>
 <p>While testing I made the function <em>get_priv_key</em> public so that I could validate what it was doing.
@@ -293,18 +293,18 @@ during login will work much like SSH/SFTP does on Unix by looking up the key.</p
 <p><em>as_sftp_keymgmt_security</em> package implements the policy checks that will, when installed via <em>DBMS_RLS</em>, control
 whether access to table <em>as_sftp_private_keys</em> is permitted.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">as_sftp_keymgmt_security</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">as_sftp_keymgmt_security</span>
 <span class="kr">AS</span>
     <span class="c1">--</span>
     <span class="c1">-- These control access to records in the table as_sftp_private_keys</span>
     <span class="c1">--</span>
-    <span class="kr">FUNCTION</span> <span class="n">user_data_select_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">user_data_select_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span><span class="p">;</span>
-    <span class="kr">FUNCTION</span> <span class="n">user_data_insert_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">user_data_insert_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span><span class="p">;</span>
-    <span class="kr">FUNCTION</span> <span class="n">user_data_update_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">user_data_update_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span><span class="p">;</span>
-    <span class="kr">FUNCTION</span> <span class="n">user_data_delete_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">user_data_delete_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span><span class="p">;</span>
 <span class="k">END</span> <span class="n">as_sftp_keymgmt_security</span><span class="p">;</span>
 </code></pre></div></div>
@@ -370,8 +370,8 @@ to cause your operation to not match any rows.</p>
 We look at the call stack. It is tricky though because the <em>DBMS_RLS</em> operations insert themselves into the
 call stack! You must look back a few levels to find the original caller.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">as_sftp_keymgmt_security</span> <span class="kr">IS</span>
-    <span class="kr">FUNCTION</span> <span class="n">user_data_select_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">as_sftp_keymgmt_security</span> <span class="kr">IS</span>
+    <span class="k">FUNCTION</span> <span class="n">user_data_select_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="kr">IS</span>
         <span class="n">v_owner</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
@@ -413,7 +413,7 @@ call stack! You must look back a few levels to find the original caller.</p>
     <span class="k">END</span> <span class="n">user_data_select_security</span>
     <span class="p">;</span>
 
-    <span class="kr">FUNCTION</span> <span class="n">user_data_insert_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">user_data_insert_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="kr">IS</span>
         <span class="n">v_owner</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
@@ -454,7 +454,7 @@ call stack! You must look back a few levels to find the original caller.</p>
         <span class="c1">--RETURN NULL;</span>
     <span class="k">END</span> <span class="n">user_data_insert_security</span>
     <span class="p">;</span>
-    <span class="kr">FUNCTION</span> <span class="n">user_data_update_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">user_data_update_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="kr">IS</span>
         <span class="n">v_owner</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
@@ -496,7 +496,7 @@ call stack! You must look back a few levels to find the original caller.</p>
     <span class="k">END</span> <span class="n">user_data_update_security</span>
     <span class="p">;</span>
 
-    <span class="kr">FUNCTION</span> <span class="n">user_data_delete_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">user_data_delete_security</span> <span class="p">(</span><span class="k">owner</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">objname</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="kr">IS</span>
         <span class="n">v_owner</span> <span class="kt">varchar2</span><span class="p">(</span><span class="mi">1024</span><span class="p">);</span>
@@ -546,12 +546,12 @@ call stack! You must look back a few levels to find the original caller.</p>
 
 <p>Implementation of the methods to do the login and DML is anticlimatic.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">as_sftp_keymgmt</span> <span class="kr">AS</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">as_sftp_keymgmt</span> <span class="kr">AS</span>
     <span class="c1">--</span>
     <span class="c1">-- This is the only method to select the private key when fine grained access control is added to the table</span>
     <span class="c1">-- with as_sftp_keymgt_security package. It is a package private function only called by login()</span>
     <span class="c1">--</span>
-    <span class="kr">FUNCTION</span> <span class="n">get_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">get_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">CLOB</span>
     <span class="kr">IS</span>
         <span class="n">v_clob</span> <span class="kt">CLOB</span><span class="p">;</span>
@@ -569,7 +569,7 @@ call stack! You must look back a few levels to find the original caller.</p>
     <span class="c1">--</span>
     <span class="c1">-- The method for obtaining the private key and using it to call as_sftp.login</span>
     <span class="c1">--</span>
-    <span class="kr">PROCEDURE</span> <span class="n">login</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_passphrase</span> <span class="kt">VARCHAR2</span> <span class="o">:=</span> <span class="kr">NULL</span><span class="p">,</span> <span class="n">i_log_level</span> <span class="kt">pls_integer</span> <span class="o">:=</span> <span class="kr">null</span><span class="p">)</span>
+    <span class="k">PROCEDURE</span> <span class="n">login</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_passphrase</span> <span class="kt">VARCHAR2</span> <span class="o">:=</span> <span class="kr">NULL</span><span class="p">,</span> <span class="n">i_log_level</span> <span class="kt">pls_integer</span> <span class="o">:=</span> <span class="kr">null</span><span class="p">)</span>
     <span class="kr">IS</span>
         <span class="n">v_priv_key</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">)</span> <span class="o">:=</span> <span class="n">get_priv_key</span><span class="p">(</span><span class="n">i_host</span><span class="p">,</span> <span class="n">i_user</span><span class="p">);</span>
     <span class="k">BEGIN</span>
@@ -579,14 +579,14 @@ call stack! You must look back a few levels to find the original caller.</p>
     <span class="c1">--</span>
     <span class="c1">-- 3 DML methods for manipulating the key table records</span>
     <span class="c1">--</span>
-    <span class="kr">PROCEDURE</span> <span class="n">insert_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">)</span>
+    <span class="k">PROCEDURE</span> <span class="n">insert_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">)</span>
     <span class="kr">IS</span>
     <span class="k">BEGIN</span>
         <span class="kr">INSERT</span> <span class="kr">INTO</span> <span class="n">as_sftp_private_keys</span><span class="p">(</span><span class="k">host</span><span class="p">,</span> <span class="k">id</span><span class="p">,</span> <span class="k">key</span><span class="p">)</span> <span class="kr">VALUES</span><span class="p">(</span><span class="n">i_host</span><span class="p">,</span> <span class="n">i_user</span><span class="p">,</span> <span class="n">i_key</span><span class="p">);</span>
         <span class="k">COMMIT</span><span class="p">;</span>
     <span class="k">END</span> <span class="n">insert_priv_key</span><span class="p">;</span>
 
-    <span class="kr">PROCEDURE</span> <span class="n">update_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">)</span>
+    <span class="k">PROCEDURE</span> <span class="n">update_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_key</span> <span class="kt">CLOB</span><span class="p">)</span>
     <span class="kr">IS</span>
     <span class="k">BEGIN</span>
         <span class="kr">UPDATE</span> <span class="n">as_sftp_private_keys</span>
@@ -596,7 +596,7 @@ call stack! You must look back a few levels to find the original caller.</p>
         <span class="k">COMMIT</span><span class="p">;</span>
     <span class="k">END</span> <span class="n">update_priv_key</span><span class="p">;</span>
 
-    <span class="kr">PROCEDURE</span> <span class="n">delete_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">PROCEDURE</span> <span class="n">delete_priv_key</span><span class="p">(</span><span class="n">i_host</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">i_user</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="kr">IS</span>
     <span class="k">BEGIN</span>
         <span class="kr">DELETE</span> <span class="kr">FROM</span> <span class="n">as_sftp_private_keys</span>

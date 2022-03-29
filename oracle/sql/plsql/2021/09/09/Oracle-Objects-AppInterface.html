@@ -173,7 +173,7 @@
 
 <p>We will use the <em>HR</em> sample schema for the demonstration. The example is contrived in that the overhead of putting the <em>department</em> data into a flattened row or running two separate queries, is minimal, and we would not bother normally. Pretend that we have a much larger common object, perhaps multiple disparate child arrays, and/or extremely high volume that will justify the added complexity.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">employee_udt</span> <span class="kr">AS</span> <span class="k">OBJECT</span> <span class="p">(</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">employee_udt</span> <span class="kr">AS</span> <span class="k">OBJECT</span> <span class="p">(</span>
      <span class="n">last_name</span>          <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
     <span class="p">,</span><span class="n">first_name</span>         <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
     <span class="p">,</span><span class="n">email</span>              <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
@@ -181,47 +181,47 @@
     <span class="p">,</span><span class="n">hire_date</span>          <span class="kt">DATE</span>
     <span class="p">,</span><span class="n">salary</span>             <span class="kt">NUMBER</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
     <span class="c1">-- for sorting</span>
-    <span class="p">,</span><span class="k">MAP</span> <span class="k">MEMBER</span> <span class="kr">FUNCTION</span> <span class="n">full_name</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+    <span class="p">,</span><span class="k">MAP</span> <span class="k">MEMBER</span> <span class="k">FUNCTION</span> <span class="n">full_name</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
 <span class="p">);</span>
 <span class="o">/</span>
-<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="kr">BODY</span> <span class="n">employee_udt</span> <span class="kr">AS</span>
-    <span class="k">MAP</span> <span class="k">MEMBER</span> <span class="kr">FUNCTION</span> <span class="n">full_name</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+<span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="kr">BODY</span> <span class="n">employee_udt</span> <span class="kr">AS</span>
+    <span class="k">MAP</span> <span class="k">MEMBER</span> <span class="k">FUNCTION</span> <span class="n">full_name</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="kr">IS</span>
     <span class="k">BEGIN</span>
         <span class="k">RETURN</span> <span class="n">last_name</span><span class="o">||'</span><span class="s1">, </span><span class="o">'||</span><span class="n">first_name</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">arr_employee_udt</span> <span class="kr">AS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">employee_udt</span><span class="p">;</span>
+<span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">arr_employee_udt</span> <span class="kr">AS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">employee_udt</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">department_udt</span> <span class="kr">AS</span> <span class="k">OBJECT</span> <span class="p">(</span>
+<span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">department_udt</span> <span class="kr">AS</span> <span class="k">OBJECT</span> <span class="p">(</span>
      <span class="n">department_name</span>    <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>
     <span class="p">,</span><span class="n">manager_last_name</span>  <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span>
     <span class="p">,</span><span class="n">manager_first_name</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
     <span class="p">,</span><span class="n">arr_employee</span>       <span class="n">arr_employee_udt</span>
-    <span class="p">,</span><span class="k">MAP</span> <span class="k">MEMBER</span> <span class="kr">FUNCTION</span> <span class="n">dmap</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+    <span class="p">,</span><span class="k">MAP</span> <span class="k">MEMBER</span> <span class="k">FUNCTION</span> <span class="n">dmap</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
 <span class="p">);</span>
 <span class="o">/</span>
-<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="kr">BODY</span> <span class="n">department_udt</span> <span class="kr">AS</span> 
-    <span class="k">MAP</span> <span class="k">MEMBER</span> <span class="kr">FUNCTION</span> <span class="n">dmap</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+<span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="kr">BODY</span> <span class="n">department_udt</span> <span class="kr">AS</span> 
+    <span class="k">MAP</span> <span class="k">MEMBER</span> <span class="k">FUNCTION</span> <span class="n">dmap</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="kr">IS</span>
     <span class="k">BEGIN</span>
         <span class="k">RETURN</span> <span class="n">department_name</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">arr_department_udt</span> <span class="kr">AS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">department_udt</span><span class="p">;</span>
+<span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">TYPE</span> <span class="n">arr_department_udt</span> <span class="kr">AS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">department_udt</span><span class="p">;</span>
 <span class="o">/</span>
 </code></pre></div></div>
 
 <p>Each department object will contain all of the employees in the department. The top level array of departments object is a single unit that can be transferred in one database call. Alternatively, if that object could be too large to be efficient, a cursor can return rows of <em>department_udt</em> objects, perhaps bulk fetched depending on how it is called. Here is a package that provides both. The query is written in multiple pieces using <em>WITH</em> subquery factoring to make it easier to follow (a practice I recommend to keep large queries easier to understand).</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">employees_by_dept_pkg</span> <span class="kr">AS</span>
-    <span class="kr">PROCEDURE</span> <span class="n">get</span><span class="p">(</span><span class="n">p_arr_department</span> <span class="kr">OUT</span> <span class="n">arr_department_udt</span><span class="p">);</span>
-    <span class="kr">FUNCTION</span> <span class="n">get</span> <span class="k">RETURN</span> <span class="n">arr_department_udt</span> <span class="kr">PIPELINED</span><span class="p">;</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">employees_by_dept_pkg</span> <span class="kr">AS</span>
+    <span class="k">PROCEDURE</span> <span class="k">get</span><span class="p">(</span><span class="n">p_arr_department</span> <span class="kr">OUT</span> <span class="n">arr_department_udt</span><span class="p">);</span>
+    <span class="k">FUNCTION</span> <span class="k">get</span> <span class="k">RETURN</span> <span class="n">arr_department_udt</span> <span class="kr">PIPELINED</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">employees_by_dept_pkg</span> <span class="kr">AS</span>
+<span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">employees_by_dept_pkg</span> <span class="kr">AS</span>
     <span class="k">CURSOR</span> <span class="n">g_c</span> <span class="kr">IS</span>
         <span class="kr">WITH</span> <span class="n">d</span> <span class="kr">AS</span> <span class="p">(</span>
             <span class="kr">SELECT</span> <span class="n">hd</span><span class="p">.</span><span class="n">department_id</span><span class="p">,</span> <span class="n">hd</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">he</span><span class="p">.</span><span class="n">last_name</span> <span class="kr">AS</span> <span class="n">manager_last_name</span><span class="p">,</span> <span class="n">he</span><span class="p">.</span><span class="n">first_name</span> <span class="kr">AS</span> <span class="n">manager_first_name</span>
@@ -260,7 +260,7 @@
         <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">dept</span>
         <span class="p">;</span>
 
-    <span class="kr">PROCEDURE</span> <span class="n">get</span><span class="p">(</span>
+    <span class="k">PROCEDURE</span> <span class="k">get</span><span class="p">(</span>
         <span class="n">p_arr_department</span>    <span class="kr">OUT</span> <span class="n">arr_department_udt</span>
     <span class="p">)</span> <span class="kr">AS</span>
     <span class="k">BEGIN</span>
@@ -278,7 +278,7 @@
         <span class="k">CLOSE</span> <span class="n">g_c</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
 
-    <span class="kr">FUNCTION</span> <span class="n">get</span> <span class="k">RETURN</span> <span class="n">arr_department_udt</span> <span class="kr">PIPELINED</span>
+    <span class="k">FUNCTION</span> <span class="k">get</span> <span class="k">RETURN</span> <span class="n">arr_department_udt</span> <span class="kr">PIPELINED</span>
     <span class="kr">AS</span>
         <span class="n">v_arr_department</span>    <span class="n">arr_department_udt</span><span class="p">;</span>
     <span class="k">BEGIN</span>

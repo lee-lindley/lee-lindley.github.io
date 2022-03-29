@@ -394,7 +394,7 @@ then use that for the MERGE ON clause join back into the staging table.</p>
     <span class="kr">WHERE</span> <span class="n">rn</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="p">)</span> <span class="n">q</span>
 <span class="kr">ON</span> <span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="kr">rowid</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">s_rowid</span><span class="p">)</span>
-<span class="k">WHEN</span> <span class="k">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="nf">SET</span>
+<span class="kr">WHEN</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="kr">SET</span>
     <span class="n">update_value</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">update_value</span>
 </code></pre></div></div>
 

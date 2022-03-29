@@ -186,7 +186,7 @@ that contains multiple lines, each of which are a CSV record. Note that
 this is a full blown CSV parser that should handle any records that comply
 with RFC4180 (See https://www.loc.gov/preservation/digital/formats/fdd/fdd000323.shtml).</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">FUNCTION</span> <span class="n">ptf</span><span class="p">(</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">FUNCTION</span> <span class="n">ptf</span><span class="p">(</span>
         <span class="n">p_tab</span>           <span class="kr">TABLE</span>
         <span class="p">,</span><span class="n">p_table_name</span>   <span class="kt">VARCHAR2</span>
         <span class="p">,</span><span class="n">p_columns</span>      <span class="kt">VARCHAR2</span> <span class="c1">-- csv list -- could be COLUMNS() construct instead</span>
@@ -197,18 +197,18 @@ with RFC4180 (See https://www.loc.gov/preservation/digital/formats/fdd/fdd000323
     <span class="p">;</span>
 
     <span class="c1">-- public type to be returned by split_clob_to_lines PIPE ROW function</span>
-    <span class="kr">TYPE</span> <span class="n">t_csv_row_rec</span> <span class="kr">IS</span> <span class="kr">RECORD</span><span class="p">(</span>
+    <span class="k">TYPE</span> <span class="n">t_csv_row_rec</span> <span class="kr">IS</span> <span class="kr">RECORD</span><span class="p">(</span>
         <span class="n">s</span>   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>  <span class="c1">-- the csv row</span>
         <span class="p">,</span><span class="n">rn</span> <span class="kt">NUMBER</span>          <span class="c1">-- line number in the input</span>
     <span class="p">);</span>
-    <span class="kr">TYPE</span> <span class="n">t_arr_csv_row_rec</span> <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">t_csv_row_rec</span><span class="p">;</span>
+    <span class="k">TYPE</span> <span class="n">t_arr_csv_row_rec</span> <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">t_csv_row_rec</span><span class="p">;</span>
 
     <span class="c1">--</span>
     <span class="c1">-- split a clob into a row for each line.</span>
     <span class="c1">-- Handle case where a "line" can have embedded LF chars per RFC for CSV format</span>
     <span class="c1">-- Throw out completely blank lines (but keep track of line number)</span>
     <span class="c1">--</span>
-    <span class="kr">FUNCTION</span> <span class="n">split_clob_to_lines</span><span class="p">(</span><span class="n">p_clob</span> <span class="kt">CLOB</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">split_clob_to_lines</span><span class="p">(</span><span class="n">p_clob</span> <span class="kt">CLOB</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="n">t_arr_csv_row_rec</span>
     <span class="kr">PIPELINED</span>
     <span class="p">;</span>

@@ -181,14 +181,14 @@ with the INSERT(…) clause of the MERGE.</p>
 <p>I started off writing a custom <em>join</em> function that also took a template string as an argument.
 It was sort of a meld between the Perl <em>join</em> and <em>map</em> methods.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">FUNCTION</span> <span class="n">join</span><span class="p">(</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">FUNCTION</span> <span class="k">join</span><span class="p">(</span>
         <span class="n">p_arr</span>           <span class="n">sys</span><span class="p">.</span><span class="n">ku$_vcnt</span>
         <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span> <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">, </span><span class="o">'</span>
         <span class="p">,</span><span class="n">p_template</span>     <span class="kt">VARCHAR2</span> <span class="kr">DEFAULT</span> <span class="kr">NULL</span>
     <span class="p">)</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="kr">IS</span>
         <span class="n">l_s</span>     <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">);</span>
-        <span class="kr">FUNCTION</span> <span class="n">apply_template</span><span class="p">(</span>
+        <span class="k">FUNCTION</span> <span class="n">apply_template</span><span class="p">(</span>
             <span class="n">p_val</span>   <span class="kt">VARCHAR2</span>
         <span class="p">)</span>
         <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>

@@ -161,7 +161,7 @@ to improve performance by avoiding context switching. Yet in the same release we
 and that role has been granted <em>SELECT</em> on <em>HR.job_history</em>. If I attempted to create a function
 that read from the table <em>HR.job_history</em>, the create would fail. The inline PL/SQL function works though.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="kr">FUNCTION</span> <span class="n">get_hist_job_id</span><span class="p">(</span><span class="n">p_emp</span> <span class="kt">number</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="k">FUNCTION</span> <span class="n">get_hist_job_id</span><span class="p">(</span><span class="n">p_emp</span> <span class="kt">number</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
 <span class="kr">AS</span>
     <span class="n">l_job_id</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">);</span>
 <span class="k">BEGIN</span>
@@ -198,7 +198,7 @@ or SqlDeveloper).</p>
 <p>As of Oracle 12.2 you can do this in straight SQL (see <a href="https://odieweblog.wordpress.com/2017/04/17/oracle-12-2-to_clob-and-to_blob-enhancements/">TO_CLOB and TO_BLOB enhancements</a>), 
 but I’m going to use the example anyway.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="kr">FUNCTION</span> <span class="n">get_blob</span><span class="p">(</span><span class="n">p_directory</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">p_filename</span> <span class="kt">VARCHAR2</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">BLOB</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="k">FUNCTION</span> <span class="n">get_blob</span><span class="p">(</span><span class="n">p_directory</span> <span class="kt">VARCHAR2</span><span class="p">,</span> <span class="n">p_filename</span> <span class="kt">VARCHAR2</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">BLOB</span>
 <span class="kr">AS</span>
     <span class="n">l_bfile</span>         <span class="kt">BFILE</span><span class="p">;</span>
     <span class="n">l_blob</span>          <span class="kt">BLOB</span><span class="p">;</span>
@@ -242,7 +242,7 @@ already written a procedure that does much of what you need for your adhoc query
 quickly copy/paste the code into a WITH clause and be ready to rock and roll.</p>
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> 
-<span class="kr">FUNCTION</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="n">p_src</span> <span class="kt">SYS_REFCURSOR</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">BLOB</span> <span class="kr">AS</span>
+<span class="k">FUNCTION</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="n">p_src</span> <span class="kt">SYS_REFCURSOR</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">BLOB</span> <span class="kr">AS</span>
     <span class="n">v_blob</span>          <span class="kt">BLOB</span><span class="p">;</span>
     <span class="n">v_ctxId</span>         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">ctxHandle</span><span class="p">;</span>
     <span class="n">v_sheetHandle</span>   <span class="kt">BINARY_INTEGER</span><span class="p">;</span>
@@ -296,7 +296,7 @@ block using a client declared context variable that does the first part of this 
 <p>Here is another example using <a href="https://github.com/lee-lindley/PdfGen">PdfGen</a>, a package I wrote that wraps
 the core <em>as_pdf3</em> written by Anton Scheffer.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="kr">FUNCTION</span> <span class="n">get_blob</span><span class="p">(</span><span class="n">p_src</span> <span class="kt">SYS_REFCURSOR</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">BLOB</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="k">FUNCTION</span> <span class="n">get_blob</span><span class="p">(</span><span class="n">p_src</span> <span class="kt">SYS_REFCURSOR</span><span class="p">)</span> <span class="k">RETURN</span> <span class="kt">BLOB</span>
 <span class="kr">IS</span>
     <span class="n">v_blob</span>      <span class="kt">BLOB</span><span class="p">;</span>
     <span class="n">v_widths</span>    <span class="n">PdfGen</span><span class="p">.</span><span class="n">t_col_widths</span><span class="p">;</span>

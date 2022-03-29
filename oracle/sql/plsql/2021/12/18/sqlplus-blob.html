@@ -194,7 +194,7 @@ to a file as base64 encoded text.</p>
 <span class="k">DECLARE</span>
     <span class="kr">c</span> <span class="kt">SYS_REFCURSOR</span><span class="p">;</span>
 
-    <span class="kr">FUNCTION</span> <span class="n">base64encode</span><span class="p">(</span><span class="n">p_blob</span> <span class="o">IN</span> <span class="kt">BLOB</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">base64encode</span><span class="p">(</span><span class="n">p_blob</span> <span class="o">IN</span> <span class="kt">BLOB</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">CLOB</span>
     <span class="c1">-- -----------------------------------------------------------------------------------</span>
     <span class="c1">-- File Name    : https://oracle-base.com/dba/miscellaneous/base64encode.sql</span>
@@ -212,7 +212,7 @@ to a file as base64 encoded text.</p>
         <span class="k">RETURN</span> <span class="n">l_clob</span><span class="p">;</span>
     <span class="k">END</span><span class="p">;</span>
 
-    <span class="kr">FUNCTION</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="n">p_src</span> <span class="kt">SYS_REFCURSOR</span><span class="p">)</span> 
+    <span class="k">FUNCTION</span> <span class="n">get_xlsx</span><span class="p">(</span><span class="n">p_src</span> <span class="kt">SYS_REFCURSOR</span><span class="p">)</span> 
     <span class="k">RETURN</span> <span class="kt">CLOB</span> <span class="kr">AS</span>
         <span class="n">v_blob</span>          <span class="kt">BLOB</span><span class="p">;</span>
         <span class="n">v_ctxId</span>         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">ctxHandle</span><span class="p">;</span>

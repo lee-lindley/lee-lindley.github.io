@@ -161,9 +161,9 @@ a fine answer for our deployment task, but I prefer a MERGE.</p>
     <span class="kr">SELECT</span> <span class="o">'</span><span class="s1">My App</span><span class="o">'</span> <span class="kr">AS</span> <span class="n">app_name</span><span class="p">,</span> <span class="o">'</span><span class="s1">debug_level</span><span class="o">'</span> <span class="kr">AS</span> <span class="n">param_name</span><span class="p">,</span> <span class="o">'</span><span class="s1">0</span><span class="o">'</span> <span class="kr">AS</span> <span class="n">param_value</span> <span class="kr">FROM</span> <span class="n">DUAL</span>
 <span class="p">)</span> <span class="n">q</span>
 <span class="kr">ON</span> <span class="p">(</span><span class="kr">c</span><span class="p">.</span><span class="n">app_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">app_name</span> <span class="o">AND</span> <span class="kr">c</span><span class="p">.</span><span class="n">param_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">)</span>
-<span class="k">WHEN</span> <span class="o">NOT</span> <span class="k">MATCHED</span> <span class="kr">THEN</span> <span class="kr">INSERT</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">created_by</span><span class="p">,</span> <span class="n">created_dt</span><span class="p">)</span>
+<span class="kr">WHEN</span> <span class="kr">NOT</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">INSERT</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">created_by</span><span class="p">,</span> <span class="n">created_dt</span><span class="p">)</span>
     <span class="kr">VALUES</span><span class="p">(</span><span class="n">q</span><span class="p">.</span><span class="n">app_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span><span class="p">,</span> <span class="nf">USER</span><span class="p">,</span> <span class="nf">SYSDATE</span><span class="p">)</span>
-<span class="k">WHEN</span> <span class="k">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="nf">SET</span>
+<span class="kr">WHEN</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="kr">SET</span>
         <span class="n">param_value</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span>
         <span class="p">,</span><span class="n">updated_by</span> <span class="o">=</span> <span class="nf">USER</span>
         <span class="p">,</span><span class="n">update_DT</span> <span class="o">=</span> <span class="nf">sysdate</span>
@@ -231,10 +231,10 @@ The PTF allows us to provide any field list and types at run time.</p>
 
 <p>Here is the package specification. I include the PTF function inside the package even though it can be standalone.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">csv_to_table_pkg</span> 
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="n">csv_to_table_pkg</span> 
 <span class="k">AUTHID</span> <span class="k">CURRENT_USER</span>
 <span class="kr">AS</span>
-    <span class="kr">FUNCTION</span> <span class="n">t</span><span class="p">(</span>
+    <span class="k">FUNCTION</span> <span class="n">t</span><span class="p">(</span>
         <span class="n">p_tab</span>           <span class="kr">TABLE</span>
         <span class="p">,</span><span class="n">p_table_name</span>   <span class="kt">VARCHAR2</span>
         <span class="p">,</span><span class="n">p_columns</span>      <span class="kt">VARCHAR2</span> <span class="c1">-- csv list</span>
@@ -244,7 +244,7 @@ The PTF allows us to provide any field list and types at run time.</p>
     <span class="kr">PIPELINED</span> <span class="k">ROW</span> <span class="kr">POLYMORPHIC</span> <span class="k">USING</span> <span class="n">csv_to_table_pkg</span>
     <span class="p">;</span>
 
-    <span class="kr">FUNCTION</span> <span class="n">describe</span><span class="p">(</span>
+    <span class="k">FUNCTION</span> <span class="n">describe</span><span class="p">(</span>
         <span class="n">p_tab</span> <span class="o">IN</span> <span class="kr">OUT</span>    <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
         <span class="p">,</span><span class="n">p_table_name</span>   <span class="kt">VARCHAR2</span>
         <span class="p">,</span><span class="n">p_columns</span>      <span class="kt">VARCHAR2</span> <span class="c1">-- csv list</span>
@@ -252,7 +252,7 @@ The PTF allows us to provide any field list and types at run time.</p>
         <span class="p">,</span><span class="n">p_date_fmt</span>     <span class="kt">VARCHAR2</span> <span class="kr">DEFAULT</span> <span class="kr">NULL</span> <span class="c1">-- uses nls_date_format if null</span>
     <span class="p">)</span> <span class="k">RETURN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">DESCRIBE_T</span>
     <span class="p">;</span>
-    <span class="kr">PROCEDURE</span> <span class="n">fetch_rows</span><span class="p">(</span>
+    <span class="k">PROCEDURE</span> <span class="n">fetch_rows</span><span class="p">(</span>
          <span class="n">p_table_name</span>   <span class="kt">VARCHAR2</span>
         <span class="p">,</span><span class="n">p_columns</span>      <span class="kt">VARCHAR2</span> <span class="c1">-- csv list</span>
         <span class="p">,</span><span class="n">p_clob</span>         <span class="kt">CLOB</span>
@@ -381,11 +381,11 @@ that I support.</p>
 <p>I wrote a <a href="https://leelindley.blogspot.com/2021/12/perl-regexp-vs-oracle.html">blog post</a> about
 <em>transform_perl_regexp</em>.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">csv_to_table_pkg</span> <span class="kr">AS</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">csv_to_table_pkg</span> <span class="kr">AS</span>
 
     <span class="n">g_rows_regexp</span>   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">);</span>
     <span class="c1">-- defined at the end of the package</span>
-    <span class="kr">FUNCTION</span> <span class="n">split</span> <span class="p">(</span>
+    <span class="k">FUNCTION</span> <span class="k">split</span> <span class="p">(</span>
         <span class="n">p_s</span>            <span class="kt">VARCHAR2</span>
         <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
         <span class="p">,</span><span class="n">p_keep_nulls</span>   <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">N</span><span class="o">'</span>
@@ -393,7 +393,7 @@ that I support.</p>
     <span class="p">)</span> <span class="k">RETURN</span> <span class="n">arr_varchar2_udt</span> <span class="k">DETERMINISTIC</span>
     <span class="p">;</span>
 
-    <span class="kr">FUNCTION</span> <span class="n">describe</span><span class="p">(</span>
+    <span class="k">FUNCTION</span> <span class="n">describe</span><span class="p">(</span>
         <span class="n">p_tab</span> <span class="o">IN</span> <span class="kr">OUT</span>    <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
         <span class="p">,</span><span class="n">p_table_name</span>   <span class="kt">VARCHAR2</span>
         <span class="p">,</span><span class="n">p_columns</span>      <span class="kt">VARCHAR2</span> <span class="c1">-- csv list</span>
@@ -404,7 +404,7 @@ that I support.</p>
         <span class="n">v_new_cols</span>  <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">columns_new_t</span><span class="p">;</span>
         <span class="n">v_col_names</span> <span class="n">arr_varchar2_udt</span><span class="p">;</span>
 
-        <span class="kr">TYPE</span> <span class="n">t_col_order</span> <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="kt">BINARY_INTEGER</span> <span class="kr">INDEX</span> <span class="kr">BY</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">);</span>
+        <span class="k">TYPE</span> <span class="n">t_col_order</span> <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="kt">BINARY_INTEGER</span> <span class="kr">INDEX</span> <span class="kr">BY</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">);</span>
         <span class="n">v_col_order</span> <span class="n">t_col_order</span><span class="p">;</span>
     <span class="k">BEGIN</span>
         <span class="k">IF</span> <span class="n">p_tab</span><span class="p">.</span><span class="k">column</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span> 
@@ -457,7 +457,7 @@ that I support.</p>
     <span class="k">END</span> <span class="n">describe</span>
     <span class="p">;</span>
 
-    <span class="kr">PROCEDURE</span> <span class="n">fetch_rows</span><span class="p">(</span>
+    <span class="k">PROCEDURE</span> <span class="n">fetch_rows</span><span class="p">(</span>
          <span class="n">p_table_name</span>   <span class="kt">VARCHAR2</span>
         <span class="p">,</span><span class="n">p_columns</span>      <span class="kt">VARCHAR2</span> <span class="c1">-- csv list</span>
         <span class="p">,</span><span class="n">p_clob</span>         <span class="kt">CLOB</span>
@@ -550,7 +550,7 @@ ROW: </span><span class="o">'||</span><span class="n">v_row</span><span class="p
         <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">put_row_set</span><span class="p">(</span><span class="n">v_rowset_out</span><span class="p">,</span> <span class="n">replication_factor</span> <span class="o">=&gt;</span> <span class="n">v_rows_out</span><span class="p">);</span>
     <span class="k">END</span> <span class="n">fetch_rows</span><span class="p">;</span>
 
-    <span class="kr">FUNCTION</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">p_re</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">p_re</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="k">DETERMINISTIC</span>
     <span class="kr">IS</span>
@@ -582,7 +582,7 @@ ROW: </span><span class="o">'||</span><span class="n">v_row</span><span class="p
     <span class="k">END</span> <span class="n">transform_perl_regexp</span><span class="p">;</span>
 
 
-  <span class="kr">FUNCTION</span> <span class="n">split</span> <span class="p">(</span>
+  <span class="k">FUNCTION</span> <span class="k">split</span> <span class="p">(</span>
      <span class="n">p_s</span>            <span class="kt">VARCHAR2</span>
     <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
     <span class="p">,</span><span class="n">p_keep_nulls</span>   <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">N</span><span class="o">'</span>
@@ -847,9 +847,9 @@ My App, debug_level, 0
         <span class="p">)</span>
     <span class="p">)</span> <span class="n">q</span>
     <span class="kr">ON</span> <span class="p">(</span><span class="kr">c</span><span class="p">.</span><span class="n">app_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">app_name</span> <span class="o">AND</span> <span class="kr">c</span><span class="p">.</span><span class="n">param_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">)</span>
-<span class="k">WHEN</span> <span class="o">NOT</span> <span class="k">MATCHED</span> <span class="kr">THEN</span> <span class="kr">INSERT</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">created_by</span><span class="p">,</span> <span class="n">created_dt</span><span class="p">)</span>
+<span class="kr">WHEN</span> <span class="kr">NOT</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">INSERT</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">created_by</span><span class="p">,</span> <span class="n">created_dt</span><span class="p">)</span>
     <span class="kr">VALUES</span><span class="p">(</span><span class="n">q</span><span class="p">.</span><span class="n">app_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span><span class="p">,</span> <span class="nf">USER</span><span class="p">,</span> <span class="nf">SYSDATE</span><span class="p">)</span>
-<span class="k">WHEN</span> <span class="k">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="nf">SET</span>
+<span class="kr">WHEN</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="kr">SET</span>
         <span class="n">param_value</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span>
         <span class="p">,</span><span class="n">updated_by</span> <span class="o">=</span> <span class="nf">USER</span>
         <span class="p">,</span><span class="n">update_DT</span> <span class="o">=</span> <span class="nf">sysdate</span>

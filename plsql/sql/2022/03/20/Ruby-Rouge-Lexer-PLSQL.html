@@ -217,19 +217,19 @@ Name</span><span class="o">"</span>
 <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span>
 <span class="p">;</span>
 
-<span class="kr">CREATE</span> <span class="o">OR</span> 
+<span class="kr">CREATE</span> <span class="kr">OR</span> 
  <span class="kr">REPLACE</span> 
   <span class="kr">PACKAGE</span> 
    <span class="n">sample_pkg</span>
-    <span class="kr">PROCEDURE</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">p_re</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">PROCEDURE</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">p_re</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="k">DETERMINISTIC</span>
     <span class="p">;</span>
 <span class="k">END</span> <span class="n">sample_pkg</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="kr">CREATE</span> <span class="o">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">sample_pkg</span>
+<span class="kr">CREATE</span> <span class="kr">OR</span> <span class="kr">REPLACE</span> <span class="kr">PACKAGE</span> <span class="kr">BODY</span> <span class="n">sample_pkg</span>
 
-    <span class="kr">FUNCTION</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">p_re</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">transform_perl_regexp</span><span class="p">(</span><span class="n">p_re</span> <span class="kt">VARCHAR2</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
     <span class="k">DETERMINISTIC</span>
     <span class="kr">IS</span>

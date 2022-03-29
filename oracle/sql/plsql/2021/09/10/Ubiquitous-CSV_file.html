@@ -380,7 +380,7 @@ with the bulk collect).</p>
         <span class="kr">ORDER</span> <span class="kr">BY</span> <span class="n">d</span><span class="p">.</span><span class="n">department_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">first_name</span>
     <span class="p">;</span>
     <span class="k">SUBTYPE</span> <span class="n">t_c1_rec</span> <span class="kr">IS</span> <span class="n">c1</span><span class="na">%ROWTYPE</span><span class="p">;</span>
-    <span class="kr">TYPE</span> <span class="n">t_arr_c1_rec</span> <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">t_c1_rec</span><span class="p">;</span>
+    <span class="k">TYPE</span> <span class="n">t_arr_c1_rec</span> <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">t_c1_rec</span><span class="p">;</span>
     <span class="n">v_arr_c1_rec</span>    <span class="n">t_arr_c1_rec</span><span class="p">;</span>
     <span class="n">v_file</span>          <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">file_type</span><span class="p">;</span>
     <span class="n">v_dir</span>           <span class="k">CONSTANT</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">TMP_DIR</span><span class="o">'</span><span class="p">;</span>

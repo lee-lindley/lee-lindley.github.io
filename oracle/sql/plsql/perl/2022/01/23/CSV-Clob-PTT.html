@@ -209,7 +209,7 @@ we were using before. Under the covers that is what it does, but now we have som
 <p>Given the prior work with <em>perlish_util_udt.split_clobs_to_lines</em> and <em>perlish_util_udt.split_csv</em>, this was not
 difficult to implement.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="k">STATIC</span> <span class="kr">PROCEDURE</span> <span class="n">create_ptt_csv</span> <span class="p">(</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="k">STATIC</span> <span class="k">PROCEDURE</span> <span class="n">create_ptt_csv</span> <span class="p">(</span>
          <span class="c1">-- creates private temporary table ora$ptt_csv with columns named in first row of data case preserved.</span>
          <span class="c1">-- All fields are varchar2(4000)</span>
 	     <span class="n">p_clob</span>         <span class="kt">CLOB</span>

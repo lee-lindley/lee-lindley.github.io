@@ -271,10 +271,10 @@ of just one as shown here.</p>
 <span class="kr">ON</span> <span class="p">(</span>
     <span class="n">t</span><span class="p">.</span><span class="o">"</span><span class="nv">ID</span><span class="o">"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">ID</span><span class="o">"</span>
 <span class="p">)</span>
-<span class="k">WHEN</span> <span class="k">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="nf">SET</span>
+<span class="kr">WHEN</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="kr">SET</span>
     <span class="n">t</span><span class="p">.</span><span class="o">"</span><span class="nv">MSG</span><span class="o">"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">MSG</span><span class="o">"</span>
     <span class="p">,</span><span class="n">t</span><span class="p">.</span><span class="o">"</span><span class="nv">DT</span><span class="o">"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">DT</span><span class="o">"</span>
-<span class="k">WHEN</span> <span class="o">NOT</span> <span class="k">MATCHED</span> <span class="kr">THEN</span> <span class="kr">INSERT</span><span class="p">(</span>
+<span class="kr">WHEN</span> <span class="kr">NOT</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">INSERT</span><span class="p">(</span>
     <span class="o">"</span><span class="nv">ID</span><span class="o">"</span><span class="p">,</span> <span class="o">"</span><span class="nv">MSG</span><span class="o">"</span><span class="p">,</span> <span class="o">"</span><span class="nv">DT</span><span class="o">"</span>
 <span class="p">)</span> <span class="kr">VALUES</span> <span class="p">(</span>
     <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">ID</span><span class="o">"</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">MSG</span><span class="o">"</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">DT</span><span class="o">"</span>
