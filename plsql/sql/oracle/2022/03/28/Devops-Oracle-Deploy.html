@@ -222,7 +222,7 @@ build deployment scripts that run in <em>SQL*PLUS</em> handling relatively large
 data as Comma Separated Value (CSV) records efficiently. 
 Not as efficiently as using <em>sqlldr</em>, but good enough.</p>
 
-<p>From the documentation at <a href="https://github.com/lee-lindley/plsql_utilities/app_csv_pkg">plsql_utilities/app_csv_pkg</a>…</p>
+<p>From the documentation at <a href="https://github.com/lee-lindley/plsql_utilities/tree/main/app_csv_pkg">plsql_utilities/app_csv_pkg</a>…</p>
 
 <p>Read the data from a table (with an optional WHERE clause) and convert it
 into a CSV CLOB with a header row. Break the CLOB into a set of quoted
@@ -235,11 +235,11 @@ string literals. Generate a script that</p>
 
 <p>We call the deployment generator:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">APP_CSV_PKG</span><span class="p">.</span><span class="n">gen_deploy_merge</span><span class="p">(</span>
-    <span class="n">p_table_name</span>    <span class="o">=&gt;</span> <span class="s1">'MY_TABLE_NAME'</span>
-    <span class="p">,</span><span class="n">p_key_cols</span>     <span class="o">=&gt;</span> <span class="s1">'ID'</span>
-    <span class="p">,</span><span class="n">p_where_clause</span> <span class="o">=&gt;</span> <span class="s1">'id &lt;= 10'</span>
-<span class="p">)</span> <span class="k">FROM</span> <span class="n">DUAL</span><span class="p">;</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="n">APP_CSV_PKG</span><span class="p">.</span><span class="n">gen_deploy_merge</span><span class="p">(</span>
+    <span class="n">p_table_name</span>    <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">MY_TABLE_NAME</span><span class="o">'</span>
+    <span class="p">,</span><span class="n">p_key_cols</span>     <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">ID</span><span class="o">'</span>
+    <span class="p">,</span><span class="n">p_where_clause</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">id &lt;= 10</span><span class="o">'</span>
+<span class="p">)</span> <span class="kr">FROM</span> <span class="n">DUAL</span><span class="p">;</span>
 </code></pre></div></div>
 
 <p>That provides the following script as a CLOB in your query result. Note that
@@ -247,8 +247,8 @@ if the size of the CSV CLOB holding the records was greater than 32767,
 it would be represented by a concatenated set of quoted literals instead
 of just one as shown here.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
-    <span class="n">APP_CSV_PKG</span><span class="p">.</span><span class="n">create_ptt_csv</span><span class="p">(</span><span class="n">q</span><span class="s1">'{"ID","MSG","DT"
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
+    <span class="n">APP_CSV_PKG</span><span class="p">.</span><span class="n">create_ptt_csv</span><span class="p">(</span><span class="o">q'{</span><span class="sx">"ID","MSG","DT"
 1,"testing...","03/26/2022"
 2,"testing...","03/27/2022"
 3,"testing...","03/28/2022"
@@ -259,25 +259,25 @@ of just one as shown here.</p>
 8,"testing...","04/02/2022"
 9,"testing...","04/03/2022"
 10,"testing...","04/04/2022"
-}'</span>
+</span><span class="o">}'</span>
 <span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
-<span class="n">MERGE</span> <span class="k">INTO</span> <span class="n">MY_TABLE_NAME</span> <span class="n">t</span>
+<span class="k">MERGE</span> <span class="kr">INTO</span> <span class="n">MY_TABLE_NAME</span> <span class="n">t</span>
 <span class="k">USING</span> <span class="p">(</span>
-    <span class="k">SELECT</span> <span class="o">*</span>
-    <span class="k">FROM</span> <span class="n">ora</span><span class="err">$</span><span class="n">ptt_csv</span>
+    <span class="kr">SELECT</span> <span class="o">*</span>
+    <span class="kr">FROM</span> <span class="n">ora$ptt_csv</span>
 <span class="p">)</span> <span class="n">q</span>
-<span class="k">ON</span> <span class="p">(</span>
-    <span class="n">t</span><span class="p">.</span><span class="nv">"ID"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="nv">"ID"</span>
+<span class="kr">ON</span> <span class="p">(</span>
+    <span class="n">t</span><span class="p">.</span><span class="o">"</span><span class="nv">ID</span><span class="o">"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">ID</span><span class="o">"</span>
 <span class="p">)</span>
-<span class="k">WHEN</span> <span class="n">MATCHED</span> <span class="k">THEN</span> <span class="k">UPDATE</span> <span class="k">SET</span>
-    <span class="n">t</span><span class="p">.</span><span class="nv">"MSG"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="nv">"MSG"</span>
-    <span class="p">,</span><span class="n">t</span><span class="p">.</span><span class="nv">"DT"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="nv">"DT"</span>
-<span class="k">WHEN</span> <span class="k">NOT</span> <span class="n">MATCHED</span> <span class="k">THEN</span> <span class="k">INSERT</span><span class="p">(</span>
-    <span class="nv">"ID"</span><span class="p">,</span> <span class="nv">"MSG"</span><span class="p">,</span> <span class="nv">"DT"</span>
-<span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span>
-    <span class="n">q</span><span class="p">.</span><span class="nv">"ID"</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="nv">"MSG"</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="nv">"DT"</span>
+<span class="k">WHEN</span> <span class="k">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="nf">SET</span>
+    <span class="n">t</span><span class="p">.</span><span class="o">"</span><span class="nv">MSG</span><span class="o">"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">MSG</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">t</span><span class="p">.</span><span class="o">"</span><span class="nv">DT</span><span class="o">"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">DT</span><span class="o">"</span>
+<span class="k">WHEN</span> <span class="o">NOT</span> <span class="k">MATCHED</span> <span class="kr">THEN</span> <span class="kr">INSERT</span><span class="p">(</span>
+    <span class="o">"</span><span class="nv">ID</span><span class="o">"</span><span class="p">,</span> <span class="o">"</span><span class="nv">MSG</span><span class="o">"</span><span class="p">,</span> <span class="o">"</span><span class="nv">DT</span><span class="o">"</span>
+<span class="p">)</span> <span class="kr">VALUES</span> <span class="p">(</span>
+    <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">ID</span><span class="o">"</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">MSG</span><span class="o">"</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="o">"</span><span class="nv">DT</span><span class="o">"</span>
 <span class="p">);</span>
 <span class="k">COMMIT</span><span class="p">;</span>
 </code></pre></div></div>
