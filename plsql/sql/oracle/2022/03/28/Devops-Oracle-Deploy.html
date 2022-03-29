@@ -5,10 +5,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="/static/img/favicon.ico" />
-    <title>Inline External Tables for CSV Load - Lee Lindley Scratchpad</title>
+    <title>Devops Data Deployment for Oracle - Lee Lindley Scratchpad</title>
     <meta name="author" content="Lee Lindley" />
-    <meta name="description" content="Inline External Tables for CSV Load" />
-    <meta name="keywords" content="Inline External Tables for CSV Load, Lee Lindley Scratchpad, oracle, sql, plsql, perl" />
+    <meta name="description" content="Devops Data Deployment for Oracle" />
+    <meta name="keywords" content="Devops Data Deployment for Oracle, Lee Lindley Scratchpad, plsql, sql, oracle" />
     <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
     <meta content="" property="fb:app_id">
     <meta content="Lee Lindley Scratchpad" property="og:site_name">
@@ -16,7 +16,7 @@
     
 
     
-      <meta content="Inline External Tables for CSV Load" property="og:title">
+      <meta content="Devops Data Deployment for Oracle" property="og:title">
       <meta content="article" property="og:type">
     
 
@@ -25,11 +25,11 @@
     
 
     
-      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html" property="og:url">
+      <meta content="https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html" property="og:url">
     
 
     
-      <meta content="2022-01-24T10:30:00-05:00" property="article:published_time">
+      <meta content="2022-03-28T10:00:00-04:00" property="article:published_time">
       <meta content="https://lee-lindley.github.io/about/" property="article:author">
     
 
@@ -37,7 +37,7 @@
 
     
       
-        <meta content="oracle" property="article:section">
+        <meta content="plsql" property="article:section">
       
     
 
@@ -49,9 +49,11 @@
       
         <meta content="plsql" property="article:tag">
       
-        <meta content="csv" property="article:tag">
+        <meta content="devops" property="article:tag">
       
-        <meta content="perl" property="article:tag">
+        <meta content="deploy" property="article:tag">
+      
+        <meta content="CLOB" property="article:tag">
       
     
 
@@ -60,11 +62,11 @@
     <meta name="twitter:creator" content="@">
 
     
-      <meta name="twitter:title" content="Inline External Tables for CSV Load">
+      <meta name="twitter:title" content="Devops Data Deployment for Oracle">
     
 
     
-      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">
+      <meta name="twitter:url" content="https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html">
     
 
     
@@ -129,129 +131,163 @@
       </div>
       <div class="col-sm-8 col-offset-1 main-layout">
         <header class="post-header">
-  <h1 class="post-title">Inline External Tables for CSV Load</h1>
+  <h1 class="post-title">Devops Data Deployment for Oracle</h1>
 </header>
 
-<span class="time">24 Jan 2022</span>
+<span class="time">28 Mar 2022</span>
 
   <span class="categories">
-    &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>
+    &raquo; <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>, <a href="/category/oracle">oracle</a>
   </span>
 
 
 <div class="content">
-  <div class="post"><h1 id="yet-another-csv-load-option---inline-external-tables">Yet Another CSV Load Option - <em>Inline External Tables</em></h1>
+  <div class="post"><h1 id="introduction">Introduction</h1>
 
-<p>While reviewing the Oracle What’s New documentation for 18c I found <em>Private Temporary Tables</em> which
-I wrote about in <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">my last post</a>
-on the neverending saga of loading CSV data. Also found in What’s New for 18c
-is <em>Inline External Tables</em>.</p>
+<p>Most large corporations have adopted some form of <strong>Continuous Improvement</strong> (CI)
+strategy with a <strong>Devops</strong> build and deploy component. 
+The people who manage and direct these operations tend to
+be Web guys and the tools tend to focus on deploying Web applications (this includes
+middleware component on Java and .NET servers). If I am
+guilty of stereotyping incorrectly, please tell me about organizations with 
+a broader focus. I could be wrong, but that is what I have observed so far.</p>
 
-<p>Just like with PTTs, <em>Inline External Tables</em> are DDL without the downside. It is ad-hoc, and can be dynamically
-generated. In order to use it you must have an Oracle DIRECTORY object granted to you with both READ and WRITE,
-plus EXECUTE privilege on <em>DBMS_LOB</em> (and <em>UTL_FILE</em> if you want to clean up after yourself).</p>
+<p>Other application types are supported, just not as first class citizens.
+Specifically, database application deployment is a red-headed step-child
+of Devops. I’m not blaming the Devops guys either. We database practioners
+are likely guilty of obstruction. Any tool other than what we know works
+will be looked upon with suspicion.</p>
 
-<h1 id="example">Example</h1>
+<h1 id="how-can-we-deploy">How Can We Deploy?</h1>
 
-<p>From our last post we had an example of CSV data with a header row that looked as such:</p>
+<p>We need to deploy database application code (packages, table definitions, etc..)
+and we need to deploy data (configuration table entries for example).</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Employee ID, Last Name, First Name, nickname
-999, "Baggins", "Bilbo", "badboy, ringbearer"
-998, "Baggins", "Frodo",
-997, "Orc", "Ogg", "i kill you"
+<p>We have a suite of client tools we can use as Oracle clients for deploying
+code and data manually, all of which require providing or storing a password:</p>
+
+<ul>
+  <li>SQL*PLUS</li>
+  <li>imp</li>
+  <li>sqlldr</li>
+  <li>external tables (assuming you can deliver files to a database directory)</li>
+  <li>sqlCL</li>
+  <li>sqlDeveloper</li>
+  <li>Toad</li>
+</ul>
+
+<p>We can rule out the gui tools <em>SqlDeveloper</em> and <em>Toad</em>. These are not suitable for automated
+deployment.</p>
+
+<p><em>SQL*PLUS</em> is perfectly adequate for deploying our code to the database. Oracle uses it to 
+deploy database code and patches. We have
+all been using <em>SQL*PLUS</em> for as long as we have used Oracle. It is clunky, limiting and antiquated,
+but it works and we know how to make it do the needful.</p>
+
+<p>Strangely, <em>sqlCL</em> does not seem well supported. I know some reasons for that including
+security concerns with having Java client software on servers, but the
+primary reason is likely inertia. This is a shame because <em>sqlCl</em> supports CSV file 
+loading, which would address one of our two deployment needs.</p>
+
+<p>I have not seen a Devops deployment configuration that uses anything other than <em>SQL*PLUS</em>
+to deploy code. If there are some, my guess is the database application guys are less
+than thrilled. I could be wrong.</p>
+
+<h1 id="deploying-data">Deploying Data</h1>
+
+<p>For batch operations we have mechanisms for transfering files between production
+systems and/or with outside vendors. We have custom processes using
+<em>sqlldr</em>, External tables and perhaps an ETL tool to import the data from those files. 
+Yet the mechanisms
+we have for slinging files around in a production environment are probably not supported
+through Devops.</p>
+
+<p>We have files in our build that are on the deployment server and we have a <em>SQL*PLUS</em> client.</p>
+
+<p>Traditionally when faced with this we resort to what I call “stupid data load.” We
+create a series of Insert or Merge statements with hard coded data and run those
+in <em>SQL*PLUS</em>. Maybe we get a little more ambitious and create a single INSERT
+or MERGE statement with a series of SELECT FROM DUAL UNION ALL … statements
+providing the input. It is still “stupid data load.” Works fine for a small number of
+records. Not so fine when you need to create several thousand records.</p>
+
+<p>If Devops configured a capability to use <em>sqlldr</em>, we could do what we must. The use case
+for it is limited though and the firm may not choose to invest the resources necessary
+to configure and manage that capability.</p>
+
+<h1 id="an-alternative-for-loading-data-with-sqlplus">An Alternative for Loading Data with SQL*PLUS</h1>
+
+<p>Using tools provided in <a href="https://github.com/lee-lindley/plsql_utilities">plsql_utilities</a> we can
+build deployment scripts that run in <em>SQL*PLUS</em> handling relatively large amounts of
+data as Comma Separated Value (CSV) records efficiently. 
+Not as efficiently as using <em>sqlldr</em>, but good enough.</p>
+
+<p>From the documentation at <a href="https://github.com/lee-lindley/plsql_utilities/app_csv_pkg">plsql_utilities/app_csv_pkg</a>…</p>
+
+<p>Read the data from a table (with an optional WHERE clause) and convert it
+into a CSV CLOB with a header row. Break the CLOB into a set of quoted
+string literals. Generate a script that</p>
+
+<ol>
+  <li>Creates a Private Temporary Table from the CLOB (input as contactenated string literals).</li>
+  <li>Inserts or Merges records from the PTT into the target Table</li>
+</ol>
+
+<p>We call the deployment generator:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">APP_CSV_PKG</span><span class="p">.</span><span class="n">gen_deploy_merge</span><span class="p">(</span>
+    <span class="n">p_table_name</span>    <span class="o">=&gt;</span> <span class="s1">'MY_TABLE_NAME'</span>
+    <span class="p">,</span><span class="n">p_key_cols</span>     <span class="o">=&gt;</span> <span class="s1">'ID'</span>
+    <span class="p">,</span><span class="n">p_where_clause</span> <span class="o">=&gt;</span> <span class="s1">'id &lt;= 10'</span>
+<span class="p">)</span> <span class="k">FROM</span> <span class="n">DUAL</span><span class="p">;</span>
 </code></pre></div></div>
 
-<p>We could get fancy and try to parse the header row like we did last time, but for this effort I’m going the cheap route
-and assume you, the developer who wants to load the CSV data, will hand craft the code.</p>
+<p>That provides the following script as a CLOB in your query result. Note that
+if the size of the CSV CLOB holding the records was greater than 32767, 
+it would be represented by a concatenated set of quoted literals instead
+of just one as shown here.</p>
 
-<h1 id="create-file-on-oracle-server">Create File on Oracle Server</h1>
-
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
-    <span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">clob2file</span><span class="p">(</span><span class="o">q'[</span><span class="sx">999, "Baggins", "Bilbo", "badboy, ringbearer"
-998, "Baggins", "Frodo",
-997, "Orc", "Ogg", "i kill you"</span><span class="o">]'</span>
-                        <span class="p">,</span><span class="o">'</span><span class="s1">TMP_DIR</span><span class="o">'</span>
-                        <span class="p">,</span><span class="o">'</span><span class="s1">temp_csv_load.csv</span><span class="o">'</span>
-    <span class="p">);</span>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
+    <span class="n">APP_CSV_PKG</span><span class="p">.</span><span class="n">create_ptt_csv</span><span class="p">(</span><span class="n">q</span><span class="s1">'{"ID","MSG","DT"
+1,"testing...","03/26/2022"
+2,"testing...","03/27/2022"
+3,"testing...","03/28/2022"
+4,"testing...","03/29/2022"
+5,"testing...","03/30/2022"
+6,"testing...","03/31/2022"
+7,"testing...","04/01/2022"
+8,"testing...","04/02/2022"
+9,"testing...","04/03/2022"
+10,"testing...","04/04/2022"
+}'</span>
+<span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>
+<span class="n">MERGE</span> <span class="k">INTO</span> <span class="n">MY_TABLE_NAME</span> <span class="n">t</span>
+<span class="k">USING</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="o">*</span>
+    <span class="k">FROM</span> <span class="n">ora</span><span class="err">$</span><span class="n">ptt_csv</span>
+<span class="p">)</span> <span class="n">q</span>
+<span class="k">ON</span> <span class="p">(</span>
+    <span class="n">t</span><span class="p">.</span><span class="nv">"ID"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="nv">"ID"</span>
+<span class="p">)</span>
+<span class="k">WHEN</span> <span class="n">MATCHED</span> <span class="k">THEN</span> <span class="k">UPDATE</span> <span class="k">SET</span>
+    <span class="n">t</span><span class="p">.</span><span class="nv">"MSG"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="nv">"MSG"</span>
+    <span class="p">,</span><span class="n">t</span><span class="p">.</span><span class="nv">"DT"</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="nv">"DT"</span>
+<span class="k">WHEN</span> <span class="k">NOT</span> <span class="n">MATCHED</span> <span class="k">THEN</span> <span class="k">INSERT</span><span class="p">(</span>
+    <span class="nv">"ID"</span><span class="p">,</span> <span class="nv">"MSG"</span><span class="p">,</span> <span class="nv">"DT"</span>
+<span class="p">)</span> <span class="k">VALUES</span> <span class="p">(</span>
+    <span class="n">q</span><span class="p">.</span><span class="nv">"ID"</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="nv">"MSG"</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="nv">"DT"</span>
+<span class="p">);</span>
+<span class="k">COMMIT</span><span class="p">;</span>
 </code></pre></div></div>
-<h1 id="read-from-the-inline-external-table">Read from the Inline External Table</h1>
-
-<p>Now we read from the file:</p>
-
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">SELECT</span> <span class="o">*</span>
-    <span class="kr">FROM</span> <span class="k">EXTERNAL</span><span class="p">(</span>
-        <span class="p">(</span>
-            <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
-            <span class="p">,</span><span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>    <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
-            <span class="p">,</span><span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
-            <span class="p">,</span><span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>     <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
-        <span class="p">)</span>
-        <span class="kr">TYPE</span> <span class="n">ORACLE_LOADER</span>
-        <span class="kr">DEFAULT</span> <span class="k">DIRECTORY</span> <span class="n">TMP_DIR</span>
-        <span class="k">ACCESS</span> <span class="k">PARAMETERS</span> <span class="p">(</span>
-            <span class="n">RECORDS</span> <span class="n">DELIMITED</span> <span class="kr">BY</span> <span class="n">NEWLINE</span>
-            <span class="n">FIELDS</span> <span class="n">TERMINATED</span> <span class="kr">BY</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span> 
-            <span class="n">OPTIONALLY</span> <span class="n">ENCLOSED</span> <span class="kr">BY</span> <span class="o">'</span><span class="s1">"</span><span class="o">'</span>
-            <span class="k">MISSING</span> <span class="n">FIELD</span> <span class="kr">VALUES</span> <span class="n">ARE</span> <span class="kr">NULL</span>
-        <span class="p">)</span>
-        <span class="k">LOCATION</span> <span class="p">(</span><span class="o">'</span><span class="s1">temp_csv_load.csv</span><span class="o">'</span><span class="p">)</span>
-        <span class="k">REJECT</span> <span class="k">LIMIT</span> <span class="k">UNLIMITED</span>
-    <span class="p">)</span> <span class="n">temp_csv_load_ext</span>
-    <span class="p">;</span>
-</code></pre></div></div>
-<p>The export from SQL Developer is adding the double quotes here. These are not in the data.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>"Employee ID"                 "Last Name"                   "First Name"                  "nickname"                    
-"999"                         "Baggins"                     "Bilbo"                       "badboy, ringbearer"          
-"998"                         "Baggins"                     "Frodo"                       ""                            
-"997"                         "Orc"                         "Ogg"                         "i kill you"                  
-</code></pre></div></div>
-
-<p>You could of course have the external table sqlldr driver convert to dates and numbers as needed. As far as I can tell
-you have everything at your disposal that is there for a normal external table.</p>
-
-<p>The line</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>OPTIONALLY ENCLOSED BY '"'
-</code></pre></div></div>
-
-<p>makes sqlldr parse CSV data in a way that I believe mostly comports with the RFC on CSV data. It will handle
-most of the test cases I threw at it and you are unlikely to give it the oddball stuff.</p>
-
-<p>The line</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>MISSING FIELD VALUES ARE NULL
-</code></pre></div></div>
-
-<p>is because we do not have a trailing comma after the last field (which would be delimited data rather than separated)
-and because the sqlldr syntax of ‘TRAILING NULLCOLS’ I would pick is not available in the external table driver. Maddening.
-Without it our second record would fail to load.</p>
-
-<h1 id="cleanup">Cleanup</h1>
-
-<p>Being a good citizen, we remove our trash:</p>
-
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
-    <span class="n">UTL_FILE</span><span class="p">.</span><span class="n">fremove</span><span class="p">(</span><span class="o">'</span><span class="s1">TMP_DIR</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">temp_csv_load.csv</span><span class="o">'</span><span class="p">);</span>
-<span class="k">END</span><span class="p">;</span>
-<span class="o">/</span>
-</code></pre></div></div>
-<h1 id="drawback">Drawback</h1>
-
-<p>The big drawback to this technique (aside from how hard it is to get the external table definition right) is
-that it requires you have READ/WRITE privs on a directory on the database server. In many organizations this is forbidden.
-I retrofitted forty something load jobs
-from external table to sqlldr because of that restriction imposed upon us by architecture/DBA teams
-a few years back.
-We can debate whether that is reasonable or not, but it is what it is.</p>
 
 <h1 id="conclusion">Conclusion</h1>
 
-<p>There are plenty of client tools that will generate load data for you from CSV files or even directly from Excel.
-As nice as those are, you probably cannot use them for Continuous Improvement deployments. I’m trying to come up
-with a way to make that better. This is one more technique we might be able to use.</p>
+<p>I explored multiple mechanisms to avoid “stupid data load.” The obvious best choice would be if the right
+tools for the job like <em>sqlldr</em>, <em>imp</em>, or <em>sqlCL</em> were available, but we play the hand we are dealt. If you
+are stuck with <em>SQL*PLUS</em>, this package can be a solution.</p>
+
 </div>
 </div>
 
@@ -264,54 +300,34 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
           
             
             <div class="panel-body">
               <h4>Related Posts</h4>
               <ul>
-            
-                <li class="relatedPost">
-                  <a href="https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html">Devops Data Deployment for Oracle</a>
-                  
-                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>, <a href="/category/oracle">oracle</a>)
-                  
-                </li>
-          
-          
-        
-      
-          
-      
-    
-        
-          
-      
-          
-      
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-          
             
                 <li class="relatedPost">
                   <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
@@ -325,10 +341,10 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-    
-        
           
       
+    
+        
           
       
           
@@ -340,6 +356,10 @@ with a way to make that better. This is one more technique we might be able to u
     
       
         
+          
+      
+          
+      
           
             
                 <li class="relatedPost">
@@ -352,16 +372,8 @@ with a way to make that better. This is one more technique we might be able to u
           
         
       
-          
-      
-          
-      
-          
-      
     
         
-          
-      
           
       
           
@@ -378,6 +390,22 @@ with a way to make that better. This is one more technique we might be able to u
           
       
           
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
       
           
       
@@ -389,22 +417,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
-          
-      
-          
-      
-          
-      
-    
-        
-          
-      
           
       
           
@@ -416,6 +430,10 @@ with a way to make that better. This is one more technique we might be able to u
     
       
         
+          
+      
+          
+      
           
             
                 <li class="relatedPost">
@@ -428,6 +446,8 @@ with a way to make that better. This is one more technique we might be able to u
           
         
       
+    
+        
           
       
           
@@ -442,22 +462,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
-          
-      
-          
-      
-          
-      
-    
-        
-          
-      
           
       
           
@@ -469,6 +475,10 @@ with a way to make that better. This is one more technique we might be able to u
     
       
         
+          
+      
+          
+      
           
             
                 <li class="relatedPost">
@@ -481,12 +491,6 @@ with a way to make that better. This is one more technique we might be able to u
           
         
       
-          
-      
-          
-      
-          
-      
     
         
           
@@ -495,12 +499,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -512,6 +512,10 @@ with a way to make that better. This is one more technique we might be able to u
     
       
         
+          
+      
+          
+      
           
             
                 <li class="relatedPost">
@@ -524,12 +528,6 @@ with a way to make that better. This is one more technique we might be able to u
           
         
       
-          
-      
-          
-      
-          
-      
     
         
           
@@ -538,12 +536,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -561,8 +555,6 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
           
@@ -571,12 +563,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -594,6 +582,12 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
+    
+        
+          
+      
+          
+      
           
       
     
@@ -604,22 +598,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
-          
-      
-          
-      
-          
-      
-    
-        
-          
-      
           
       
           
@@ -637,8 +617,6 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
           
@@ -647,12 +625,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -670,8 +644,6 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
           
@@ -680,12 +652,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -703,8 +671,6 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
           
@@ -713,12 +679,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -736,8 +698,6 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
           
@@ -746,12 +706,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -769,12 +725,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -792,8 +744,6 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
           
@@ -802,12 +752,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -825,8 +771,6 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
           
@@ -835,12 +779,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -858,8 +798,6 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
           
@@ -868,12 +806,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -891,8 +825,6 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
           
@@ -901,12 +833,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -924,8 +852,6 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
           
@@ -934,12 +860,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -957,12 +879,8 @@ with a way to make that better. This is one more technique we might be able to u
       
           
       
-          
-      
     
         
-          
-      
           
       
           
@@ -978,10 +896,8 @@ with a way to make that better. This is one more technique we might be able to u
 
 <div class="PageNavigation">
   
-    <a class="prev" href="/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">&laquo; CSV Clob and Private Temporary Table</a>
+    <a class="prev" href="/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">&laquo; A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
   
-  
-    <a class="next" href="/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL &raquo;</a>
   
 </div>
 
@@ -990,8 +906,8 @@ with a way to make that better. This is one more technique we might be able to u
   <script type="text/javascript">
     /* <![CDATA[ */
     var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "https://lee-lindley.github.io_Inline External Tables for CSV Load";
-    var disqus_title = "Inline External Tables for CSV Load";
+    var disqus_identifier = "https://lee-lindley.github.io_Devops Data Deployment for Oracle";
+    var disqus_title = "Devops Data Deployment for Oracle";
 
     /* * * DON'T EDIT BELOW THIS LINE * * */
     (function() {

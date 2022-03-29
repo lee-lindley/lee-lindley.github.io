@@ -5,9 +5,183 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 21 Mar 2022 11:30:50 -0400</pubDate>
-    <lastBuildDate>Mon, 21 Mar 2022 11:30:50 -0400</lastBuildDate>
+    <pubDate>Mon, 28 Mar 2022 21:07:53 -0400</pubDate>
+    <lastBuildDate>Mon, 28 Mar 2022 21:07:53 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Devops Data Deployment for Oracle</title>
+        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;Most large corporations have adopted some form of &lt;strong&gt;Continuous Improvement&lt;/strong&gt; (CI)
+strategy with a &lt;strong&gt;Devops&lt;/strong&gt; build and deploy component. 
+The people who manage and direct these operations tend to
+be Web guys and the tools tend to focus on deploying Web applications (this includes
+middleware component on Java and .NET servers). If I am
+guilty of stereotyping incorrectly, please tell me about organizations with 
+a broader focus. I could be wrong, but that is what I have observed so far.&lt;/p&gt;
+
+&lt;p&gt;Other application types are supported, just not as first class citizens.
+Specifically, database application deployment is a red-headed step-child
+of Devops. I’m not blaming the Devops guys either. We database practioners
+are likely guilty of obstruction. Any tool other than what we know works
+will be looked upon with suspicion.&lt;/p&gt;
+
+&lt;h1 id=&quot;how-can-we-deploy&quot;&gt;How Can We Deploy?&lt;/h1&gt;
+
+&lt;p&gt;We need to deploy database application code (packages, table definitions, etc..)
+and we need to deploy data (configuration table entries for example).&lt;/p&gt;
+
+&lt;p&gt;We have a suite of client tools we can use as Oracle clients for deploying
+code and data manually, all of which require providing or storing a password:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;SQL*PLUS&lt;/li&gt;
+  &lt;li&gt;imp&lt;/li&gt;
+  &lt;li&gt;sqlldr&lt;/li&gt;
+  &lt;li&gt;external tables (assuming you can deliver files to a database directory)&lt;/li&gt;
+  &lt;li&gt;sqlCL&lt;/li&gt;
+  &lt;li&gt;sqlDeveloper&lt;/li&gt;
+  &lt;li&gt;Toad&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;We can rule out the gui tools &lt;em&gt;SqlDeveloper&lt;/em&gt; and &lt;em&gt;Toad&lt;/em&gt;. These are not suitable for automated
+deployment.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;SQL*PLUS&lt;/em&gt; is perfectly adequate for deploying our code to the database. Oracle uses it to 
+deploy database code and patches. We have
+all been using &lt;em&gt;SQL*PLUS&lt;/em&gt; for as long as we have used Oracle. It is clunky, limiting and antiquated,
+but it works and we know how to make it do the needful.&lt;/p&gt;
+
+&lt;p&gt;Strangely, &lt;em&gt;sqlCL&lt;/em&gt; does not seem well supported. I know some reasons for that including
+security concerns with having Java client software on servers, but the
+primary reason is likely inertia. This is a shame because &lt;em&gt;sqlCl&lt;/em&gt; supports CSV file 
+loading, which would address one of our two deployment needs.&lt;/p&gt;
+
+&lt;p&gt;I have not seen a Devops deployment configuration that uses anything other than &lt;em&gt;SQL*PLUS&lt;/em&gt;
+to deploy code. If there are some, my guess is the database application guys are less
+than thrilled. I could be wrong.&lt;/p&gt;
+
+&lt;h1 id=&quot;deploying-data&quot;&gt;Deploying Data&lt;/h1&gt;
+
+&lt;p&gt;For batch operations we have mechanisms for transfering files between production
+systems and/or with outside vendors. We have custom processes using
+&lt;em&gt;sqlldr&lt;/em&gt;, External tables and perhaps an ETL tool to import the data from those files. 
+Yet the mechanisms
+we have for slinging files around in a production environment are probably not supported
+through Devops.&lt;/p&gt;
+
+&lt;p&gt;We have files in our build that are on the deployment server and we have a &lt;em&gt;SQL*PLUS&lt;/em&gt; client.&lt;/p&gt;
+
+&lt;p&gt;Traditionally when faced with this we resort to what I call “stupid data load.” We
+create a series of Insert or Merge statements with hard coded data and run those
+in &lt;em&gt;SQL*PLUS&lt;/em&gt;. Maybe we get a little more ambitious and create a single INSERT
+or MERGE statement with a series of SELECT FROM DUAL UNION ALL … statements
+providing the input. It is still “stupid data load.” Works fine for a small number of
+records. Not so fine when you need to create several thousand records.&lt;/p&gt;
+
+&lt;p&gt;If Devops configured a capability to use &lt;em&gt;sqlldr&lt;/em&gt;, we could do what we must. The use case
+for it is limited though and the firm may not choose to invest the resources necessary
+to configure and manage that capability.&lt;/p&gt;
+
+&lt;h1 id=&quot;an-alternative-for-loading-data-with-sqlplus&quot;&gt;An Alternative for Loading Data with SQL*PLUS&lt;/h1&gt;
+
+&lt;p&gt;Using tools provided in &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities&quot;&gt;plsql_utilities&lt;/a&gt; we can
+build deployment scripts that run in &lt;em&gt;SQL*PLUS&lt;/em&gt; handling relatively large amounts of
+data as Comma Separated Value (CSV) records efficiently. 
+Not as efficiently as using &lt;em&gt;sqlldr&lt;/em&gt;, but good enough.&lt;/p&gt;
+
+&lt;p&gt;From the documentation at &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities/app_csv_pkg&quot;&gt;plsql_utilities/app_csv_pkg&lt;/a&gt;…&lt;/p&gt;
+
+&lt;p&gt;Read the data from a table (with an optional WHERE clause) and convert it
+into a CSV CLOB with a header row. Break the CLOB into a set of quoted
+string literals. Generate a script that&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Creates a Private Temporary Table from the CLOB (input as contactenated string literals).&lt;/li&gt;
+  &lt;li&gt;Inserts or Merges records from the PTT into the target Table&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;We call the deployment generator:&lt;/p&gt;
+
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;APP_CSV_PKG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gen_deploy_merge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;p_table_name&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'MY_TABLE_NAME'&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_key_cols&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'ID'&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_where_clause&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'id &amp;lt;= 10'&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DUAL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;That provides the following script as a CLOB in your query result. Note that
+if the size of the CSV CLOB holding the records was greater than 32767, 
+it would be represented by a concatenated set of quoted literals instead
+of just one as shown here.&lt;/p&gt;
+
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;APP_CSV_PKG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;create_ptt_csv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'{&quot;ID&quot;,&quot;MSG&quot;,&quot;DT&quot;
+1,&quot;testing...&quot;,&quot;03/26/2022&quot;
+2,&quot;testing...&quot;,&quot;03/27/2022&quot;
+3,&quot;testing...&quot;,&quot;03/28/2022&quot;
+4,&quot;testing...&quot;,&quot;03/29/2022&quot;
+5,&quot;testing...&quot;,&quot;03/30/2022&quot;
+6,&quot;testing...&quot;,&quot;03/31/2022&quot;
+7,&quot;testing...&quot;,&quot;04/01/2022&quot;
+8,&quot;testing...&quot;,&quot;04/02/2022&quot;
+9,&quot;testing...&quot;,&quot;04/03/2022&quot;
+10,&quot;testing...&quot;,&quot;04/04/2022&quot;
+}'&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;MERGE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;INTO&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MY_TABLE_NAME&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ora&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ptt_csv&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;ON&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;ID&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;ID&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MATCHED&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;UPDATE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;SET&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;MSG&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;MSG&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;DT&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;DT&quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MATCHED&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;INSERT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;&quot;ID&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;&quot;MSG&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;&quot;DT&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;VALUES&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;ID&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;MSG&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;DT&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;COMMIT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;I explored multiple mechanisms to avoid “stupid data load.” The obvious best choice would be if the right
+tools for the job like &lt;em&gt;sqlldr&lt;/em&gt;, &lt;em&gt;imp&lt;/em&gt;, or &lt;em&gt;sqlCL&lt;/em&gt; were available, but we play the hand we are dealt. If you
+are stuck with &lt;em&gt;SQL*PLUS&lt;/em&gt;, this package can be a solution.&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 28 Mar 2022 10:00:00 -0400</pubDate>
+        <link>https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html</link>
+        <guid isPermaLink="true">https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html</guid>
+        
+        <category>oracle</category>
+        
+        <category>sql</category>
+        
+        <category>plsql</category>
+        
+        <category>devops</category>
+        
+        <category>deploy</category>
+        
+        <category>CLOB</category>
+        
+        
+        <category>plsql</category>
+        
+        <category>sql</category>
+        
+        <category>oracle</category>
+        
+      </item>
     
       <item>
         <title>A Ruby/Rouge Lexer Class for Oracle PL/SQL</title>
@@ -2547,485 +2721,6 @@ can suck a little less for hacking strings and lists.&lt;/p&gt;
         <category>plsql</category>
         
         <category>perl</category>
-        
-      </item>
-    
-      <item>
-        <title>Polymorphic Table Function (PTF) for CSV (take 3)</title>
-        <description>&lt;h2 id=&quot;why-polymorphic-table-functions-ptf&quot;&gt;Why Polymorphic Table Functions (PTF)?&lt;/h2&gt;
-
-&lt;p&gt;They let you code a resultset transformation for the SQL engine 
-without knowing at compile time either or both of&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;The input cursor/resultset definition.&lt;/li&gt;
-  &lt;li&gt;The output cursor/resultset definition.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Ordinary Pipelined Table Functions already let you consume any type of input, but you must build
-your own code to figure out what is in it, generally by using &lt;em&gt;DBMS_SQL&lt;/em&gt;. If you want to see
-how that is done, I have a User Defined Type 
-Object &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities/tree/main/app_dbms_sql&quot;&gt;app_dbms_sql_udt&lt;/a&gt; you
-can check out. Ordinary Pipelined Table Functions require that you define the output type at compile time.&lt;/p&gt;
-
-&lt;p&gt;Even if you can define your output resultset at compile time, the PTF functionality takes care of
-many of the details you must otherwise encode manually with &lt;em&gt;DBMS_SQL&lt;/em&gt;. As I’ll demonstrate later, the 
-amount of code needed to produce a CSV file generator is substantially less using a PTF than &lt;em&gt;DBMS_SQL&lt;/em&gt;.&lt;/p&gt;
-
-&lt;h2 id=&quot;polymorphic-table-function-tutorials-and-examples&quot;&gt;Polymorphic Table Function Tutorials and Examples&lt;/h2&gt;
-
-&lt;p&gt;Oracle’s introduction to Polymorphic Table Functions is in the &lt;em&gt;Database PL/SQL Language Reference&lt;/em&gt;
-&lt;a href=&quot;https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/plsql-optimization-and-tuning.html#GUID-981102A8-5204-4931-B10A-93486304B184&quot;&gt;12.6 Overview of Polymorphic Table Functions&lt;/a&gt;.
-&lt;em&gt;PL/SQL Packages and Types Reference&lt;/em&gt; has documentation for the 
-&lt;a href=&quot;https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_TF.html&quot;&gt;DBMS_TF&lt;/a&gt; package
-that provides the server side implementation.
-When I want to really understand the types and constants I found it easier to look directly at the &lt;em&gt;DBMS_TF&lt;/em&gt; package specification in the database using the Toad or SqlDeveloper schema browser. The types and constants are scattered through the documentation which makes them a little harder to put together than looking straight at the package spec.&lt;/p&gt;
-
-&lt;p&gt;The best beginner introduction to PTFs I found was by 
-Tim Hall &lt;a href=&quot;https://oracle-base.com/articles/18c/polymorphic-table-functions-18c&quot;&gt;Polymorphic Table Functions in Oracle Database 18c&lt;/a&gt;. He has simple examples to lead you in gently.&lt;/p&gt;
-
-&lt;p&gt;There are a suite of example PTF implementations in the &lt;a href=&quot;https://livesql.oracle.com/&quot;&gt;Oracle LiveSql collection&lt;/a&gt;.
-Enter the search term “polymorphic table function”. 
-This &lt;a href=&quot;https://blogs.oracle.com/oraclemagazine/post/how-to-dynamically-change-the-columns-in-a-sql-query&quot;&gt;article from Oracle Magazine by Chris Saxon&lt;/a&gt; 
-goes along with one of them and I found it helpful.&lt;/p&gt;
-
-&lt;h2 id=&quot;replication_factor&quot;&gt;Replication_Factor&lt;/h2&gt;
-
-&lt;p&gt;The general design pattern for a PTF is that it transforms rows from one result set into another. 
-By default there is a one to one relationship on the number of rows OUT to the number of rows IN.
-You can choose to include columns from the input row in the output row by setting the column &lt;em&gt;pass_through&lt;/em&gt;
-flag to TRUE. You can add new columns to the output resultset.
-Whether you have any passthrough columns or not, there is still a relationship
-between the number of input rows and the number of output rows the function will produce from your &lt;em&gt;New_Columns&lt;/em&gt; tables.
-In other words you might set all of the input columns to &lt;em&gt;pass_through&lt;/em&gt;=FALSE, but the PTF will only
-produce the number of rows from your &lt;em&gt;New_Columns&lt;/em&gt; tables that match the number of rows of your input resultset.&lt;/p&gt;
-
-&lt;p&gt;There is a capability to specify how many output rows there are for any given input row using
-&lt;em&gt;DBMS_TF.row_replication&lt;/em&gt; procedure (or a scalar parameter). The procedure version requires an argument that
-is an index-by table you populate with a numeric value for every input row in that &lt;em&gt;fetch_rows&lt;/em&gt; call. 
-Note how carefully I stated that.
-You can control the number of output rows counted for each and every input row by populating an array
-with a numeric value for every input row. You can do that for any of the &lt;em&gt;fetch_rows&lt;/em&gt; calls but do not have to do so
-for all of them. If you do not call &lt;em&gt;row_replication&lt;/em&gt; procedure during a particular &lt;em&gt;fetch_rows&lt;/em&gt;,
-then you get one to one row output.&lt;/p&gt;
-
-&lt;p&gt;You can have 0, 1 or more output rows for any specific input row. If a column from an input row is
-marked with &lt;em&gt;pass_through&lt;/em&gt;=TRUE, you will get that value in your output if replication factor is 1.
-You will get it on 2 rows if the replication factor is 2, etc… If the replication factor is 0
-for that input row, you will not see that value in the output.  In the diagram below,
-the input value from row 2 will not appear in the output resultset.
-The number of output rows will be the sum of the &lt;em&gt;replication factor&lt;/em&gt; values.&lt;/p&gt;
-
-&lt;table class=&quot;img-table-centered&quot;&gt;
-  &lt;thead&gt;
-    &lt;tr&gt;
-      &lt;th style=&quot;text-align: center&quot;&gt;&lt;em&gt;PTF Replication Factor&lt;/em&gt;&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;td style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;/images/PTF_Replication_Factor.gif&quot; alt=&quot;PTF Replication Factor&quot; /&gt;&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-
-&lt;p&gt;In the work I’ve done with CSV data I have been setting all input columns to &lt;em&gt;pass_through&lt;/em&gt;=FALSE and
-using the &lt;em&gt;replication_factor&lt;/em&gt; strictly as a way to tell Oracle how many output rows are in my output column arrays.
-When you have &lt;em&gt;pass_through&lt;/em&gt;=TRUE you have to understand what Oracle does behind the scenes and how the two arrays
-match up.&lt;/p&gt;
-
-&lt;h2 id=&quot;walk-through-a-ptf-example&quot;&gt;Walk Through a PTF Example&lt;/h2&gt;
-
-&lt;p&gt;We will walk through a Polymorphic Table Function and an associated package
-for creating a CSV file from an Oracle query. This requires Oracle 18c or better.&lt;/p&gt;
-
-&lt;p&gt;I have
-a prior effort for CSV file creation at &lt;a href=&quot;https://github.com/lee-lindley/app_csv&quot;&gt;app_csv_udt&lt;/a&gt;
-that should run under Oracle 10g or later. It is an Oracle Object Type, an approach I happen
-to like, but my coworkers not so much.&lt;/p&gt;
-
-&lt;p&gt;That earlier code is more complicated than this effort
-using a PTF. Oracle has taken care of most of the gnarly cursor management and bulk array processing
-leaving us with less to do in the PTF guts of our package. That doesn’t mean it is simple. I found
-the PTF functionality a struggle to grasp. The documentation is light and the examples I 
-see published didn’t help me understand how it worked on the inside and what our design choices were
-as easily as I pick up many new things. When I look back at the examples different
-things stand out now than when I first went through them, so perhaps I just had a blind spot. 
-I hope this article may help a few people learn about PTFs more easily.&lt;/p&gt;
-
-&lt;p&gt;The complete implementation can be found in 
-the &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities#app_csv_pkg&quot;&gt;PLSQL_utilities library&lt;/a&gt; 
-I maintain on github.&lt;/p&gt;
-
-&lt;h2 id=&quot;the-ptf-components&quot;&gt;The PTF Components&lt;/h2&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;The PTF function specification may be standalone, but it makes sense to me to include it in the package. Since it is part of the package which has a descriptive name, I named the function simply &lt;em&gt;ptf&lt;/em&gt;. Note that there is no function body for the PTF function and no entry for it in the package body. It exists only in the package specification.&lt;/li&gt;
-  &lt;li&gt;The &lt;em&gt;describe&lt;/em&gt; function is a required element to support the PTF. It is usually not that complex (at least as far as I have seen so far).&lt;/li&gt;
-  &lt;li&gt;The &lt;em&gt;fetch_rows&lt;/em&gt; procedure is where we do most of the work to transform our input resultset to an output resultset.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Here are the PTF components of the package specification for our Example. There are a few more utility procedures and functions we will add later. The package name is &lt;em&gt;app_csv_pkg&lt;/em&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;CREATE&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;OR&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;REPLACE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;PACKAGE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app_csv_pkg&lt;/span&gt; 
-&lt;span class=&quot;k&quot;&gt;AUTHID&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;CURRENT_USER&lt;/span&gt;
-&lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;--&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;-- All non numeric fields will be surrounded with double quotes. Any double quotes in the&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;-- data will be backwacked to protect them. Newlines in the data are passed through as is&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;-- which might cause issues for some CSV parsers.&lt;/span&gt;
-    &lt;span class=&quot;kr&quot;&gt;FUNCTION&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ptf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;p_tab&lt;/span&gt;                   &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_header_row&lt;/span&gt;           &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;            &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;-- you can set these to NULL if you want the default TO_CHAR conversions&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_date_format&lt;/span&gt;          &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_interval_format&lt;/span&gt;      &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;PIPELINED&lt;/span&gt; 
-        &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- so can ORDER the input&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;--ROW &lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;POLYMORPHIC&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app_csv_pkg&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-
-    &lt;span class=&quot;c1&quot;&gt;-- the describe and fetch methods are used exclusively by the PTF mechanism. You cannot&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;-- call them directly.&lt;/span&gt;
-    &lt;span class=&quot;kr&quot;&gt;FUNCTION&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;describe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;p_tab&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OUT&lt;/span&gt;            &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TABLE_T&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_header_row&lt;/span&gt;           &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;            &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;-- you can set these to NULL if you want the default TO_CHAR conversions&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_date_format&lt;/span&gt;          &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_interval_format&lt;/span&gt;      &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DESCRIBE_T&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;kr&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fetch_rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-         &lt;span class=&quot;n&quot;&gt;p_header_row&lt;/span&gt;           &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;            &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;-- you can set these to NULL if you want the default TO_CHAR conversions&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_date_format&lt;/span&gt;          &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_interval_format&lt;/span&gt;      &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;..&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Notice how the first argument to the function named &lt;em&gt;ptf&lt;/em&gt; is of type &lt;em&gt;TABLE&lt;/em&gt;. That is special in PTF land.
-It must be either a schema level table or view name, or else a Common Table Expression (CTE) (aka WITH clause).
-You cannot pass in a CURSOR or subselect. I vaguely understand the reasons for that, but not well enough
-to try to explain. The first argument with the same name is given to the &lt;em&gt;describe&lt;/em&gt; function, but it
-has a different type.&lt;/p&gt;
-
-&lt;p&gt;If you have COLUMNS Pseudo-Operator arguments, they are to be the same between the PTF and &lt;em&gt;describe&lt;/em&gt;
-functions (except for type – see below).&lt;/p&gt;
-
-&lt;p&gt;Neither the TABLE nor COLUMNS type arguments are passed to the &lt;em&gt;fetch_rows&lt;/em&gt; procedure.&lt;/p&gt;
-
-&lt;p&gt;This gem from the &lt;em&gt;DBMS_TF&lt;/em&gt; documentation says what I just said:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;The arguments of the PTF function and DESCRIBE function must match, but with the type of any TABLE argument replaced with the DBMS_TF.TABLE_T descriptor type, and the type of any COLUMNS argument replaced with DBMS_TF.COLUMN_T descriptor.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;All of the other arguments to all three methods are application specific and must be identical
-between the three methods.  Even though you may not need the
-arguments in the &lt;em&gt;describe&lt;/em&gt; function, the argument footprint much match what the SQL engine is going
-to provide in the call based on what it sees in the PTF definition.&lt;/p&gt;
-
-&lt;p&gt;It is interesting that our &lt;em&gt;describe&lt;/em&gt; and &lt;em&gt;fetch_rows&lt;/em&gt; methods are stateless. The SQL engine code that
-calls our methods maintains the state. When we call &lt;em&gt;get/put&lt;/em&gt; methods that state is respected. There
-is an identifier called the XID that indexes that runtime state.
-It looks similar to the “Cursor id” value in &lt;em&gt;DBMS_SQL&lt;/em&gt;.&lt;/p&gt;
-
-&lt;h2 id=&quot;the-describe-function&quot;&gt;The &lt;em&gt;describe&lt;/em&gt; Function&lt;/h2&gt;
-
-&lt;p&gt;From the package body:&lt;/p&gt;
-
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;kr&quot;&gt;FUNCTION&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;describe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;p_tab&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OUT&lt;/span&gt;            &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;TABLE_T&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_header_row&lt;/span&gt;           &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;            &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;-- you can set these to NULL if you want the default TO_CHAR conversions&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_date_format&lt;/span&gt;          &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_interval_format&lt;/span&gt;      &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DESCRIBE_T&lt;/span&gt;
-    &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_new_cols&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;columns_new_t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;-- stop all input columns from being in the output &lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_tab&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;p_tab&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pass_through&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FALSE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;p_tab&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;for_read&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;TRUE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;-- create a single new output column for the CSV row string&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_new_cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;column_metadata_t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-                                    &lt;span class=&quot;k&quot;&gt;name&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;CSV_ROW&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-                                    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;type&lt;/span&gt;   &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;type_varchar2&lt;/span&gt;
-                                &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-
-        &lt;span class=&quot;c1&quot;&gt;-- we will use row replication to put a header out on the first row if desired&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;describe_t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;new_columns&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_new_cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;row_replication&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_header_row&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;describe&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;We need to examine all of the input column values but we do not want them to be passed through to our
-output rows. To that end we loop through the input column list setting &lt;em&gt;pass_through&lt;/em&gt; to FALSE
-and &lt;em&gt;for_read&lt;/em&gt; to TRUE.&lt;/p&gt;
-
-&lt;p&gt;We will be defining a single “new” column for our output rowset. To do that we need a table of column types
-which we get with the type &lt;em&gt;DBMS_TF.columns_new_t&lt;/em&gt; for our variable &lt;em&gt;v_new_cols&lt;/em&gt;. We then populate
-the first and only element of that table with a &lt;em&gt;column_metadata_t&lt;/em&gt; record with values for the column &lt;em&gt;name&lt;/em&gt;
-and column &lt;em&gt;type&lt;/em&gt;. Note that the type is a numeric we get from a constant, not the descriptive name like ‘VARCHAR2’.
-Digesting this bit of convoluted crafting is where it is handy to be staring at the package
-specification for &lt;em&gt;DBMS_TF&lt;/em&gt;. It is easier than hunting through the type definitions in the documentation.&lt;/p&gt;
-
-&lt;p&gt;The thing we return from the &lt;em&gt;describe&lt;/em&gt; function 
-is a &lt;em&gt;describe_t&lt;/em&gt; record. We populate &lt;em&gt;new_columns&lt;/em&gt; with the structure we populated
-for our new output column named ‘CSV_ROW’. We also provide a boolean value for &lt;em&gt;row_replication&lt;/em&gt;. We set 
-that to TRUE if we need to produce a header row. If we do not need to produce a header row,
-we will have one to one correspondence of output rows from input rows so no replication is required.&lt;/p&gt;
-
-&lt;h2 id=&quot;the-fetch_rows-procedure&quot;&gt;The &lt;em&gt;fetch_rows&lt;/em&gt; Procedure&lt;/h2&gt;
-
-&lt;p&gt;&lt;em&gt;fetch_rows&lt;/em&gt; is where most of the work is done. There is a lot to unpack here&lt;/p&gt;
-
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;kr&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fetch_rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-         &lt;span class=&quot;n&quot;&gt;p_header_row&lt;/span&gt;           &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;            &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;-- you can leave these NULL if you want the default TO_CHAR conversions for your session&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_date_format&lt;/span&gt;          &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_interval_format&lt;/span&gt;      &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_env&lt;/span&gt;               &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;env_t&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_env&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_rowset&lt;/span&gt;            &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;row_set_t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;-- the input rowset of CSV rows&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_row_cnt&lt;/span&gt;           &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_col_cnt&lt;/span&gt;           &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;--&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_val_col&lt;/span&gt;           &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tab_varchar2_t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_repfac&lt;/span&gt;            &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tab_naturaln_t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_fetch_pass&lt;/span&gt;        &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_out_row_i&lt;/span&gt;         &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;em&gt;v_rowset&lt;/em&gt; will contain our input data for this fetch. &lt;em&gt;v_val_col&lt;/em&gt; is a collection
-where we will place our output data for this fetch. &lt;em&gt;v_repfac&lt;/em&gt; is where we MAY
-put a numeric value for each input row that will be 2 on the first row and 1 on all the rest.
-The reason we need that is to produce a header row. We need to output one more row than
-we have input rows, but we only need to do that on the first fetch. After that it won’t
-be necessary to populate or use &lt;em&gt;v_repfac&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;v_fetch_pass&lt;/em&gt; is used to determine whether or not we are on the first fetch and &lt;em&gt;v_out_row_i&lt;/em&gt;
-is to keep track of the number of output rows on this fetch iteration.&lt;/p&gt;
-
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;c1&quot;&gt;-- If the user does not want to change the NLS formats for the session&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;-- but has custom coversions for this query, then we will apply them using TO_CHAR&lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_conv_fmt&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;RECORD&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;   &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;-- type&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;  &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1024&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;-- to_char fmt string&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_tab_conv_fmt&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_conv_fmt&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;INDEX&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;BY&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;v_conv_fmts&lt;/span&gt;         &lt;span class=&quot;n&quot;&gt;t_tab_conv_fmt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;--&lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;FUNCTION&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;apply_cust_conv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;p_col_index&lt;/span&gt;     &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_row_index&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;v_s&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;v_s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;CASE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_conv_fmts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;EXISTS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_col_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
-                      &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-                        &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;REPLACE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-                            &lt;span class=&quot;k&quot;&gt;CASE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_conv_fmts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_col_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;
-                                &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;type_date&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; 
-                                    &lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_rowset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_col_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tab_date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_row_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_conv_fmts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_col_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                                &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;type_interval_ym&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; 
-                                    &lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_rowset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_col_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tab_interval_ym&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_row_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_conv_fmts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_col_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                                &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;type_interval_ds&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; 
-                                    &lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_rowset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_col_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tab_interval_ds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_row_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_conv_fmts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_col_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;
-                            &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\\&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-                        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- backwack the dquotes if any&lt;/span&gt;
-                        &lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-                    &lt;span class=&quot;kr&quot;&gt;ELSE&lt;/span&gt;
-                        &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;col_to_char&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_rowset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_col_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_row_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;SUBSTR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;INSTR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;v_s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_s&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- apply_cust_conv&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;The custom conversion code is a bit ugly. The default conversion to char provided by &lt;em&gt;DBMS_TF.col_to_char()&lt;/em&gt;
-is almost perfect. It takes care of putting strings into double quotes and backwacking any embedded double quotes.
-For Date and Interval conversions it will also place the results in double quotes; however, for those
-it depends on the default string coversions (which can be further muddied by NLS_DATE_FORMAT).&lt;/p&gt;
-
-&lt;p&gt;The other oddity can happen when NLS_NUMERIC_CHARACTERS employs a comma. 
-If we encounter a separator character in an unquoted value, we quote it.&lt;/p&gt;
-
-&lt;p&gt;Other than the use of &lt;em&gt;DBMS_TF.col_to_char&lt;/em&gt;, this is standard PL/SQL (though perhaps a bit ugly), so
-I’m not going to expand on what it does other than to say it converts Oracle types to strings in
-a user specified manner while meeting the quoting needs for CSV output.&lt;/p&gt;
-
-&lt;p&gt;Now with the main &lt;em&gt;fetch_rows&lt;/em&gt; body:&lt;/p&gt;
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_header_row&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- We need to put out a header row, so we have to engage in replication_factor shenanigans.&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- This is in case FETCH is called more than once. We get and put to the store&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- the fetch count.&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- get does not change value if not found in store so starts with our default 0 on first fetch call&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xstore_get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;v_fetch_pass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_fetch_pass&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 
-&lt;span class=&quot;c1&quot;&gt;--dbms_output.put_line('xstore_get: '||v_fetch_pass);&lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;ELSE&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;v_fetch_pass&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- we do not need a header column. this will double as the flag&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;If we need to produce a header row, then we need to know whether this is the first fetch call
-or not. We use &lt;em&gt;xstore_get&lt;/em&gt; here and &lt;em&gt;xstore_put&lt;/em&gt; later to maintain our state between calls to &lt;em&gt;fetch_rows&lt;/em&gt;.
-If we do not need a header row, set our flag variable to skip that.&lt;/p&gt;
-
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;c1&quot;&gt;-- get the data for this fetch &lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_row_set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_rowset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_row_cnt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_col_cnt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-
-        &lt;span class=&quot;c1&quot;&gt;-- set up for custom TO_CHAR conversions if requested for date and/or interval types&lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_col_cnt&lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_date_format&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;NULL&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_env&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_columns&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;type_date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;v_conv_fmts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_conv_fmt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;type_date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_date_format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-            &lt;span class=&quot;kr&quot;&gt;ELSIF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_interval_format&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;NULL&lt;/span&gt; 
-                &lt;span class=&quot;o&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_env&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_columns&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;type&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;type_interval_ym&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;type_interval_ds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
-            &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;v_conv_fmts&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_conv_fmt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_env&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_columns&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_interval_format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;We obtain the resultset data for this fetch, the number of rows and the number of columns.
-We then set up the custom conversion configuration if needed. Note that &lt;em&gt;v_conv_fmts&lt;/em&gt; is sparse
-and possibly empty.&lt;/p&gt;
-
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_fetch_pass&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- this is first pass and we need header row&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- the first row of our output will get a header row plus the data row&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;v_repfac&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- the rest of the rows will be 1 to 1 on the replication factor&lt;/span&gt;
-            &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;2.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_row_cnt&lt;/span&gt;
-            &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;v_repfac&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- these names are already double quoted and Oracle will not allow a doublequote inside a column alias&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;v_val_col&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_env&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_columns&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;2.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_col_cnt&lt;/span&gt;
-            &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;v_val_col&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_val_col&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_env&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_columns&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;--join the column names with ,&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;v_out_row_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;--dbms_output.put_line('header row: '||v_val_col(1));&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;-- otherwise v_out_row_i is 0&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;On the first fetch and only when we need to produce a header row, we set up our
-replication factor table. As stated above we want two output rows for the first
-input row, then one each for all the others.&lt;/p&gt;
-
-&lt;p&gt;We build the header row by joining the column names with the separator character (comma most likely).&lt;/p&gt;
-
-&lt;p&gt;Next we loop through the input rows building the corresponding output column (we only output a single column!).&lt;/p&gt;
-
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_row_cnt&lt;/span&gt;
-        &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;v_out_row_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_out_row_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- concatenate the string representations of columns with ',' separator&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- into a single column for output on this row.&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- col_to_char() conveniently surrounds the character representation&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- of non-numeric fields with double quotes. If there is a double quote in&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;-- that data it will backwack it. Newlines in the field are passed through unchanged.&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;v_val_col&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_out_row_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;apply_cust_conv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;--DBMS_TF.col_to_char(v_rowset(1), i);&lt;/span&gt;
-            &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;2.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_col_cnt&lt;/span&gt;
-            &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;v_val_col&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_out_row_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_val_col&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_out_row_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;apply_cust_conv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;--DBMS_TF.col_to_char(v_rowset(j), i);&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;If we generated a header row on this pass we submit our &lt;em&gt;replication_factor&lt;/em&gt; table,
-then store our state for the next fetch pass.&lt;/p&gt;
-
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_header_row&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;-- save for possible next fetch call&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_fetch_pass&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
-                &lt;span class=&quot;c1&quot;&gt;-- only on the first fetch &lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;row_replication&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;replication_factor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_repfac&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;v_fetch_pass&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_fetch_pass&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xstore_set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;v_fetch_pass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_fetch_pass&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;-- otherwies we did not do any replication and will get one for one with input rows&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;Notice that if we did not output a header row on this pass, we do not call &lt;em&gt;DBMS_TF.row_replication&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;And finally we tell the engine about our single output column collection.&lt;/p&gt;
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;n&quot;&gt;DBMS_TF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;put_col&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_val_col&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-
-    &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fetch_rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;example-usage&quot;&gt;Example Usage&lt;/h2&gt;
-
-&lt;p&gt;An example including an ORDER BY clause for the PTF input:&lt;/p&gt;
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;WITH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;R&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;last_name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;first_name&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Employee Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hire_date&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Hire Date&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;employee_id&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Employee ID&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
-    &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;employees&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;--ORDER BY last_name, first_name&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
-&lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app_csv_pkg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ptf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;R&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;ORDER&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;BY&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Employee Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Hire Date&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_date_format&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;YYYYMMDD&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-                    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;rownum&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Output (notice how the header row counts as one of the 10 rows! It is just a data record in the resultset.):&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&quot;Employee Name&quot;,&quot;Hire Date&quot;,&quot;Employee ID&quot;
-&quot;Abel, Ellen&quot;,&quot;20040511&quot;,174
-&quot;Ande, Sundar&quot;,&quot;20080324&quot;,166
-&quot;Atkinson, Mozhe&quot;,&quot;20051030&quot;,130
-&quot;Austin, David&quot;,&quot;20050625&quot;,105
-&quot;Baer, Hermann&quot;,&quot;20020607&quot;,204
-&quot;Baida, Shelli&quot;,&quot;20051224&quot;,116
-&quot;Banda, Amit&quot;,&quot;20080421&quot;,167
-&quot;Bates, Elizabeth&quot;,&quot;20070324&quot;,172
-&quot;Bell, Sarah&quot;,&quot;20040204&quot;,192
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
-
-&lt;p&gt;The package implementation at &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities#app_csv_pkg&quot;&gt;PLSQL_utilities library&lt;/a&gt; 
-adds two &lt;em&gt;get_clob&lt;/em&gt; functions and two &lt;em&gt;write_file&lt;/em&gt; procedures that can be passed either a CURSOR
-(that is expected to end with a call to SELECT * FROM app_csv_pkg.ptf(…), 
-or a SQL string CLOB that does the same.&lt;/p&gt;
-
-&lt;p&gt;This implementation has almost as much functionality as my original Object Oriented version
-that uses &lt;em&gt;DBMS_SQL&lt;/em&gt;, but with a LOT less code. I think this version is also easier to understand
-once you get over the shock and awe around learning about Polymorphic Table Functions.
-I hope this article reduces the impact of that flash bang.&lt;/p&gt;
-</description>
-        <pubDate>Fri, 31 Dec 2021 10:30:00 -0500</pubDate>
-        <link>https://lee-lindley.github.io/oracle/sql/plsql/2021/12/31/Polymorphic-Table-Functions-3.html</link>
-        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/sql/plsql/2021/12/31/Polymorphic-Table-Functions-3.html</guid>
-        
-        <category>oracle</category>
-        
-        <category>sql</category>
-        
-        <category>plsql</category>
-        
-        
-        <category>oracle</category>
-        
-        <category>sql</category>
-        
-        <category>plsql</category>
         
       </item>
     

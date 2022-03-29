@@ -5,9 +5,183 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 21 Mar 2022 11:30:50 -0400</pubDate>
-    <lastBuildDate>Mon, 21 Mar 2022 11:30:50 -0400</lastBuildDate>
+    <pubDate>Mon, 28 Mar 2022 21:07:53 -0400</pubDate>
+    <lastBuildDate>Mon, 28 Mar 2022 21:07:53 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Devops Data Deployment for Oracle</title>
+        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;Most large corporations have adopted some form of &lt;strong&gt;Continuous Improvement&lt;/strong&gt; (CI)
+strategy with a &lt;strong&gt;Devops&lt;/strong&gt; build and deploy component. 
+The people who manage and direct these operations tend to
+be Web guys and the tools tend to focus on deploying Web applications (this includes
+middleware component on Java and .NET servers). If I am
+guilty of stereotyping incorrectly, please tell me about organizations with 
+a broader focus. I could be wrong, but that is what I have observed so far.&lt;/p&gt;
+
+&lt;p&gt;Other application types are supported, just not as first class citizens.
+Specifically, database application deployment is a red-headed step-child
+of Devops. I’m not blaming the Devops guys either. We database practioners
+are likely guilty of obstruction. Any tool other than what we know works
+will be looked upon with suspicion.&lt;/p&gt;
+
+&lt;h1 id=&quot;how-can-we-deploy&quot;&gt;How Can We Deploy?&lt;/h1&gt;
+
+&lt;p&gt;We need to deploy database application code (packages, table definitions, etc..)
+and we need to deploy data (configuration table entries for example).&lt;/p&gt;
+
+&lt;p&gt;We have a suite of client tools we can use as Oracle clients for deploying
+code and data manually, all of which require providing or storing a password:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;SQL*PLUS&lt;/li&gt;
+  &lt;li&gt;imp&lt;/li&gt;
+  &lt;li&gt;sqlldr&lt;/li&gt;
+  &lt;li&gt;external tables (assuming you can deliver files to a database directory)&lt;/li&gt;
+  &lt;li&gt;sqlCL&lt;/li&gt;
+  &lt;li&gt;sqlDeveloper&lt;/li&gt;
+  &lt;li&gt;Toad&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;We can rule out the gui tools &lt;em&gt;SqlDeveloper&lt;/em&gt; and &lt;em&gt;Toad&lt;/em&gt;. These are not suitable for automated
+deployment.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;SQL*PLUS&lt;/em&gt; is perfectly adequate for deploying our code to the database. Oracle uses it to 
+deploy database code and patches. We have
+all been using &lt;em&gt;SQL*PLUS&lt;/em&gt; for as long as we have used Oracle. It is clunky, limiting and antiquated,
+but it works and we know how to make it do the needful.&lt;/p&gt;
+
+&lt;p&gt;Strangely, &lt;em&gt;sqlCL&lt;/em&gt; does not seem well supported. I know some reasons for that including
+security concerns with having Java client software on servers, but the
+primary reason is likely inertia. This is a shame because &lt;em&gt;sqlCl&lt;/em&gt; supports CSV file 
+loading, which would address one of our two deployment needs.&lt;/p&gt;
+
+&lt;p&gt;I have not seen a Devops deployment configuration that uses anything other than &lt;em&gt;SQL*PLUS&lt;/em&gt;
+to deploy code. If there are some, my guess is the database application guys are less
+than thrilled. I could be wrong.&lt;/p&gt;
+
+&lt;h1 id=&quot;deploying-data&quot;&gt;Deploying Data&lt;/h1&gt;
+
+&lt;p&gt;For batch operations we have mechanisms for transfering files between production
+systems and/or with outside vendors. We have custom processes using
+&lt;em&gt;sqlldr&lt;/em&gt;, External tables and perhaps an ETL tool to import the data from those files. 
+Yet the mechanisms
+we have for slinging files around in a production environment are probably not supported
+through Devops.&lt;/p&gt;
+
+&lt;p&gt;We have files in our build that are on the deployment server and we have a &lt;em&gt;SQL*PLUS&lt;/em&gt; client.&lt;/p&gt;
+
+&lt;p&gt;Traditionally when faced with this we resort to what I call “stupid data load.” We
+create a series of Insert or Merge statements with hard coded data and run those
+in &lt;em&gt;SQL*PLUS&lt;/em&gt;. Maybe we get a little more ambitious and create a single INSERT
+or MERGE statement with a series of SELECT FROM DUAL UNION ALL … statements
+providing the input. It is still “stupid data load.” Works fine for a small number of
+records. Not so fine when you need to create several thousand records.&lt;/p&gt;
+
+&lt;p&gt;If Devops configured a capability to use &lt;em&gt;sqlldr&lt;/em&gt;, we could do what we must. The use case
+for it is limited though and the firm may not choose to invest the resources necessary
+to configure and manage that capability.&lt;/p&gt;
+
+&lt;h1 id=&quot;an-alternative-for-loading-data-with-sqlplus&quot;&gt;An Alternative for Loading Data with SQL*PLUS&lt;/h1&gt;
+
+&lt;p&gt;Using tools provided in &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities&quot;&gt;plsql_utilities&lt;/a&gt; we can
+build deployment scripts that run in &lt;em&gt;SQL*PLUS&lt;/em&gt; handling relatively large amounts of
+data as Comma Separated Value (CSV) records efficiently. 
+Not as efficiently as using &lt;em&gt;sqlldr&lt;/em&gt;, but good enough.&lt;/p&gt;
+
+&lt;p&gt;From the documentation at &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities/app_csv_pkg&quot;&gt;plsql_utilities/app_csv_pkg&lt;/a&gt;…&lt;/p&gt;
+
+&lt;p&gt;Read the data from a table (with an optional WHERE clause) and convert it
+into a CSV CLOB with a header row. Break the CLOB into a set of quoted
+string literals. Generate a script that&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Creates a Private Temporary Table from the CLOB (input as contactenated string literals).&lt;/li&gt;
+  &lt;li&gt;Inserts or Merges records from the PTT into the target Table&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;We call the deployment generator:&lt;/p&gt;
+
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;APP_CSV_PKG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gen_deploy_merge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;p_table_name&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'MY_TABLE_NAME'&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_key_cols&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'ID'&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_where_clause&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'id &amp;lt;= 10'&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DUAL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;That provides the following script as a CLOB in your query result. Note that
+if the size of the CSV CLOB holding the records was greater than 32767, 
+it would be represented by a concatenated set of quoted literals instead
+of just one as shown here.&lt;/p&gt;
+
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;APP_CSV_PKG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;create_ptt_csv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'{&quot;ID&quot;,&quot;MSG&quot;,&quot;DT&quot;
+1,&quot;testing...&quot;,&quot;03/26/2022&quot;
+2,&quot;testing...&quot;,&quot;03/27/2022&quot;
+3,&quot;testing...&quot;,&quot;03/28/2022&quot;
+4,&quot;testing...&quot;,&quot;03/29/2022&quot;
+5,&quot;testing...&quot;,&quot;03/30/2022&quot;
+6,&quot;testing...&quot;,&quot;03/31/2022&quot;
+7,&quot;testing...&quot;,&quot;04/01/2022&quot;
+8,&quot;testing...&quot;,&quot;04/02/2022&quot;
+9,&quot;testing...&quot;,&quot;04/03/2022&quot;
+10,&quot;testing...&quot;,&quot;04/04/2022&quot;
+}'&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;MERGE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;INTO&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MY_TABLE_NAME&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ora&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ptt_csv&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;ON&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;ID&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;ID&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MATCHED&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;UPDATE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;SET&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;MSG&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;MSG&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;DT&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;DT&quot;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MATCHED&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;INSERT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;&quot;ID&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;&quot;MSG&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;&quot;DT&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;VALUES&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;ID&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;MSG&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;&quot;DT&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;COMMIT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;I explored multiple mechanisms to avoid “stupid data load.” The obvious best choice would be if the right
+tools for the job like &lt;em&gt;sqlldr&lt;/em&gt;, &lt;em&gt;imp&lt;/em&gt;, or &lt;em&gt;sqlCL&lt;/em&gt; were available, but we play the hand we are dealt. If you
+are stuck with &lt;em&gt;SQL*PLUS&lt;/em&gt;, this package can be a solution.&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 28 Mar 2022 10:00:00 -0400</pubDate>
+        <link>https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html</link>
+        <guid isPermaLink="true">https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html</guid>
+        
+        <category>oracle</category>
+        
+        <category>sql</category>
+        
+        <category>plsql</category>
+        
+        <category>devops</category>
+        
+        <category>deploy</category>
+        
+        <category>CLOB</category>
+        
+        
+        <category>plsql</category>
+        
+        <category>sql</category>
+        
+        <category>oracle</category>
+        
+      </item>
     
       <item>
         <title>A Ruby/Rouge Lexer Class for Oracle PL/SQL</title>
