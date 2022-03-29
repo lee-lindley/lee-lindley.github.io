@@ -248,7 +248,7 @@ it would be represented by a concatenated set of quoted literals instead
 of just one as shown here.</p>
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
-    <span class="n">APP_CSV_PKG</span><span class="p">.</span><span class="n">create_ptt_csv</span><span class="p">(</span><span class="o">q'{</span><span class="sx">"ID","MSG","DT"
+    <span class="n">APP_CSV_PKG</span><span class="p">.</span><span class="n">create_ptt_csv</span><span class="p">(</span><span class="nf">TO_CLOB</span><span class="p">(</span><span class="o">q'{</span><span class="sx">"ID","MSG","DT"
 1,"testing...","03/26/2022"
 2,"testing...","03/27/2022"
 3,"testing...","03/28/2022"
@@ -259,7 +259,7 @@ of just one as shown here.</p>
 8,"testing...","04/02/2022"
 9,"testing...","04/03/2022"
 10,"testing...","04/04/2022"
-</span><span class="o">}'</span>
+</span><span class="o">}'</span><span class="p">)</span>
 <span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="o">/</span>

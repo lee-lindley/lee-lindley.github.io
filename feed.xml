@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 28 Mar 2022 21:47:09 -0400</pubDate>
-    <lastBuildDate>Mon, 28 Mar 2022 21:47:09 -0400</lastBuildDate>
+    <pubDate>Tue, 29 Mar 2022 12:55:50 -0400</pubDate>
+    <lastBuildDate>Tue, 29 Mar 2022 12:55:50 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -117,7 +117,7 @@ it would be represented by a concatenated set of quoted literals instead
 of just one as shown here.&lt;/p&gt;
 
 &lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;APP_CSV_PKG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;create_ptt_csv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;&quot;ID&quot;,&quot;MSG&quot;,&quot;DT&quot;
+    &lt;span class=&quot;n&quot;&gt;APP_CSV_PKG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;create_ptt_csv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CLOB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;&quot;ID&quot;,&quot;MSG&quot;,&quot;DT&quot;
 1,&quot;testing...&quot;,&quot;03/26/2022&quot;
 2,&quot;testing...&quot;,&quot;03/27/2022&quot;
 3,&quot;testing...&quot;,&quot;03/28/2022&quot;
@@ -128,7 +128,7 @@ of just one as shown here.&lt;/p&gt;
 8,&quot;testing...&quot;,&quot;04/02/2022&quot;
 9,&quot;testing...&quot;,&quot;04/03/2022&quot;
 10,&quot;testing...&quot;,&quot;04/04/2022&quot;
-&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;
+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
 &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
 &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
