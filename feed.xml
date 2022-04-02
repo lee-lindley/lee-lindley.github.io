@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 02 Apr 2022 17:54:02 -0400</pubDate>
-    <lastBuildDate>Sat, 02 Apr 2022 17:54:02 -0400</lastBuildDate>
+    <pubDate>Sat, 02 Apr 2022 18:02:59 -0400</pubDate>
+    <lastBuildDate>Sat, 02 Apr 2022 18:02:59 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -250,7 +250,7 @@ that last little bit of efficiency.&lt;/p&gt;
 &lt;p&gt;The first part is mostly the same as the code I didn’t show you for the other variations. 
 It parses the first row of the CLOB to get the column names and creates the PTT.&lt;/p&gt;
 
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	&lt;span class=&quot;k&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;create_ptt_csv&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;create_ptt_csv&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
          &lt;span class=&quot;c1&quot;&gt;--&lt;/span&gt;
          &lt;span class=&quot;c1&quot;&gt;-- creates private temporary table &quot;ora$ptt_csv&quot; with columns named in first row of data (case preserved).&lt;/span&gt;
          &lt;span class=&quot;c1&quot;&gt;-- from a CLOB containing CSV lines.&lt;/span&gt;
@@ -259,7 +259,7 @@ It parses the first row of the CLOB to get the column names and creates the PTT.
 	     &lt;span class=&quot;n&quot;&gt;p_clob&lt;/span&gt;         &lt;span class=&quot;kt&quot;&gt;CLOB&lt;/span&gt;
 	    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
 	    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_strip_dquote&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- also unquotes \&quot; and &quot;&quot; pairs within the field to just &quot;&lt;/span&gt;
-	&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;v_cols&lt;/span&gt;          &lt;span class=&quot;n&quot;&gt;perlish_util_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- for manipulating column names into SQL statement&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;           &lt;span class=&quot;kt&quot;&gt;CLOB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;v_first_row&lt;/span&gt;     &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;32767&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
