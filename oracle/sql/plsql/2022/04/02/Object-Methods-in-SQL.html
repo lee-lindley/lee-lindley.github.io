@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    <title>Cost of UDT Object Methods in SQL - Lee Lindley Scratchpad</title>
+    <meta name="author" content="Lee Lindley" />
+    <meta name="description" content="Cost of UDT Object Methods in SQL" />
+    <meta name="keywords" content="Cost of UDT Object Methods in SQL, Lee Lindley Scratchpad, oracle, sql, plsql" />
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+    <meta content="" property="fb:app_id">
+    <meta content="Lee Lindley Scratchpad" property="og:site_name">
+
+    
+
+    
+      <meta content="Cost of UDT Object Methods in SQL" property="og:title">
+      <meta content="article" property="og:type">
+    
+
+    
+      <meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description">
+    
+
+    
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/02/Object-Methods-in-SQL.html" property="og:url">
+    
+
+    
+      <meta content="2022-04-02T03:30:00-04:00" property="article:published_time">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
+    
+
+    
+
+    
+      
+        <meta content="oracle" property="article:section">
+      
+    
+
+    
+      
+        <meta content="oracle" property="article:tag">
+      
+        <meta content="sql" property="article:tag">
+      
+        <meta content="plsql" property="article:tag">
+      
+        <meta content="objects" property="article:tag">
+      
+        <meta content="user-defined-type-objects" property="article:tag">
+      
+    
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@">
+    <meta name="twitter:creator" content="@">
+
+    
+      <meta name="twitter:title" content="Cost of UDT Object Methods in SQL">
+    
+
+    
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/02/Object-Methods-in-SQL.html">
+    
+
+    
+      <meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux">
+    
+
+    
+
+    <!-- Font awesome icons -->
+    <link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <!-- syntax highlighting CSS -->
+    <link rel="stylesheet" href="/static/css/syntax.css">
+    <!-- Bootstrap core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/super-search.css">
+    <link rel="stylesheet" href="/static/css/thickbox.css">
+    <link rel="stylesheet" href="/static/css/projects.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-sm-3">
+        <div class="fixed-condition">
+          <h1 class="author-name"><a href="/">Lee Lindley</a></h1>
+          
+            <div class="profile-about">
+              I'm Just Another Perl Hacker who wound up in a big Oracle Database playground
+            </div>
+          
+          <div class="social">
+            <ul>
+              
+                <li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+              
+                <li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></li>
+              
+            </ul>
+          </div>
+          <div class="search" id="js-search">
+            <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input">
+            <ul class="search__results" id="js-search__results"></ul>
+          </div>
+          <hr />
+          <ul class="sidebar-nav">
+            <strong>Navigation</strong>
+            <li><a href="/">Home</a></li>
+            
+              <li><a class="about" href="/about/">About Me</a></li>
+            
+              <li><a class="about" href="/projects/">My Projects</a></li>
+            
+              <li><a class="about" href="/feed.xml">XML Feed</a></li>
+            
+          </ul>
+        </div>
+        <!-- end /.fixed-condition -->
+      </div>
+      <div class="col-sm-8 col-offset-1 main-layout">
+        <header class="post-header">
+  <h1 class="post-title">Cost of UDT Object Methods in SQL</h1>
+</header>
+
+<span class="time">02 Apr 2022</span>
+
+  <span class="categories">
+    &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>
+  </span>
+
+
+<div class="content">
+  <div class="post"><h1 id="introduction">Introduction</h1>
+
+<p>In a prior post, <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>,
+I described how one could use some new tools I created 
+to parse a CSV clob into records and fields, then use that parsed data in a SQL statement,
+perhaps including DML.</p>
+
+<p>The article was about a work in progress and the code has changed, but it will give you an idea of how
+we got here if you are interested.</p>
+
+<p>I ran into performance issues for large datasets while testing it. This article is about
+the techniques I tried for tuning it, and a fact about Oracle Object Type methods that
+I had not thought about much before.</p>
+
+<blockquote>
+  <p>Note: you will see what may be unfamiliar methods of <em>perlish_util_udt</em> Object type in this code. They work like Perl operators on lists.</p>
+</blockquote>
+
+<h1 id="sql-engine-and-plsql-method-calls">SQL Engine and PL/SQL Method Calls</h1>
+
+<p>Here is an example query that is built as dynamic SQL in a PL/SQL procedure. It
+returns a resultset built from reading CSV data provided to the program as a CLOB.</p>
+
+<p>You can find the packages at <a href="https://github.com/lee-lindley/plsql_utilities">https://github.com/lee-lindley/plsql_utilities</a>.
+The procedure I’m showing examples from is <em>app_csv_pkg.create_ptt_csv</em>.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="n">a</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span>
+            <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">s</span><span class="p">,</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">)</span>
+        <span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
+    <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(:</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">p_skip_lines</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="n">t</span>
+<span class="p">)</span> <span class="kr">SELECT</span> 
+    <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
+<span class="kr">FROM</span> <span class="n">a</span> <span class="n">x</span>
+</code></pre></div></div>
+
+<p>The pipelined table function <em>split_clob_to_lines</em> is efficient. 
+What turned out to be not efficient is the call to the <em>perlish_util_udt</em> object conststructor and/or the 
+call to the function <em>split_csv</em> in the SQL SELECT list. Those are both efficient when called inside a PL/SQL program.</p>
+
+<p>This should not have surprised me. I know that the SQL engine must do a context switch for each call to a PL/SQL
+program unless it is cached. In this case the cost was much, much larger than I expected.</p>
+
+<p>For a 10K row CLOB of CSV data (20 fields each row) the above construct ran for 20 minutes to process the query on an AIX
+based database, and 6 minutes on my Intel NUC running in a Hyper-V Linux partition.
+It is difficult
+to tell what it is doing from the WAIT events, but I suspected it was in-memory operations and context switching.</p>
+
+<h1 id="removing-the-object">Removing the Object</h1>
+
+<p>I also suspected the object method <em>get</em> calls might be doing context switches. My first refinement attempt
+was to remove the object from the picture and use a WITH FUNCTION to snag the field values from the
+array returned by <em>split_csv</em>.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="k">FUNCTION</span> <span class="n">wget</span><span class="p">(</span>
+    <span class="n">p_arr</span>   <span class="n">ARR_VARCHAR2_UDT</span>
+    <span class="p">,</span><span class="n">p_i</span>    <span class="kt">NUMBER</span>
+<span class="p">)</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+<span class="kr">AS</span>
+<span class="k">BEGIN</span>
+    <span class="k">RETURN</span> <span class="n">p_arr</span><span class="p">(</span><span class="n">p_i</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="n">a</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">s</span>
+                    <span class="p">,</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
+            <span class="p">)</span> <span class="kr">AS</span> <span class="n">arr</span>
+    <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(:</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">p_skip_lines</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="n">t</span>
+<span class="p">)</span> <span class="kr">SELECT</span> 
+     <span class="k">get</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">arr</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
+    <span class="p">,</span><span class="k">get</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">arr</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="k">get</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">arr</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="k">get</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">arr</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
+<span class="kr">FROM</span> <span class="n">a</span> <span class="n">x</span>
+</code></pre></div></div>
+<p>This also ran for 6 minutes on my Intel NUC database. We haven’t ruled out that the object could play a
+part, but we know that the function call to <em>split_csv</em> is a problem.</p>
+
+<p>If you are thinking about using
+a <em>UDF</em> pragma on that puppy (<em>split_csv</em>), I could not 
+get any of the variations I tried to give an improvement. There are many examples shown of the limitations
+of that pragma (or using a WITH function) that does anything very complicated.</p>
+
+<h1 id="make-the-function-pipelined-in-a-chain">Make the Function Pipelined in a Chain</h1>
+
+<p>The next refactoring I tried was moving the call to <em>split_csv</em> into another Pipelined Table Function
+to be called in a chain with <em>split_clob_to_lines</em>. I called it <em>split_lines_to_fields</em> (catcalls
+from the peanut gallery may be deserved). Maybe I’ll come up with a better name before I merge this code.</p>
+
+<p>From the package header:</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">TYPE</span> <span class="n">t_csv_fields_rec</span> <span class="kr">IS</span> <span class="kr">RECORD</span><span class="p">(</span>
+        <span class="n">arr</span> <span class="n">ARR_VARCHAR2_UDT</span>
+        <span class="p">,</span><span class="n">rn</span> <span class="kt">NUMBER</span>
+    <span class="p">);</span>
+    <span class="k">TYPE</span> <span class="n">t_arr_csv_fields_rec</span> <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">t_csv_fields_rec</span><span class="p">;</span>
+
+    <span class="k">FUNCTION</span> <span class="n">split_lines_to_fields</span><span class="p">(</span>
+        <span class="n">p_curs</span>          <span class="n">t_curs_csv_row_rec</span>
+        <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
+	    <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
+        <span class="p">,</span><span class="n">p_keep_nulls</span>   <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
+    <span class="p">)</span> 
+    <span class="k">RETURN</span> <span class="n">t_arr_csv_fields_rec</span>
+    <span class="kr">PIPELINED</span>
+    <span class="p">;</span>
+</code></pre></div></div>
+
+<p>and from the package body:</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">FUNCTION</span> <span class="n">split_lines_to_fields</span><span class="p">(</span>
+        <span class="n">p_curs</span>          <span class="n">t_curs_csv_row_rec</span>
+        <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
+	    <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
+        <span class="p">,</span><span class="n">p_keep_nulls</span>   <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
+    <span class="p">)</span> 
+    <span class="k">RETURN</span> <span class="n">t_arr_csv_fields_rec</span>
+    <span class="kr">PIPELINED</span>
+    <span class="kr">IS</span>
+        <span class="n">v_row</span>       <span class="n">t_csv_fields_rec</span><span class="p">;</span>
+        <span class="n">v_in_row</span>    <span class="n">t_csv_row_rec</span><span class="p">;</span>
+    <span class="k">BEGIN</span>
+        <span class="kr">LOOP</span>
+            <span class="k">FETCH</span> <span class="n">p_curs</span> <span class="kr">INTO</span> <span class="n">v_in_row</span><span class="p">;</span>
+            <span class="kr">EXIT</span> <span class="k">WHEN</span> <span class="n">p_curs</span><span class="o">%</span><span class="n">NOTFOUND</span><span class="p">;</span>
+            <span class="n">v_row</span><span class="p">.</span><span class="n">rn</span> <span class="o">:=</span> <span class="n">v_in_row</span><span class="p">.</span><span class="n">rn</span><span class="p">;</span>
+            <span class="n">v_row</span><span class="p">.</span><span class="n">arr</span> <span class="o">:=</span> <span class="n">split_csv</span><span class="p">(</span><span class="n">v_in_row</span><span class="p">.</span><span class="n">s</span>
+                                    <span class="p">,</span> <span class="n">p_separator</span>       <span class="o">=&gt;</span> <span class="n">p_separator</span>
+                                    <span class="p">,</span> <span class="n">p_strip_dquote</span>    <span class="o">=&gt;</span> <span class="n">p_strip_dquote</span>
+                                    <span class="p">,</span> <span class="n">p_keep_nulls</span>      <span class="o">=&gt;</span> <span class="n">p_keep_nulls</span>
+            <span class="p">);</span>
+            <span class="kr">PIPE</span> <span class="k">ROW</span><span class="p">(</span><span class="n">v_row</span><span class="p">);</span>
+        <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+        <span class="k">RETURN</span><span class="p">;</span>
+    <span class="k">END</span> <span class="n">split_lines_to_fields</span>
+    <span class="p">;</span>
+</code></pre></div></div>
+<p>The documentation never shows a Bulk Collect in these chained pipelines and the descritpions
+it uses and other hints make me believe it is not needed. I wish it was
+more explicit.</p>
+
+<p>As recommended in the documentation, it is called in a chain of pipelined table functions 
+directly in SQL with CURSOR casts as</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="k">FUNCTION</span> <span class="n">wget</span><span class="p">(</span>
+    <span class="n">p_arr</span>   <span class="n">ARR_VARCHAR2_UDT</span>
+    <span class="p">,</span><span class="n">p_i</span>    <span class="kt">NUMBER</span>
+<span class="p">)</span> <span class="k">RETURN</span> <span class="kt">VARCHAR2</span>
+<span class="kr">AS</span>
+<span class="k">BEGIN</span>
+    <span class="k">RETURN</span> <span class="n">p_arr</span><span class="p">(</span><span class="n">p_i</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="n">a</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="n">t</span><span class="p">.</span><span class="n">arr</span> 
+    <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span>
+                <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_lines_to_fields</span><span class="p">(</span>
+                    <span class="k">CURSOR</span><span class="p">(</span><span class="kr">SELECT</span> <span class="o">*</span> 
+                           <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(:</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">p_skip_lines</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="p">,</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
+                <span class="p">)</span>
+    <span class="p">)</span> <span class="n">t</span>
+<span class="p">)</span> <span class="kr">SELECT</span> 
+     <span class="k">get</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">arr</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
+    <span class="p">,</span><span class="k">get</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">arr</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="k">get</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">arr</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="k">get</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">arr</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
+<span class="kr">FROM</span> <span class="n">a</span>
+
+</code></pre></div></div>
+
+<p>This ran in 23 seconds. Moving the function call into a pipelined table chain solves the problem, but I
+still want to know whether or how much the Object plays a part.</p>
+
+<h1 id="call-the-object-constructor-in-sql">Call the Object Constructor in SQL</h1>
+
+<p>I could have moved the object constructor into the pipeline chain (and did try that), but it turns out
+to not be necessary.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="n">a</span> <span class="kr">AS</span> <span class="p">(</span>
+    <span class="kr">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">arr</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
+    <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span>
+                <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_lines_to_fields</span><span class="p">(</span>
+                    <span class="k">CURSOR</span><span class="p">(</span><span class="kr">SELECT</span> <span class="o">*</span> 
+                           <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(:</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">p_skip_lines</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="p">,</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
+                <span class="p">)</span>
+    <span class="p">)</span> <span class="n">t</span>
+<span class="p">)</span> <span class="kr">SELECT</span> 
+     <span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
+<span class="kr">FROM</span> <span class="n">a</span> <span class="n">X</span>
+</code></pre></div></div>
+
+<p>This also ran in 23 seconds.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>Calls to a PL/SQL function in a SELECT list can lead to significant cost via context switching. This is
+well known and there are several caching strategies (DETERMINISTIC, RESULT_CACHE, Scalar Subquery) to mitigate
+it. Using a Pipelined Table Function chain as I did here is also a viable mitigation strategy and I believe
+the appropriate one for this use case.</p>
+
+<p>My concern that object construction and simple method function calls in the SQL engine could context
+switch seems to be unfounded. I re-read the Object Relational Developer Guide and searched Google several
+ways looking for more information about how object methods are implemented, but it is not clearly stated.
+They seem to be neither fish nor fowl, SQL engine nor PL/SQL engine.</p>
+
+<p>I am wondering why using an object type is not another mitigation strategy for PL/SQL Function context switching,
+at least when the method does not need to call anything other than builtin functions? Why could
+one not simply define a dummy object type with a static function instead of a PL/SQL program unit? Would
+that avoid the context switch?</p>
+
+<p>I may explore this as a context switching mitigation strategy another day.</p>
+
+<h1 id="appendix---the-full-monty">Appendix - The Full Monty</h1>
+
+<p>If you have a use case that calls for the ultimate in performance (this one does not, but
+I happened to try this early in my analysis), you can get down and dirty with DBMS_SQL
+and I believe what is called “Method 4” dynamic SQL. This is because you have a variable
+number of bind elements.</p>
+
+<p>Unlike the other examples, this one is the entire procedure that creates a
+Private Temporary Table (PTT) and populates it from the CSV Clob.</p>
+
+<p>The best I could achieve with the code shown in the article was 23 seconds. This version
+operates in 19 seconds. It isn’t worth the complexity for this package, but it is nice
+to know how to do it for the rare occassions when you might need to squeeze out
+that last little bit of efficiency.</p>
+
+<p>The first part is mostly the same as for the other variations. It parses the first row of the CLOB to
+get the column names and creates the PTT.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="k">PROCEDURE</span> <span class="n">create_ptt_csv</span> <span class="p">(</span>
+         <span class="c1">--</span>
+         <span class="c1">-- creates private temporary table "ora$ptt_csv" with columns named in first row of data (case preserved).</span>
+         <span class="c1">-- from a CLOB containing CSV lines.</span>
+         <span class="c1">-- All fields are varchar2(4000)</span>
+         <span class="c1">--</span>
+	     <span class="n">p_clob</span>         <span class="kt">CLOB</span>
+	    <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
+	    <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
+	<span class="p">)</span> <span class="kr">IS</span>
+        <span class="n">v_cols</span>          <span class="n">perlish_util_udt</span><span class="p">;</span> <span class="c1">-- for manipulating column names into SQL statement</span>
+        <span class="n">v_sql</span>           <span class="kt">CLOB</span><span class="p">;</span>
+        <span class="n">v_first_row</span>     <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">);</span>
+        <span class="n">v_ins_curs</span>      <span class="kt">INT</span><span class="p">;</span>
+        <span class="n">v_num_rows</span>      <span class="kt">INT</span><span class="p">;</span>
+        <span class="n">v_last_row_cnt</span>  <span class="kt">BINARY_INTEGER</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">v_col_cnt</span>       <span class="kt">BINARY_INTEGER</span><span class="p">;</span>
+        <span class="n">v_vals_1_row</span>    <span class="n">ARR_VARCHAR2_UDT</span><span class="p">;</span>  <span class="c1">-- from split_csv on 1 line</span>
+        <span class="n">v_rows</span>          <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">varchar2a</span><span class="p">;</span>     <span class="c1">-- from split_clob_to_lines fetch</span>
+        <span class="c1">--</span>
+        <span class="c1">-- variable number of columns, each of which has a bind array.</span>
+        <span class="c1">--</span>
+        <span class="k">TYPE</span> <span class="n">varchar2a_tab</span>  <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">varchar2a</span> <span class="kr">INDEX</span> <span class="kr">BY</span> <span class="kt">BINARY_INTEGER</span><span class="p">;</span>
+        <span class="n">v_vals</span>          <span class="n">varchar2a_tab</span><span class="p">;</span>          <span class="c1">-- array of columns each of which holds array of values</span>
+        <span class="c1">--</span>
+        <span class="c1">-- We get all but the header row when we read the clob in a loop.</span>
+        <span class="c1">--</span>
+        <span class="k">CURSOR</span> <span class="n">c_read_rows</span> <span class="kr">IS</span>
+            <span class="kr">SELECT</span> <span class="n">t</span><span class="p">.</span><span class="n">s</span>
+            <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span><span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">p_skip_lines</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">))</span>  <span class="n">t</span>
+            <span class="p">;</span>
+    <span class="k">BEGIN</span>
+        <span class="k">BEGIN</span>
+            <span class="c1">-- read the first row only</span>
+            <span class="kr">SELECT</span> <span class="n">s</span> <span class="kr">INTO</span> <span class="n">v_first_row</span> 
+            <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">p_max_lines</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
+            <span class="p">;</span>
+            <span class="k">IF</span> <span class="n">v_first_row</span> <span class="o">IS</span> <span class="o">NULL</span> <span class="kr">THEN</span>
+                <span class="n">raise_application_error</span><span class="p">(</span><span class="mi">-20222</span><span class="p">,</span><span class="o">'</span><span class="s1">app_csv_pkg.create_ptt_csv did not find csv rows in input clob.</span><span class="o">'</span><span class="p">);</span>
+            <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+        <span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">NO_DATA_FOUND</span> <span class="kr">THEN</span>
+            <span class="n">raise_application_error</span><span class="p">(</span><span class="mi">-20222</span><span class="p">,</span><span class="o">'</span><span class="s1">app_csv_pkg.create_ptt_csv did not find csv rows in input clob.</span><span class="o">'</span><span class="p">);</span>
+        <span class="k">END</span><span class="p">;</span>
+        <span class="c1">-- split the column header values into collection</span>
+        <span class="n">v_cols</span> <span class="o">:=</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">split_csv</span><span class="p">(</span><span class="n">v_first_row</span><span class="p">,</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">));</span>
+        <span class="n">v_col_cnt</span> <span class="o">:=</span> <span class="n">v_cols</span><span class="p">.</span><span class="n">arr</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">;</span>
+
+        <span class="c1">-- create the private global temporary table with "known" name and columns matching names found</span>
+        <span class="c1">-- in csv first record</span>
+        <span class="c1">--</span>
+        <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">DROP TABLE ora$ptt_csv</span><span class="o">'</span><span class="p">;</span>
+        <span class="k">BEGIN</span>
+            <span class="k">EXECUTE</span> <span class="k">IMMEDIATE</span> <span class="n">v_sql</span><span class="p">;</span>
+        <span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="k">OTHERS</span> <span class="kr">THEN</span> <span class="kr">NULL</span><span class="p">;</span>
+        <span class="k">END</span><span class="p">;</span>
+
+        <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">CREATE PRIVATE TEMPORARY TABLE ora$ptt_csv(
+</span><span class="o">'</span>
+            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"    VARCHAR2(4000)</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+,</span><span class="o">'</span><span class="p">)</span>
+            <span class="o">||'</span><span class="s1">
+)</span><span class="o">'</span>
+            <span class="p">;</span>
+        <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_sql</span><span class="p">);</span>
+        <span class="k">EXECUTE</span> <span class="k">IMMEDIATE</span> <span class="n">v_sql</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The next part populates the PTT. This variation uses bulk collect to read the data as lines,
+splits the lines into columns, stuffs the column data into individual arrays, then
+executes a DBMS_SQL INSERT cursor bound to those arrays. Pretty slick, if a little hard core.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="c1">-- </span>
+        <span class="c1">-- Dynamic sql for dbms_sql. will be used with bind arrays.</span>
+        <span class="c1">-- Of note is that it reports conventional load even if specify append.</span>
+        <span class="c1">-- I don't understand that as I've seen other reports that direct path load works.</span>
+        <span class="c1">-- Does not seem to matter though.</span>
+        <span class="c1">--</span>
+        <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">INSERT INTO ora$ptt_csv(
+</span><span class="o">'</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>
+        <span class="o">||'</span><span class="s1">
+) VALUES (
+</span><span class="o">'</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">:$##index_val##</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span> <span class="c1">-- :1, :2, :3, etc...</span>
+        <span class="o">||'</span><span class="s1">
+)</span><span class="o">'</span><span class="p">;</span>
+        <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_sql</span><span class="p">);</span>
+        <span class="n">v_ins_curs</span> <span class="o">:=</span> <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">open_cursor</span><span class="p">;</span>
+        <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">parse</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">,</span> <span class="n">v_sql</span><span class="p">,</span> <span class="n">DBMS_SQL</span><span class="p">.</span><span class="k">native</span><span class="p">);</span>
+
+        <span class="k">OPEN</span> <span class="n">c_read_rows</span><span class="p">;</span>
+        <span class="kr">LOOP</span>
+            <span class="k">FETCH</span> <span class="n">c_read_rows</span> <span class="k">BULK</span> <span class="nf">COLLECT</span> <span class="kr">INTO</span> <span class="n">v_rows</span> <span class="k">LIMIT</span> <span class="mi">100</span><span class="p">;</span>
+            <span class="kr">EXIT</span> <span class="k">WHEN</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span>
+            <span class="kr">LOOP</span>
+                <span class="n">v_vals_1_row</span> <span class="o">:=</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">v_rows</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">);</span>
+                <span class="c1">-- j is column number</span>
+                <span class="kr">FOR</span> <span class="n">j</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_cnt</span>
+                <span class="kr">LOOP</span>
+                    <span class="n">v_vals</span><span class="p">(</span><span class="n">j</span><span class="p">)(</span><span class="n">i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_vals_1_row</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+                <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+            <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+
+            <span class="k">IF</span> <span class="n">v_last_row_cnt</span> <span class="o">!=</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span> <span class="kr">THEN</span> <span class="c1">-- will be true on first loop iteration</span>
+                <span class="n">v_last_row_cnt</span> <span class="o">:=</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">;</span>
+                <span class="c1">-- bind each column array. v_vals has an array for every column</span>
+                <span class="kr">FOR</span> <span class="n">j</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_cnt</span>
+                <span class="kr">LOOP</span>
+                    <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">bind_array</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">,</span> <span class="o">'</span><span class="s1">:</span><span class="o">'||</span><span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">v_vals</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">v_last_row_cnt</span><span class="p">);</span>
+                <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+            <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+
+            <span class="n">v_num_rows</span> <span class="o">:=</span> <span class="n">DBMS_SQL</span><span class="p">.</span><span class="k">execute</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">);</span>
+
+        <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+        <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">close_cursor</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">);</span>
+        <span class="k">CLOSE</span> <span class="n">c_read_rows</span><span class="p">;</span>
+    <span class="k">END</span> <span class="n">create_ptt_csv</span>
+    <span class="p">;</span>
+</code></pre></div></div>
+</div>
+</div>
+
+
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+            
+            <div class="panel-body">
+              <h4>Related Posts</h4>
+              <ul>
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html">Devops Data Deployment for Oracle</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>, <a href="/category/oracle">oracle</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/01/22/Hiding-Data-Oracle.html">Protecting/Hiding Data in Oracle</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+  
+  </ul>
+</div>
+
+
+<div class="PageNavigation">
+  
+    <a class="prev" href="/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html">&laquo; Devops Data Deployment for Oracle</a>
+  
+  
+</div>
+
+<div class="disqus-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    /* <![CDATA[ */
+    var disqus_shortname = "leelindleyscratchpad";
+    var disqus_identifier = "https://lee-lindley.github.io_Cost of UDT Object Methods in SQL";
+    var disqus_title = "Cost of UDT Object Methods in SQL";
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    /* ]]> */
+  </script>
+</div>
+
+        <footer>
+          &copy; Lee Lindley
+          
+            - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.
+          
+          <div class="btn-github" style="float:right;">
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+          </div>
+        </footer>
+      </div>
+      <!-- end /.col-sm-8 -->
+    </div>
+    <!-- end /.container -->
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/super-search.js"></script>
+    <script src="/static/js/thickbox-compressed.js"></script>
+    <script src="/static/js/projects.js"></script>
+  </body>
+</html>
+
