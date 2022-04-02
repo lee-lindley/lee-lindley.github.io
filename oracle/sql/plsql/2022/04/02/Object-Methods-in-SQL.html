@@ -218,7 +218,7 @@ array returned by <em>split_csv</em>.</p>
 <span class="kr">FROM</span> <span class="n">a</span> <span class="n">x</span>
 </code></pre></div></div>
 <p>This also ran for 6 minutes on my Intel NUC database. We haven’t ruled out that the object could play a
-part, but we know that the function call to <em>split_csv</em> is a problem.</p>
+part, but we know that the function call <em>split_csv</em> is a problem.</p>
 
 <p>If you are thinking about using
 a <em>UDF</em> pragma on that puppy (<em>split_csv</em>), I could not 
@@ -355,7 +355,7 @@ ways looking for more information about how object methods are implemented, but 
 They seem to be neither fish nor fowl, SQL engine nor PL/SQL engine.</p>
 
 <p>I am wondering why using an object type is not touted as another mitigation strategy for PL/SQL Function context switching
-(t least for when the method does not need to call anything other than builtin functions)? 
+(at least for when the method does not need to call anything other than builtin functions)? 
 I realize we have WITH FUNCTIONs, UDF pragma, and with Oracle 21c, SQL Macros,
 but it would be nice to know if Object methods are an alternative.</p>
 

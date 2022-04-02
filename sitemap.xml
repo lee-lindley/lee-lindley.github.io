@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 02 Apr 2022 17:36:59 -0400</pubDate>
-    <lastBuildDate>Sat, 02 Apr 2022 17:36:59 -0400</lastBuildDate>
+    <pubDate>Sat, 02 Apr 2022 17:54:02 -0400</pubDate>
+    <lastBuildDate>Sat, 02 Apr 2022 17:54:02 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -89,7 +89,7 @@ array returned by &lt;em&gt;split_csv&lt;/em&gt;.&lt;/p&gt;
 &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;This also ran for 6 minutes on my Intel NUC database. We haven’t ruled out that the object could play a
-part, but we know that the function call to &lt;em&gt;split_csv&lt;/em&gt; is a problem.&lt;/p&gt;
+part, but we know that the function call &lt;em&gt;split_csv&lt;/em&gt; is a problem.&lt;/p&gt;
 
 &lt;p&gt;If you are thinking about using
 a &lt;em&gt;UDF&lt;/em&gt; pragma on that puppy (&lt;em&gt;split_csv&lt;/em&gt;), I could not 
@@ -226,7 +226,7 @@ ways looking for more information about how object methods are implemented, but 
 They seem to be neither fish nor fowl, SQL engine nor PL/SQL engine.&lt;/p&gt;
 
 &lt;p&gt;I am wondering why using an object type is not touted as another mitigation strategy for PL/SQL Function context switching
-(t least for when the method does not need to call anything other than builtin functions)? 
+(at least for when the method does not need to call anything other than builtin functions)? 
 I realize we have WITH FUNCTIONs, UDF pragma, and with Oracle 21c, SQL Macros,
 but it would be nice to know if Object methods are an alternative.&lt;/p&gt;
 
