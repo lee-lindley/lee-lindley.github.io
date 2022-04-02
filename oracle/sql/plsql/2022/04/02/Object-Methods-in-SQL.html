@@ -242,7 +242,7 @@ from the peanut gallery may be deserved). Maybe I’ll come up with a better nam
     <span class="k">FUNCTION</span> <span class="n">split_lines_to_fields</span><span class="p">(</span>
         <span class="n">p_curs</span>          <span class="n">t_curs_csv_row_rec</span>
         <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
-	    <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
+        <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
         <span class="p">,</span><span class="n">p_keep_nulls</span>   <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
     <span class="p">)</span> 
     <span class="k">RETURN</span> <span class="n">t_arr_csv_fields_rec</span>
@@ -255,7 +255,7 @@ from the peanut gallery may be deserved). Maybe I’ll come up with a better nam
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">FUNCTION</span> <span class="n">split_lines_to_fields</span><span class="p">(</span>
         <span class="n">p_curs</span>          <span class="n">t_curs_csv_row_rec</span>
         <span class="p">,</span><span class="n">p_separator</span>    <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
-	    <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
+        <span class="p">,</span><span class="n">p_strip_dquote</span> <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
         <span class="p">,</span><span class="n">p_keep_nulls</span>   <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
     <span class="p">)</span> 
     <span class="k">RETURN</span> <span class="n">t_arr_csv_fields_rec</span>
@@ -279,7 +279,7 @@ from the peanut gallery may be deserved). Maybe I’ll come up with a better nam
     <span class="k">END</span> <span class="n">split_lines_to_fields</span>
     <span class="p">;</span>
 </code></pre></div></div>
-<p>The documentation never shows a Bulk Collect in these chained pipelines and the descritpions
+<p>The documentation never shows a Bulk Collect in the chained pipeline examples, and the descriptions
 it uses and other hints make me believe it is not needed. I wish it was
 more explicit.</p>
 
@@ -339,13 +339,14 @@ to not be necessary.</p>
 <span class="kr">FROM</span> <span class="n">a</span> <span class="n">X</span>
 </code></pre></div></div>
 
-<p>This also ran in 23 seconds.</p>
+<p>This also ran in 23 seconds. I prefer the object way better than the WITH FUNCTION way, but if you don’t
+already have an object wrapped around your array with a handy method, the WITH FUNCTION is just dandy.</p>
 
 <h1 id="conclusion">Conclusion</h1>
 
 <p>Calls to a PL/SQL function in a SELECT list can lead to significant cost via context switching. This is
-well known and there are several caching strategies (DETERMINISTIC, RESULT_CACHE, Scalar Subquery) to mitigate
-it. Using a Pipelined Table Function chain as I did here is also a viable mitigation strategy and I believe
+well known, and there are several caching strategies (DETERMINISTIC, RESULT_CACHE, Scalar Subquery) to mitigate
+it. Using a Pipelined Table Function chain as I did here is also a viable mitigation strategy, and I believe
 the appropriate one for this use case.</p>
 
 <p>My concern that object construction and simple method function calls in the SQL engine could context
@@ -353,10 +354,10 @@ switch seems to be unfounded. I re-read the Object Relational Developer Guide an
 ways looking for more information about how object methods are implemented, but it is not clearly stated.
 They seem to be neither fish nor fowl, SQL engine nor PL/SQL engine.</p>
 
-<p>I am wondering why using an object type is not another mitigation strategy for PL/SQL Function context switching,
-at least when the method does not need to call anything other than builtin functions? Why could
-one not simply define a dummy object type with a static function instead of a PL/SQL program unit? Would
-that avoid the context switch?</p>
+<p>I am wondering why using an object type is not touted as another mitigation strategy for PL/SQL Function context switching
+(t least for when the method does not need to call anything other than builtin functions)? 
+I realize we have WITH FUNCTIONs, UDF pragma, and with Oracle 21c, SQL Macros,
+but it would be nice to know if Object methods are an alternative.</p>
 
 <p>I may explore this as a context switching mitigation strategy another day.</p>
 
@@ -364,10 +365,10 @@ that avoid the context switch?</p>
 
 <p>If you have a use case that calls for the ultimate in performance (this one does not, but
 I happened to try this early in my analysis), you can get down and dirty with DBMS_SQL
-and I believe what is called “Method 4” dynamic SQL. This is because you have a variable
+and I believe what is called “Method 4” dynamic SQL. That classification is because we have a variable
 number of bind elements.</p>
 
-<p>Unlike the other examples, this one is the entire procedure that creates a
+<p>Unlike the other examples, this one shows the entire procedure that creates a
 Private Temporary Table (PTT) and populates it from the CSV Clob.</p>
 
 <p>The best I could achieve with the code shown in the article was 23 seconds. This version
@@ -375,8 +376,8 @@ operates in 19 seconds. It isn’t worth the complexity for this package, but it
 to know how to do it for the rare occassions when you might need to squeeze out
 that last little bit of efficiency.</p>
 
-<p>The first part is mostly the same as for the other variations. It parses the first row of the CLOB to
-get the column names and creates the PTT.</p>
+<p>The first part is mostly the same as the code I didn’t show you for the other variations. 
+It parses the first row of the CLOB to get the column names and creates the PTT.</p>
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>	<span class="k">PROCEDURE</span> <span class="n">create_ptt_csv</span> <span class="p">(</span>
          <span class="c1">--</span>
@@ -457,11 +458,11 @@ executes a DBMS_SQL INSERT cursor bound to those arrays. Pretty slick, if a litt
         <span class="c1">--</span>
         <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">INSERT INTO ora$ptt_csv(
 </span><span class="o">'</span>
-        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>             <span class="c1">-- the column names in dquotes</span>
         <span class="o">||'</span><span class="s1">
 ) VALUES (
 </span><span class="o">'</span>
-        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">:$##index_val##</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span> <span class="c1">-- :1, :2, :3, etc...</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">:$##index_val##</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>  <span class="c1">-- :1, :2, :3, etc... bind placeholders</span>
         <span class="o">||'</span><span class="s1">
 )</span><span class="o">'</span><span class="p">;</span>
         <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_sql</span><span class="p">);</span>
@@ -482,7 +483,7 @@ executes a DBMS_SQL INSERT cursor bound to those arrays. Pretty slick, if a litt
                 <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
             <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
 
-            <span class="k">IF</span> <span class="n">v_last_row_cnt</span> <span class="o">!=</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span> <span class="kr">THEN</span> <span class="c1">-- will be true on first loop iteration</span>
+            <span class="k">IF</span> <span class="n">v_last_row_cnt</span> <span class="o">!=</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span> <span class="kr">THEN</span> <span class="c1">-- will be true on first loop iteration and maybe last</span>
                 <span class="n">v_last_row_cnt</span> <span class="o">:=</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">;</span>
                 <span class="c1">-- bind each column array. v_vals has an array for every column</span>
                 <span class="kr">FOR</span> <span class="n">j</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_cnt</span>

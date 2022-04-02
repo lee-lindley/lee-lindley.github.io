@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 02 Apr 2022 13:17:52 -0400</pubDate>
-    <lastBuildDate>Sat, 02 Apr 2022 13:17:52 -0400</lastBuildDate>
+    <pubDate>Sat, 02 Apr 2022 17:36:59 -0400</pubDate>
+    <lastBuildDate>Sat, 02 Apr 2022 17:36:59 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -113,7 +113,7 @@ from the peanut gallery may be deserved). Maybe I’ll come up with a better nam
     &lt;span class=&quot;k&quot;&gt;FUNCTION&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;split_lines_to_fields&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;p_curs&lt;/span&gt;          &lt;span class=&quot;n&quot;&gt;t_curs_csv_row_rec&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-	    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_strip_dquote&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- also unquotes \&quot; and &quot;&quot; pairs within the field to just &quot;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_strip_dquote&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- also unquotes \&quot; and &quot;&quot; pairs within the field to just &quot;&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_keep_nulls&lt;/span&gt;   &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
     &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_arr_csv_fields_rec&lt;/span&gt;
@@ -126,7 +126,7 @@ from the peanut gallery may be deserved). Maybe I’ll come up with a better nam
 &lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;FUNCTION&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;split_lines_to_fields&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;p_curs&lt;/span&gt;          &lt;span class=&quot;n&quot;&gt;t_curs_csv_row_rec&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-	    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_strip_dquote&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- also unquotes \&quot; and &quot;&quot; pairs within the field to just &quot;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_strip_dquote&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- also unquotes \&quot; and &quot;&quot; pairs within the field to just &quot;&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_keep_nulls&lt;/span&gt;   &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
     &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_arr_csv_fields_rec&lt;/span&gt;
@@ -150,7 +150,7 @@ from the peanut gallery may be deserved). Maybe I’ll come up with a better nam
     &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;split_lines_to_fields&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;The documentation never shows a Bulk Collect in these chained pipelines and the descritpions
+&lt;p&gt;The documentation never shows a Bulk Collect in the chained pipeline examples, and the descriptions
 it uses and other hints make me believe it is not needed. I wish it was
 more explicit.&lt;/p&gt;
 
@@ -210,13 +210,14 @@ to not be necessary.&lt;/p&gt;
 &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;This also ran in 23 seconds.&lt;/p&gt;
+&lt;p&gt;This also ran in 23 seconds. I prefer the object way better than the WITH FUNCTION way, but if you don’t
+already have an object wrapped around your array with a handy method, the WITH FUNCTION is just dandy.&lt;/p&gt;
 
 &lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
 
 &lt;p&gt;Calls to a PL/SQL function in a SELECT list can lead to significant cost via context switching. This is
-well known and there are several caching strategies (DETERMINISTIC, RESULT_CACHE, Scalar Subquery) to mitigate
-it. Using a Pipelined Table Function chain as I did here is also a viable mitigation strategy and I believe
+well known, and there are several caching strategies (DETERMINISTIC, RESULT_CACHE, Scalar Subquery) to mitigate
+it. Using a Pipelined Table Function chain as I did here is also a viable mitigation strategy, and I believe
 the appropriate one for this use case.&lt;/p&gt;
 
 &lt;p&gt;My concern that object construction and simple method function calls in the SQL engine could context
@@ -224,10 +225,10 @@ switch seems to be unfounded. I re-read the Object Relational Developer Guide an
 ways looking for more information about how object methods are implemented, but it is not clearly stated.
 They seem to be neither fish nor fowl, SQL engine nor PL/SQL engine.&lt;/p&gt;
 
-&lt;p&gt;I am wondering why using an object type is not another mitigation strategy for PL/SQL Function context switching,
-at least when the method does not need to call anything other than builtin functions? Why could
-one not simply define a dummy object type with a static function instead of a PL/SQL program unit? Would
-that avoid the context switch?&lt;/p&gt;
+&lt;p&gt;I am wondering why using an object type is not touted as another mitigation strategy for PL/SQL Function context switching
+(t least for when the method does not need to call anything other than builtin functions)? 
+I realize we have WITH FUNCTIONs, UDF pragma, and with Oracle 21c, SQL Macros,
+but it would be nice to know if Object methods are an alternative.&lt;/p&gt;
 
 &lt;p&gt;I may explore this as a context switching mitigation strategy another day.&lt;/p&gt;
 
@@ -235,10 +236,10 @@ that avoid the context switch?&lt;/p&gt;
 
 &lt;p&gt;If you have a use case that calls for the ultimate in performance (this one does not, but
 I happened to try this early in my analysis), you can get down and dirty with DBMS_SQL
-and I believe what is called “Method 4” dynamic SQL. This is because you have a variable
+and I believe what is called “Method 4” dynamic SQL. That classification is because we have a variable
 number of bind elements.&lt;/p&gt;
 
-&lt;p&gt;Unlike the other examples, this one is the entire procedure that creates a
+&lt;p&gt;Unlike the other examples, this one shows the entire procedure that creates a
 Private Temporary Table (PTT) and populates it from the CSV Clob.&lt;/p&gt;
 
 &lt;p&gt;The best I could achieve with the code shown in the article was 23 seconds. This version
@@ -246,8 +247,8 @@ operates in 19 seconds. It isn’t worth the complexity for this package, but it
 to know how to do it for the rare occassions when you might need to squeeze out
 that last little bit of efficiency.&lt;/p&gt;
 
-&lt;p&gt;The first part is mostly the same as for the other variations. It parses the first row of the CLOB to
-get the column names and creates the PTT.&lt;/p&gt;
+&lt;p&gt;The first part is mostly the same as the code I didn’t show you for the other variations. 
+It parses the first row of the CLOB to get the column names and creates the PTT.&lt;/p&gt;
 
 &lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	&lt;span class=&quot;k&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;create_ptt_csv&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
          &lt;span class=&quot;c1&quot;&gt;--&lt;/span&gt;
@@ -328,11 +329,11 @@ executes a DBMS_SQL INSERT cursor bound to those arrays. Pretty slick, if a litt
         &lt;span class=&quot;c1&quot;&gt;--&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;INSERT INTO ora$ptt_csv(
 &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&quot;$_&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&quot;$_&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;             &lt;span class=&quot;c1&quot;&gt;-- the column names in dquotes&lt;/span&gt;
         &lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;
 ) VALUES (
 &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-        &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;:$##index_val##&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- :1, :2, :3, etc...&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;:$##index_val##&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;-- :1, :2, :3, etc... bind placeholders&lt;/span&gt;
         &lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;
 )&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;DBMS_OUTPUT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;put_line&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
@@ -353,7 +354,7 @@ executes a DBMS_SQL INSERT cursor bound to those arrays. Pretty slick, if a litt
                 &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
             &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
 
-            &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_last_row_cnt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- will be true on first loop iteration&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_last_row_cnt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- will be true on first loop iteration and maybe last&lt;/span&gt;
                 &lt;span class=&quot;n&quot;&gt;v_last_row_cnt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
                 &lt;span class=&quot;c1&quot;&gt;-- bind each column array. v_vals has an array for every column&lt;/span&gt;
                 &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_col_cnt&lt;/span&gt;
