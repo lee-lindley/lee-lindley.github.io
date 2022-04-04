@@ -516,7 +516,7 @@ ROW: </span><span class="o">'||</span><span class="n">v_row</span><span class="p
             <span class="n">v_rows_out</span> <span class="o">:=</span> <span class="n">v_rows_out</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
             <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_out_cnt</span>
             <span class="kr">LOOP</span>
-                <span class="n">v_output_col_type</span> <span class="o">:=</span> <span class="n">v_env</span><span class="p">.</span><span class="n">put_columns</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="k">TYPE</span><span class="p">;</span>
+                <span class="n">v_output_col_type</span> <span class="o">:=</span> <span class="n">v_env</span><span class="p">.</span><span class="n">put_columns</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">TYPE</span><span class="p">;</span>
                 <span class="k">IF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_timestamp</span> <span class="kr">THEN</span>
                     <span class="c1">-- better set nls value yourself because we just shoving the string in with default conversion</span>
                     <span class="c1">-- likely not to ever be used</span>

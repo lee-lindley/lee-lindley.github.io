@@ -266,7 +266,7 @@ from the peanut gallery may be deserved). Maybe I’ll come up with a better nam
     <span class="k">BEGIN</span>
         <span class="kr">LOOP</span>
             <span class="k">FETCH</span> <span class="n">p_curs</span> <span class="kr">INTO</span> <span class="n">v_in_row</span><span class="p">;</span>
-            <span class="kr">EXIT</span> <span class="k">WHEN</span> <span class="n">p_curs</span><span class="o">%</span><span class="n">NOTFOUND</span><span class="p">;</span>
+            <span class="kr">EXIT</span> <span class="k">WHEN</span> <span class="n">p_curs</span><span class="na">%NOTFOUND</span><span class="p">;</span>
             <span class="n">v_row</span><span class="p">.</span><span class="n">rn</span> <span class="o">:=</span> <span class="n">v_in_row</span><span class="p">.</span><span class="n">rn</span><span class="p">;</span>
             <span class="n">v_row</span><span class="p">.</span><span class="n">arr</span> <span class="o">:=</span> <span class="n">split_csv</span><span class="p">(</span><span class="n">v_in_row</span><span class="p">.</span><span class="n">s</span>
                                     <span class="p">,</span> <span class="n">p_separator</span>       <span class="o">=&gt;</span> <span class="n">p_separator</span>
@@ -437,7 +437,7 @@ It parses the first row of the CLOB to get the column names and creates the PTT.
 
         <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">CREATE PRIVATE TEMPORARY TABLE ora$ptt_csv(
 </span><span class="o">'</span>
-            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"    VARCHAR2(4000)</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"    VARCHAR2(4000)</span><span class="o">'</span><span class="p">).</span><span class="n">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
 ,</span><span class="o">'</span><span class="p">)</span>
             <span class="o">||'</span><span class="s1">
 )</span><span class="o">'</span>
@@ -458,11 +458,11 @@ executes a DBMS_SQL INSERT cursor bound to those arrays. Pretty slick, if a litt
         <span class="c1">--</span>
         <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">INSERT INTO ora$ptt_csv(
 </span><span class="o">'</span>
-        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>             <span class="c1">-- the column names in dquotes</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"</span><span class="o">'</span><span class="p">).</span><span class="n">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>             <span class="c1">-- the column names in dquotes</span>
         <span class="o">||'</span><span class="s1">
 ) VALUES (
 </span><span class="o">'</span>
-        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">:$##index_val##</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>  <span class="c1">-- :1, :2, :3, etc... bind placeholders</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">:$##index_val##</span><span class="o">'</span><span class="p">).</span><span class="n">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>  <span class="c1">-- :1, :2, :3, etc... bind placeholders</span>
         <span class="o">||'</span><span class="s1">
 )</span><span class="o">'</span><span class="p">;</span>
         <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_sql</span><span class="p">);</span>

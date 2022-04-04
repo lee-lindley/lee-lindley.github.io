@@ -246,7 +246,7 @@ bind the collection array to a SQL statement and do not want the first row to be
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">CREATE PRIVATE TEMPORARY TABLE ora$ptt_csv(
 </span><span class="o">'</span>
-            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"    VARCHAR2(4000)</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"    VARCHAR2(4000)</span><span class="o">'</span><span class="p">).</span><span class="n">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
 ,</span><span class="o">'</span><span class="p">)</span>
             <span class="o">||'</span><span class="s1">
 )</span><span class="o">'</span>
@@ -276,7 +276,7 @@ WITH a AS (
         ) AS p
     FROM TABLE(:bind_array) t
 ) SELECT </span><span class="o">]'</span>
-        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">x.p.get($##index_val##) AS "$_"</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">x.p.get($##index_val##) AS "$_"</span><span class="o">'</span><span class="p">).</span><span class="n">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
 ,</span><span class="o">'</span><span class="p">)</span>
         <span class="o">||'</span><span class="s1">
 FROM a x</span><span class="o">'</span><span class="p">;</span>
