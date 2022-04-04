@@ -231,8 +231,8 @@ or it is a noop.) Observe:</p>
 <span class="p">;</span>
 <span class="kr">SELECT</span> <span class="n">sql_id</span><span class="p">,</span>  <span class="n">parse_calls</span><span class="p">,</span> <span class="n">sql_text</span>
 <span class="kr">FROM</span> <span class="n">v$sql</span>
-<span class="kr">WHERE</span> <span class="n">sql_text</span> <span class="o">LIKE</span> <span class="o">'</span><span class="s1">%app_log_app</span><span class="o">'</span>
-<span class="o">AND</span> <span class="n">sql_text</span> <span class="o">NOT</span> <span class="o">LIKE</span> <span class="o">'</span><span class="s1">%v$sql%</span><span class="o">'</span>
+<span class="kr">WHERE</span> <span class="n">sql_text</span> <span class="ow">LIKE</span> <span class="o">'</span><span class="s1">%app_log_app</span><span class="o">'</span>
+<span class="ow">AND</span> <span class="n">sql_text</span> <span class="ow">NOT</span> <span class="ow">LIKE</span> <span class="o">'</span><span class="s1">%v$sql%</span><span class="o">'</span>
 <span class="p">;</span>
 </code></pre></div></div>
 

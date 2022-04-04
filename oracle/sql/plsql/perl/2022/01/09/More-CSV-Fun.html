@@ -185,7 +185,7 @@ to deal with that set of CSV records.</p>
 <p>An example tells the story better than all those words:</p>
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="n">a</span> <span class="kr">AS</span> <span class="p">(</span>
-    <span class="kr">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="k">column_value</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
+    <span class="kr">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">column_value</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
     <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span>
 <span class="o">q'[</span><span class="sx">"abc",123,xyz
 def,456,"ghi"
@@ -194,7 +194,7 @@ lmn,789,opq</span><span class="o">]'</span>
     <span class="p">)</span> <span class="n">t</span>
 <span class="p">)</span> <span class="c1">-- remember you need a table alias to access object methods and attributes</span>
 <span class="c1">-- thus making the table alias x for a here.</span>
-<span class="kr">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col2</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col3</span>
+<span class="kr">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col2</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col3</span>
 <span class="kr">FROM</span> <span class="n">a</span> <span class="n">x</span>
 <span class="p">;</span>
 </code></pre></div></div>
@@ -219,7 +219,7 @@ lmn,789,opq</span><span class="o">]'</span>
 <p><em>split_clob_to_line</em> returns a collection of VARCHAR2(4000) elements. We wrap that function call in a TABLE cast (perhaps
 unnecessarily depending on your Oracle version), and now we can select those lines as rows from the input string.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">SELECT</span> <span class="n">t</span><span class="p">.</span><span class="k">column_value</span> <span class="kr">AS</span> <span class="n">r</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">SELECT</span> <span class="n">t</span><span class="p">.</span><span class="n">column_value</span> <span class="kr">AS</span> <span class="n">r</span>
     <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span>
 <span class="o">q'[</span><span class="sx">"abc",123,xyz
 def,456,"ghi"
@@ -267,7 +267,7 @@ getting too gross.</p>
 
 <p>That leads us to using <em>split_csv</em> to parse that CSV row/line into a collection:</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="k">column_value</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="kr">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">column_value</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
     <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span>
 <span class="o">q'[</span><span class="sx">"abc",123,xyz
 def,456,"ghi"
@@ -313,7 +313,7 @@ you must have a table alias for the “table” that provided the object instanc
 our “table” is named “a” and our alias for “a” is “x”.</p>
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">WITH</span> <span class="n">a</span> <span class="kr">AS</span> <span class="p">(</span>
-    <span class="kr">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="k">column_value</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
+    <span class="kr">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">column_value</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
     <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span>
 <span class="o">q'[</span><span class="sx">"abc",123,xyz
 def,456,"ghi"
@@ -322,7 +322,7 @@ lmn,789,opq</span><span class="o">]'</span>
     <span class="p">)</span> <span class="n">t</span>
 <span class="p">)</span> <span class="c1">-- remember you need a table alias to access object methods and attributes</span>
 <span class="c1">-- thus making the table alias x for a here.</span>
-<span class="kr">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col2</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col3</span>
+<span class="kr">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col1</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col2</span><span class="p">,</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">col3</span>
 <span class="kr">FROM</span> <span class="n">a</span> <span class="n">x</span>
 <span class="p">;</span>
 </code></pre></div></div>

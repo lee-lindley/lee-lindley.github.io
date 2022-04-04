@@ -228,7 +228,7 @@ of our <em>map</em> and <em>join</em> methods to build the SQL we need to execut
     <span class="k">BEGIN</span>
         <span class="n">v_cols</span> <span class="o">:=</span> <span class="n">perlish_util_udt</span><span class="p">(</span><span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">v_rows</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">));</span>
         <span class="c1">-- remove the header row so can bind the array to read the data</span>
-        <span class="n">v_rows</span><span class="p">.</span><span class="kr">DELETE</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+        <span class="n">v_rows</span><span class="p">.</span><span class="n">DELETE</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
 </code></pre></div></div>
 
 <p>We parse the first row differently than the rest. We are going to enclose the data in double quotes so we must strip
@@ -246,7 +246,7 @@ bind the collection array to a SQL statement and do not want the first row to be
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">CREATE PRIVATE TEMPORARY TABLE ora$ptt_csv(
 </span><span class="o">'</span>
-            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"    VARCHAR2(4000)</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"    VARCHAR2(4000)</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
 ,</span><span class="o">'</span><span class="p">)</span>
             <span class="o">||'</span><span class="s1">
 )</span><span class="o">'</span>
@@ -276,7 +276,7 @@ WITH a AS (
         ) AS p
     FROM TABLE(:bind_array) t
 ) SELECT </span><span class="o">]'</span>
-        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">x.p.get($##index_val##) AS "$_"</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">x.p.get($##index_val##) AS "$_"</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
 ,</span><span class="o">'</span><span class="p">)</span>
         <span class="o">||'</span><span class="s1">
 FROM a x</span><span class="o">'</span><span class="p">;</span>
@@ -297,13 +297,13 @@ substitution to <em>map</em> for this release.</p>
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">INSERT</span> <span class="kr">INTO</span> <span class="n">ora$ptt_csv</span>
 <span class="kr">WITH</span> <span class="n">a</span> <span class="kr">AS</span> <span class="p">(</span>
     <span class="kr">SELECT</span> <span class="n">perlish_util_udt</span><span class="p">(</span>
-            <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="k">column_value</span><span class="p">,</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">)</span>
+            <span class="n">perlish_util_udt</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">column_value</span><span class="p">,</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="p">:</span><span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">)</span>
         <span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
     <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(:</span><span class="n">bind_array</span><span class="p">)</span> <span class="n">t</span>
-<span class="p">)</span> <span class="kr">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
-<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
-<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
-<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
+<span class="p">)</span> <span class="kr">SELECT</span> <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
+<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
+<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
+<span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
 <span class="kr">FROM</span> <span class="n">a</span> <span class="n">x</span>
 </code></pre></div></div>
 

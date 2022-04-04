@@ -165,7 +165,7 @@ because it is what it is. Yet some things we can do something about.</p>
 with the INSERT(…) clause of the MERGE.</p>
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="n">v_s</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">WHEN NOT MATCHED THEN INSERT(</span><span class="o">'||</span><span class="n">v_arr_cols</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-    <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">2.</span><span class="p">.</span><span class="n">v_arr_cols</span><span class="p">.</span><span class="nf">COUNT</span>
+    <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">2</span><span class="o">..</span><span class="n">v_arr_cols</span><span class="p">.</span><span class="nf">COUNT</span>
     <span class="kr">LOOP</span>
         <span class="n">v_s</span> <span class="o">:=</span> <span class="n">v_s</span><span class="o">||'</span><span class="s1">, </span><span class="o">'||</span><span class="n">v_arr_cols</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
     <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
@@ -195,7 +195,7 @@ It was sort of a meld between the Perl <em>join</em> and <em>map</em> methods.</
         <span class="kr">IS</span>
             <span class="n">l_t</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">);</span>
         <span class="k">BEGIN</span>
-            <span class="k">IF</span> <span class="n">p_template</span> <span class="o">IS</span> <span class="o">NULL</span> <span class="kr">THEN</span>
+            <span class="k">IF</span> <span class="n">p_template</span> <span class="ow">IS</span> <span class="ow">NULL</span> <span class="kr">THEN</span>
                 <span class="n">l_t</span> <span class="o">:=</span> <span class="n">p_val</span><span class="p">;</span>
             <span class="kr">ELSE</span> 
                 <span class="n">l_t</span> <span class="o">:=</span> <span class="nf">REPLACE</span><span class="p">(</span><span class="n">p_template</span><span class="p">,</span> <span class="o">'</span><span class="s1">__PLACEHOLDER__</span><span class="o">'</span><span class="p">,</span> <span class="n">p_val</span><span class="p">);</span>
@@ -207,7 +207,7 @@ It was sort of a meld between the Perl <em>join</em> and <em>map</em> methods.</
             <span class="k">RETURN</span> <span class="kr">NULL</span><span class="p">;</span>
         <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="n">l_s</span> <span class="o">:=</span> <span class="n">apply_template</span><span class="p">(</span><span class="n">p_arr</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
-        <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">2.</span><span class="p">.</span><span class="n">p_arr</span><span class="p">.</span><span class="nf">COUNT</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">2</span><span class="o">..</span><span class="n">p_arr</span><span class="p">.</span><span class="nf">COUNT</span>
         <span class="kr">LOOP</span>
             <span class="n">l_s</span> <span class="o">:=</span> <span class="n">l_s</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="n">apply_template</span><span class="p">(</span><span class="n">p_arr</span><span class="p">(</span><span class="n">i</span><span class="p">));</span>
         <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>

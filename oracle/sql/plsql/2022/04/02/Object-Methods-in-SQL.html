@@ -172,10 +172,10 @@ The procedure I’m showing examples from is <em>app_csv_pkg.create_ptt_csv</em>
         <span class="p">)</span> <span class="kr">AS</span> <span class="n">p</span>
     <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(:</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">p_skip_lines</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="n">t</span>
 <span class="p">)</span> <span class="kr">SELECT</span> 
-    <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
-    <span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
-    <span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
-    <span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
+    <span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">x</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
 <span class="kr">FROM</span> <span class="n">a</span> <span class="n">x</span>
 </code></pre></div></div>
 
@@ -332,10 +332,10 @@ to not be necessary.</p>
                 <span class="p">)</span>
     <span class="p">)</span> <span class="n">t</span>
 <span class="p">)</span> <span class="kr">SELECT</span> 
-     <span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
-    <span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
-    <span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
-    <span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="k">get</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
+     <span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Employee ID</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">Last Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">First Name</span><span class="o">"</span>
+    <span class="p">,</span><span class="n">X</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span> <span class="kr">AS</span> <span class="o">"</span><span class="nv">nickname</span><span class="o">"</span>
 <span class="kr">FROM</span> <span class="n">a</span> <span class="n">X</span>
 </code></pre></div></div>
 
@@ -416,7 +416,7 @@ It parses the first row of the CLOB to get the column names and creates the PTT.
             <span class="kr">SELECT</span> <span class="n">s</span> <span class="kr">INTO</span> <span class="n">v_first_row</span> 
             <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_clob_to_lines</span><span class="p">(</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">p_max_lines</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span>
             <span class="p">;</span>
-            <span class="k">IF</span> <span class="n">v_first_row</span> <span class="o">IS</span> <span class="o">NULL</span> <span class="kr">THEN</span>
+            <span class="k">IF</span> <span class="n">v_first_row</span> <span class="ow">IS</span> <span class="ow">NULL</span> <span class="kr">THEN</span>
                 <span class="n">raise_application_error</span><span class="p">(</span><span class="mi">-20222</span><span class="p">,</span><span class="o">'</span><span class="s1">app_csv_pkg.create_ptt_csv did not find csv rows in input clob.</span><span class="o">'</span><span class="p">);</span>
             <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="k">EXCEPTION</span> <span class="k">WHEN</span> <span class="n">NO_DATA_FOUND</span> <span class="kr">THEN</span>
@@ -437,7 +437,7 @@ It parses the first row of the CLOB to get the column names and creates the PTT.
 
         <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">CREATE PRIVATE TEMPORARY TABLE ora$ptt_csv(
 </span><span class="o">'</span>
-            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"    VARCHAR2(4000)</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+            <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"    VARCHAR2(4000)</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
 ,</span><span class="o">'</span><span class="p">)</span>
             <span class="o">||'</span><span class="s1">
 )</span><span class="o">'</span>
@@ -458,26 +458,26 @@ executes a DBMS_SQL INSERT cursor bound to those arrays. Pretty slick, if a litt
         <span class="c1">--</span>
         <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">INSERT INTO ora$ptt_csv(
 </span><span class="o">'</span>
-        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>             <span class="c1">-- the column names in dquotes</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">"$_"</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>             <span class="c1">-- the column names in dquotes</span>
         <span class="o">||'</span><span class="s1">
 ) VALUES (
 </span><span class="o">'</span>
-        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="k">map</span><span class="p">(</span><span class="o">'</span><span class="s1">:$##index_val##</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>  <span class="c1">-- :1, :2, :3, etc... bind placeholders</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">:$##index_val##</span><span class="o">'</span><span class="p">).</span><span class="k">join</span><span class="p">(</span><span class="o">'</span><span class="s1">, </span><span class="o">'</span><span class="p">)</span>  <span class="c1">-- :1, :2, :3, etc... bind placeholders</span>
         <span class="o">||'</span><span class="s1">
 )</span><span class="o">'</span><span class="p">;</span>
         <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_sql</span><span class="p">);</span>
         <span class="n">v_ins_curs</span> <span class="o">:=</span> <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">open_cursor</span><span class="p">;</span>
-        <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">parse</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">,</span> <span class="n">v_sql</span><span class="p">,</span> <span class="n">DBMS_SQL</span><span class="p">.</span><span class="k">native</span><span class="p">);</span>
+        <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">parse</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">,</span> <span class="n">v_sql</span><span class="p">,</span> <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">native</span><span class="p">);</span>
 
         <span class="k">OPEN</span> <span class="n">c_read_rows</span><span class="p">;</span>
         <span class="kr">LOOP</span>
             <span class="k">FETCH</span> <span class="n">c_read_rows</span> <span class="k">BULK</span> <span class="nf">COLLECT</span> <span class="kr">INTO</span> <span class="n">v_rows</span> <span class="k">LIMIT</span> <span class="mi">100</span><span class="p">;</span>
             <span class="kr">EXIT</span> <span class="k">WHEN</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-            <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span>
+            <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span>
             <span class="kr">LOOP</span>
                 <span class="n">v_vals_1_row</span> <span class="o">:=</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">v_rows</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">);</span>
                 <span class="c1">-- j is column number</span>
-                <span class="kr">FOR</span> <span class="n">j</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_cnt</span>
+                <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_cnt</span>
                 <span class="kr">LOOP</span>
                     <span class="n">v_vals</span><span class="p">(</span><span class="n">j</span><span class="p">)(</span><span class="n">i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_vals_1_row</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
                 <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
@@ -486,13 +486,13 @@ executes a DBMS_SQL INSERT cursor bound to those arrays. Pretty slick, if a litt
             <span class="k">IF</span> <span class="n">v_last_row_cnt</span> <span class="o">!=</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span> <span class="kr">THEN</span> <span class="c1">-- will be true on first loop iteration and maybe last</span>
                 <span class="n">v_last_row_cnt</span> <span class="o">:=</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">;</span>
                 <span class="c1">-- bind each column array. v_vals has an array for every column</span>
-                <span class="kr">FOR</span> <span class="n">j</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_cnt</span>
+                <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_cnt</span>
                 <span class="kr">LOOP</span>
                     <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">bind_array</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">,</span> <span class="o">'</span><span class="s1">:</span><span class="o">'||</span><span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">v_vals</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">v_last_row_cnt</span><span class="p">);</span>
                 <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
             <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
 
-            <span class="n">v_num_rows</span> <span class="o">:=</span> <span class="n">DBMS_SQL</span><span class="p">.</span><span class="k">execute</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">);</span>
+            <span class="n">v_num_rows</span> <span class="o">:=</span> <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">execute</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">);</span>
 
         <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
         <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">close_cursor</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">);</span>

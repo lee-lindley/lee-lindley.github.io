@@ -375,7 +375,7 @@ the core <em>as_pdf3</em> written by Anton Scheffer.</p>
         <span class="c1">-- NULL last_name indicates an aggregate result.</span>
         <span class="c1">-- NULL department_name indicates it was the grand total</span>
         <span class="c1">-- Similar to the LABEL on COMPUTE SUM</span>
-        <span class="p">,</span><span class="nf">NVL</span><span class="p">(</span><span class="n">last_name</span><span class="p">,</span> <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">department_name</span> <span class="o">IS</span> <span class="o">NULL</span>
+        <span class="p">,</span><span class="nf">NVL</span><span class="p">(</span><span class="n">last_name</span><span class="p">,</span> <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">department_name</span> <span class="ow">IS</span> <span class="ow">NULL</span>
                             <span class="kr">THEN</span> <span class="nf">LPAD</span><span class="p">(</span><span class="o">'</span><span class="s1">GRAND TOTAL:</span><span class="o">'</span><span class="p">,</span><span class="mi">25</span><span class="p">)</span>
                             <span class="kr">ELSE</span> <span class="nf">LPAD</span><span class="p">(</span><span class="o">'</span><span class="s1">DEPT TOTAL:</span><span class="o">'</span><span class="p">,</span><span class="mi">25</span><span class="p">)</span>
                         <span class="k">END</span>

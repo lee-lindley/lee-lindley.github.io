@@ -160,7 +160,7 @@ a fine answer for our deployment task, but I prefer a MERGE.</p>
     <span class="kr">UNION</span> <span class="kr">ALL</span>
     <span class="kr">SELECT</span> <span class="o">'</span><span class="s1">My App</span><span class="o">'</span> <span class="kr">AS</span> <span class="n">app_name</span><span class="p">,</span> <span class="o">'</span><span class="s1">debug_level</span><span class="o">'</span> <span class="kr">AS</span> <span class="n">param_name</span><span class="p">,</span> <span class="o">'</span><span class="s1">0</span><span class="o">'</span> <span class="kr">AS</span> <span class="n">param_value</span> <span class="kr">FROM</span> <span class="n">DUAL</span>
 <span class="p">)</span> <span class="n">q</span>
-<span class="kr">ON</span> <span class="p">(</span><span class="kr">c</span><span class="p">.</span><span class="n">app_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">app_name</span> <span class="o">AND</span> <span class="kr">c</span><span class="p">.</span><span class="n">param_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">)</span>
+<span class="kr">ON</span> <span class="p">(</span><span class="kr">c</span><span class="p">.</span><span class="n">app_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">app_name</span> <span class="ow">AND</span> <span class="kr">c</span><span class="p">.</span><span class="n">param_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">)</span>
 <span class="kr">WHEN</span> <span class="kr">NOT</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">INSERT</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">created_by</span><span class="p">,</span> <span class="n">created_dt</span><span class="p">)</span>
     <span class="kr">VALUES</span><span class="p">(</span><span class="n">q</span><span class="p">.</span><span class="n">app_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span><span class="p">,</span> <span class="nf">USER</span><span class="p">,</span> <span class="nf">SYSDATE</span><span class="p">)</span>
 <span class="kr">WHEN</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="kr">SET</span>
@@ -245,7 +245,7 @@ The PTF allows us to provide any field list and types at run time.</p>
     <span class="p">;</span>
 
     <span class="k">FUNCTION</span> <span class="n">describe</span><span class="p">(</span>
-        <span class="n">p_tab</span> <span class="o">IN</span> <span class="kr">OUT</span>    <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
+        <span class="n">p_tab</span> <span class="ow">IN</span> <span class="kr">OUT</span>    <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
         <span class="p">,</span><span class="n">p_table_name</span>   <span class="kt">VARCHAR2</span>
         <span class="p">,</span><span class="n">p_columns</span>      <span class="kt">VARCHAR2</span> <span class="c1">-- csv list</span>
         <span class="p">,</span><span class="n">p_clob</span>         <span class="kt">CLOB</span>
@@ -394,7 +394,7 @@ that I support.</p>
     <span class="p">;</span>
 
     <span class="k">FUNCTION</span> <span class="n">describe</span><span class="p">(</span>
-        <span class="n">p_tab</span> <span class="o">IN</span> <span class="kr">OUT</span>    <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
+        <span class="n">p_tab</span> <span class="ow">IN</span> <span class="kr">OUT</span>    <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
         <span class="p">,</span><span class="n">p_table_name</span>   <span class="kt">VARCHAR2</span>
         <span class="p">,</span><span class="n">p_columns</span>      <span class="kt">VARCHAR2</span> <span class="c1">-- csv list</span>
         <span class="p">,</span><span class="n">p_clob</span>         <span class="kt">CLOB</span>
@@ -407,32 +407,32 @@ that I support.</p>
         <span class="k">TYPE</span> <span class="n">t_col_order</span> <span class="kr">IS</span> <span class="kr">TABLE</span> <span class="kr">OF</span> <span class="kt">BINARY_INTEGER</span> <span class="kr">INDEX</span> <span class="kr">BY</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">);</span>
         <span class="n">v_col_order</span> <span class="n">t_col_order</span><span class="p">;</span>
     <span class="k">BEGIN</span>
-        <span class="k">IF</span> <span class="n">p_tab</span><span class="p">.</span><span class="k">column</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span> 
+        <span class="k">IF</span> <span class="n">p_tab</span><span class="p">.</span><span class="n">column</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span> 
         <span class="kr">THEN</span>
             <span class="n">RAISE_APPLICATION_ERROR</span><span class="p">(</span><span class="mi">-20000</span><span class="p">,</span><span class="o">'</span><span class="s1">Input table to csv_to_table_pkg.t should be table DUAL</span><span class="o">'</span><span class="p">);</span>
         <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
-        <span class="n">p_tab</span><span class="p">.</span><span class="k">column</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="n">pass_through</span> <span class="o">:=</span> <span class="k">FALSE</span><span class="p">;</span>
-        <span class="n">p_tab</span><span class="p">.</span><span class="k">column</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="n">for_read</span> <span class="o">:=</span> <span class="k">TRUE</span><span class="p">;</span>
+        <span class="n">p_tab</span><span class="p">.</span><span class="n">column</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="n">pass_through</span> <span class="o">:=</span> <span class="k">FALSE</span><span class="p">;</span>
+        <span class="n">p_tab</span><span class="p">.</span><span class="n">column</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="n">for_read</span> <span class="o">:=</span> <span class="k">TRUE</span><span class="p">;</span>
 
         <span class="n">v_col_names</span> <span class="o">:=</span> <span class="k">split</span><span class="p">(</span><span class="nf">UPPER</span><span class="p">(</span><span class="n">p_columns</span><span class="p">));</span>
         <span class="c1">-- we need a hash to get from the column name to the index for both input csv order and output field order</span>
-        <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_names</span><span class="p">.</span><span class="nf">COUNT</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_names</span><span class="p">.</span><span class="nf">COUNT</span>
         <span class="kr">LOOP</span>
             <span class="n">v_col_order</span><span class="p">(</span><span class="n">v_col_names</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="o">:=</span> <span class="n">i</span><span class="p">;</span>
         <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
 
-        <span class="kr">FOR</span> <span class="n">r</span> <span class="o">IN</span> <span class="p">(</span>
-            <span class="kr">SELECT</span> <span class="kr">c</span><span class="p">.</span><span class="k">column_value</span> <span class="kr">AS</span> <span class="n">column_name</span>
-                <span class="p">,</span><span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">a</span><span class="p">.</span><span class="n">data_type</span> <span class="o">LIKE</span> <span class="o">'</span><span class="s1">TIMESTAMP%</span><span class="o">'</span> <span class="kr">THEN</span> <span class="o">'</span><span class="s1">TIMESTAMP</span><span class="o">'</span> <span class="kr">ELSE</span> <span class="n">a</span><span class="p">.</span><span class="n">data_type</span> <span class="k">END</span> <span class="kr">AS</span> <span class="n">data_type</span>
+        <span class="kr">FOR</span> <span class="n">r</span> <span class="ow">IN</span> <span class="p">(</span>
+            <span class="kr">SELECT</span> <span class="kr">c</span><span class="p">.</span><span class="n">column_value</span> <span class="kr">AS</span> <span class="n">column_name</span>
+                <span class="p">,</span><span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">a</span><span class="p">.</span><span class="n">data_type</span> <span class="ow">LIKE</span> <span class="o">'</span><span class="s1">TIMESTAMP%</span><span class="o">'</span> <span class="kr">THEN</span> <span class="o">'</span><span class="s1">TIMESTAMP</span><span class="o">'</span> <span class="kr">ELSE</span> <span class="n">a</span><span class="p">.</span><span class="n">data_type</span> <span class="k">END</span> <span class="kr">AS</span> <span class="n">data_type</span>
             <span class="kr">FROM</span> <span class="kr">TABLE</span><span class="p">(</span><span class="n">v_col_names</span><span class="p">)</span> <span class="kr">c</span>
             <span class="k">LEFT</span> <span class="k">OUTER</span> <span class="k">JOIN</span> <span class="n">all_tab_columns</span> <span class="n">a</span>
                 <span class="kr">ON</span> <span class="n">a</span><span class="p">.</span><span class="n">table_name</span> <span class="o">=</span> <span class="nf">UPPER</span><span class="p">(</span><span class="n">p_table_name</span><span class="p">)</span>
-                    <span class="o">AND</span> <span class="n">a</span><span class="p">.</span><span class="n">column_name</span> <span class="o">=</span> <span class="kr">c</span><span class="p">.</span><span class="k">column_value</span>
+                    <span class="ow">AND</span> <span class="n">a</span><span class="p">.</span><span class="n">column_name</span> <span class="o">=</span> <span class="kr">c</span><span class="p">.</span><span class="n">column_value</span>
         <span class="p">)</span> <span class="kr">LOOP</span>
-            <span class="k">IF</span> <span class="n">r</span><span class="p">.</span><span class="n">data_type</span> <span class="o">IS</span> <span class="o">NULL</span> <span class="kr">THEN</span>
+            <span class="k">IF</span> <span class="n">r</span><span class="p">.</span><span class="n">data_type</span> <span class="ow">IS</span> <span class="ow">NULL</span> <span class="kr">THEN</span>
                 <span class="n">RAISE_APPLICATION_ERROR</span><span class="p">(</span><span class="mi">-20001</span><span class="p">,</span><span class="o">'</span><span class="s1">table: </span><span class="o">'||</span><span class="n">p_table_name</span><span class="o">||'</span><span class="s1"> does not have a column named </span><span class="o">'||</span><span class="n">r</span><span class="p">.</span><span class="n">column_name</span><span class="p">);</span>
             <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
-            <span class="k">IF</span> <span class="n">r</span><span class="p">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="o">'</span><span class="s1">BLOB</span><span class="o">'</span> <span class="o">OR</span> <span class="n">r</span><span class="p">.</span><span class="n">data_type</span> <span class="o">LIKE</span> <span class="o">'</span><span class="s1">INTERVAL%</span><span class="o">'</span> <span class="kr">THEN</span>
+            <span class="k">IF</span> <span class="n">r</span><span class="p">.</span><span class="n">data_type</span> <span class="o">=</span> <span class="o">'</span><span class="s1">BLOB</span><span class="o">'</span> <span class="ow">OR</span> <span class="n">r</span><span class="p">.</span><span class="n">data_type</span> <span class="ow">LIKE</span> <span class="o">'</span><span class="s1">INTERVAL%</span><span class="o">'</span> <span class="kr">THEN</span>
                 <span class="n">RAISE_APPLICATION_ERROR</span><span class="p">(</span><span class="mi">-20002</span><span class="p">,</span><span class="o">'</span><span class="s1">table: </span><span class="o">'||</span><span class="n">p_table_name</span><span class="o">||'</span><span class="s1"> column </span><span class="o">'||</span><span class="n">r</span><span class="p">.</span><span class="n">column_name</span><span class="o">||'</span><span class="s1"> is unsupported data type </span><span class="o">'||</span><span class="n">r</span><span class="p">.</span><span class="n">data_type</span><span class="p">);</span>
             <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
             <span class="c1">-- we create these in any order, but they must be in the right location in the array</span>
@@ -495,7 +495,7 @@ that I support.</p>
         <span class="n">v_row_cnt</span> <span class="o">:=</span> <span class="nf">REGEXP_COUNT</span><span class="p">(</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">g_rows_regexp</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="c1">-- one extra matches on $</span>
 <span class="c1">--dbms_output.put_line('got '||v_row_cnt||' rows from clob');</span>
         <span class="c1">-- loop over the rows split from the input string</span>
-        <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_row_cnt</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_row_cnt</span>
         <span class="kr">LOOP</span>
             <span class="n">g_row_num</span> <span class="o">:=</span> <span class="n">g_row_num</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
             <span class="c1">-- pull a line out of the text input (sans newline)</span>
@@ -514,7 +514,7 @@ ROW: </span><span class="o">'||</span><span class="n">v_row</span><span class="p
 <span class="c1">--dbms_output.put_line('row '||g_row_num||' had '||v_col_strings.COUNT||' csv columns');</span>
             <span class="c1">-- populate the output rowset column tables for this row</span>
             <span class="n">v_rows_out</span> <span class="o">:=</span> <span class="n">v_rows_out</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-            <span class="kr">FOR</span> <span class="n">j</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_out_cnt</span>
+            <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_out_cnt</span>
             <span class="kr">LOOP</span>
                 <span class="n">v_output_col_type</span> <span class="o">:=</span> <span class="n">v_env</span><span class="p">.</span><span class="n">put_columns</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="k">TYPE</span><span class="p">;</span>
                 <span class="k">IF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_timestamp</span> <span class="kr">THEN</span>
@@ -530,7 +530,7 @@ ROW: </span><span class="o">'||</span><span class="n">v_row</span><span class="p
 				<span class="kr">ELSIF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_clob</span> <span class="kr">THEN</span>
                     <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_clob</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
 				<span class="kr">ELSIF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_date</span> <span class="kr">THEN</span>
-                    <span class="k">IF</span> <span class="n">p_date_fmt</span> <span class="o">IS</span> <span class="o">NULL</span> <span class="kr">THEN</span>
+                    <span class="k">IF</span> <span class="n">p_date_fmt</span> <span class="ow">IS</span> <span class="ow">NULL</span> <span class="kr">THEN</span>
                         <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_date</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">);</span> <span class="c1">-- default to nls_date_fmt</span>
                     <span class="kr">ELSE</span>
                         <span class="n">v_rowset_out</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">tab_date</span><span class="p">(</span><span class="n">v_rows_out</span><span class="p">)</span> <span class="o">:=</span> <span class="nf">TO_DATE</span><span class="p">(</span><span class="n">v_col_strings</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">p_date_fmt</span><span class="p">);</span>
@@ -697,7 +697,7 @@ SOFTWARE.
 <span class="c1">--</span>
 <span class="c1">--v_log app_log_udt := app_log_udt('TEST');</span>
   <span class="k">BEGIN</span>
-        <span class="k">IF</span> <span class="n">p_s</span> <span class="o">IS</span> <span class="o">NULL</span> <span class="kr">THEN</span>
+        <span class="k">IF</span> <span class="n">p_s</span> <span class="ow">IS</span> <span class="ow">NULL</span> <span class="kr">THEN</span>
             <span class="k">RETURN</span> <span class="n">v_arr</span><span class="p">;</span> <span class="c1">-- will be empty</span>
         <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
 <span class="c1">--v_log.log_p(TO_CHAR(REGEXP_COUNT(p_s,v_regexp)));</span>
@@ -736,7 +736,7 @@ SOFTWARE.
             <span class="n">v_cnt</span> <span class="o">:=</span> <span class="n">v_cnt</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
         <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
 
-        <span class="kr">FOR</span> <span class="n">v_occurence</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_cnt</span>
+        <span class="kr">FOR</span> <span class="n">v_occurence</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_cnt</span>
         <span class="kr">LOOP</span>
             <span class="n">v_str</span> <span class="o">:=</span> <span class="nf">REGEXP_SUBSTR</span><span class="p">(</span>
                     <span class="n">p_s</span>                 <span class="c1">-- the string we are parsing</span>
@@ -754,9 +754,9 @@ SOFTWARE.
             <span class="c1">--EXIT WHEN v_str IS NULL;</span>
 
             <span class="n">v_str</span> <span class="o">:=</span> <span class="nf">TRIM</span><span class="p">(</span><span class="n">v_str</span><span class="p">);</span>                               <span class="c1">-- if it is a double quoted string, can still have leading/trailing spaces in the value</span>
-            <span class="k">IF</span> <span class="n">v_str</span> <span class="o">IS</span> <span class="o">NOT</span> <span class="o">NULL</span> <span class="o">OR</span> <span class="n">p_keep_nulls</span> <span class="o">=</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="kr">THEN</span>     <span class="c1">-- otherwise it was an empty string which we discard.</span>
+            <span class="k">IF</span> <span class="n">v_str</span> <span class="ow">IS</span> <span class="ow">NOT</span> <span class="ow">NULL</span> <span class="ow">OR</span> <span class="n">p_keep_nulls</span> <span class="o">=</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="kr">THEN</span>     <span class="c1">-- otherwise it was an empty string which we discard.</span>
                 <span class="c1">-- we WILL add this to the array</span>
-                <span class="k">IF</span> <span class="n">v_str</span> <span class="o">IS</span> <span class="o">NULL</span> <span class="kr">THEN</span>
+                <span class="k">IF</span> <span class="n">v_str</span> <span class="ow">IS</span> <span class="ow">NULL</span> <span class="kr">THEN</span>
                     <span class="kr">NULL</span><span class="p">;</span>
                 <span class="kr">ELSIF</span> <span class="nf">SUBSTR</span><span class="p">(</span><span class="n">v_str</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="o">'</span><span class="s1">"</span><span class="o">'</span> <span class="kr">THEN</span>                 <span class="c1">-- it IS a double quoted string</span>
                     <span class="k">IF</span> <span class="n">p_strip_dquote</span> <span class="o">=</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="kr">THEN</span>
@@ -779,7 +779,7 @@ SOFTWARE.
                 <span class="c1">-- So, you can still get nulls in the case they are given to you as "" and we stripped the dquotes,</span>
                 <span class="c1">-- even if you asked to not keep nulls. Cause an empty string is not NULL. Uggh.</span>
                 <span class="n">v_i</span> <span class="o">:=</span> <span class="n">v_i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-                <span class="n">v_arr</span><span class="p">.</span><span class="k">EXTEND</span><span class="p">;</span>
+                <span class="n">v_arr</span><span class="p">.</span><span class="n">EXTEND</span><span class="p">;</span>
                 <span class="c1">-- this will raise an error if the value is more than 400 chars</span>
                 <span class="n">v_arr</span><span class="p">(</span><span class="n">v_i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_str</span><span class="p">;</span>
             <span class="k">END</span> <span class="k">IF</span><span class="p">;</span> <span class="c1">-- end not an empty string or we want to include NULL</span>
@@ -846,7 +846,7 @@ My App, debug_level, 0
 </span><span class="o">'</span>
         <span class="p">)</span>
     <span class="p">)</span> <span class="n">q</span>
-    <span class="kr">ON</span> <span class="p">(</span><span class="kr">c</span><span class="p">.</span><span class="n">app_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">app_name</span> <span class="o">AND</span> <span class="kr">c</span><span class="p">.</span><span class="n">param_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">)</span>
+    <span class="kr">ON</span> <span class="p">(</span><span class="kr">c</span><span class="p">.</span><span class="n">app_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">app_name</span> <span class="ow">AND</span> <span class="kr">c</span><span class="p">.</span><span class="n">param_name</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">)</span>
 <span class="kr">WHEN</span> <span class="kr">NOT</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">INSERT</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">param_value</span><span class="p">,</span> <span class="n">created_by</span><span class="p">,</span> <span class="n">created_dt</span><span class="p">)</span>
     <span class="kr">VALUES</span><span class="p">(</span><span class="n">q</span><span class="p">.</span><span class="n">app_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_name</span><span class="p">,</span> <span class="n">q</span><span class="p">.</span><span class="n">param_value</span><span class="p">,</span> <span class="nf">USER</span><span class="p">,</span> <span class="nf">SYSDATE</span><span class="p">)</span>
 <span class="kr">WHEN</span> <span class="kr">MATCHED</span> <span class="kr">THEN</span> <span class="kr">UPDATE</span> <span class="kr">SET</span>

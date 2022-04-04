@@ -274,7 +274,7 @@ I maintain on github.</p>
     <span class="c1">-- the describe and fetch methods are used exclusively by the PTF mechanism. You cannot</span>
     <span class="c1">-- call them directly.</span>
     <span class="k">FUNCTION</span> <span class="n">describe</span><span class="p">(</span>
-        <span class="n">p_tab</span> <span class="o">IN</span> <span class="kr">OUT</span>            <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
+        <span class="n">p_tab</span> <span class="ow">IN</span> <span class="kr">OUT</span>            <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
         <span class="p">,</span><span class="n">p_header_row</span>           <span class="kt">VARCHAR2</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
         <span class="p">,</span><span class="n">p_separator</span>            <span class="kt">VARCHAR2</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
         <span class="c1">-- you can set these to NULL if you want the default TO_CHAR conversions</span>
@@ -325,7 +325,7 @@ It looks similar to the “Cursor id” value in <em>DBMS_SQL</em>.</p>
 <p>From the package body:</p>
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">FUNCTION</span> <span class="n">describe</span><span class="p">(</span>
-        <span class="n">p_tab</span> <span class="o">IN</span> <span class="kr">OUT</span>            <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
+        <span class="n">p_tab</span> <span class="ow">IN</span> <span class="kr">OUT</span>            <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">TABLE_T</span>
         <span class="p">,</span><span class="n">p_header_row</span>           <span class="kt">VARCHAR2</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
         <span class="p">,</span><span class="n">p_separator</span>            <span class="kt">VARCHAR2</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
         <span class="c1">-- you can set these to NULL if you want the default TO_CHAR conversions</span>
@@ -336,10 +336,10 @@ It looks similar to the “Cursor id” value in <em>DBMS_SQL</em>.</p>
         <span class="n">v_new_cols</span>  <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">columns_new_t</span><span class="p">;</span>
     <span class="k">BEGIN</span>
         <span class="c1">-- stop all input columns from being in the output </span>
-        <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">p_tab</span><span class="p">.</span><span class="k">column</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">()</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">p_tab</span><span class="p">.</span><span class="n">column</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">()</span>
         <span class="kr">LOOP</span>
-            <span class="n">p_tab</span><span class="p">.</span><span class="k">column</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">pass_through</span> <span class="o">:=</span> <span class="k">FALSE</span><span class="p">;</span>
-            <span class="n">p_tab</span><span class="p">.</span><span class="k">column</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">for_read</span> <span class="o">:=</span> <span class="k">TRUE</span><span class="p">;</span>
+            <span class="n">p_tab</span><span class="p">.</span><span class="n">column</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">pass_through</span> <span class="o">:=</span> <span class="k">FALSE</span><span class="p">;</span>
+            <span class="n">p_tab</span><span class="p">.</span><span class="n">column</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">for_read</span> <span class="o">:=</span> <span class="k">TRUE</span><span class="p">;</span>
         <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
         <span class="c1">-- create a single new output column for the CSV row string</span>
         <span class="n">v_new_cols</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">:=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">column_metadata_t</span><span class="p">(</span>
@@ -348,7 +348,7 @@ It looks similar to the “Cursor id” value in <em>DBMS_SQL</em>.</p>
                                 <span class="p">);</span>
 
         <span class="c1">-- we will use row replication to put a header out on the first row if desired</span>
-        <span class="k">RETURN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">describe_t</span><span class="p">(</span><span class="n">new_columns</span> <span class="o">=&gt;</span> <span class="n">v_new_cols</span><span class="p">,</span> <span class="n">row_replication</span> <span class="o">=&gt;</span> <span class="n">p_header_row</span> <span class="o">IN</span> <span class="p">(</span><span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">y</span><span class="o">'</span><span class="p">));</span>
+        <span class="k">RETURN</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">describe_t</span><span class="p">(</span><span class="n">new_columns</span> <span class="o">=&gt;</span> <span class="n">v_new_cols</span><span class="p">,</span> <span class="n">row_replication</span> <span class="o">=&gt;</span> <span class="n">p_header_row</span> <span class="ow">IN</span> <span class="p">(</span><span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">y</span><span class="o">'</span><span class="p">));</span>
     <span class="k">END</span> <span class="n">describe</span>
     <span class="p">;</span>
 </code></pre></div></div>
@@ -417,7 +417,7 @@ is to keep track of the number of output rows on this fetch iteration.</p>
         <span class="kr">IS</span>
             <span class="n">v_s</span> <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">4000</span><span class="p">);</span>
         <span class="k">BEGIN</span>
-            <span class="n">v_s</span> <span class="o">:=</span> <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">v_conv_fmts</span><span class="p">.</span><span class="kr">EXISTS</span><span class="p">(</span><span class="n">p_col_index</span><span class="p">)</span> <span class="kr">THEN</span>
+            <span class="n">v_s</span> <span class="o">:=</span> <span class="k">CASE</span> <span class="k">WHEN</span> <span class="n">v_conv_fmts</span><span class="p">.</span><span class="n">EXISTS</span><span class="p">(</span><span class="n">p_col_index</span><span class="p">)</span> <span class="kr">THEN</span>
                       <span class="o">'</span><span class="s1">"</span><span class="o">'</span>
                         <span class="o">||</span><span class="nf">REPLACE</span><span class="p">(</span>
                             <span class="k">CASE</span> <span class="n">v_conv_fmts</span><span class="p">(</span><span class="n">p_col_index</span><span class="p">).</span><span class="n">t</span>
@@ -434,7 +434,7 @@ is to keep track of the number of output rows on this fetch iteration.</p>
                     <span class="kr">ELSE</span>
                         <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">col_to_char</span><span class="p">(</span><span class="n">v_rowset</span><span class="p">(</span><span class="n">p_col_index</span><span class="p">),</span> <span class="n">p_row_index</span><span class="p">)</span>
                 <span class="k">END</span><span class="p">;</span>
-            <span class="k">IF</span> <span class="nf">SUBSTR</span><span class="p">(</span><span class="n">v_s</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="o">'</span><span class="s1">"</span><span class="o">'</span> <span class="o">AND</span> <span class="nf">INSTR</span><span class="p">(</span><span class="n">v_s</span><span class="p">,</span><span class="n">p_separator</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="kr">THEN</span>
+            <span class="k">IF</span> <span class="nf">SUBSTR</span><span class="p">(</span><span class="n">v_s</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="o">'</span><span class="s1">"</span><span class="o">'</span> <span class="ow">AND</span> <span class="nf">INSTR</span><span class="p">(</span><span class="n">v_s</span><span class="p">,</span><span class="n">p_separator</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="kr">THEN</span>
                 <span class="n">v_s</span> <span class="o">:=</span> <span class="o">'</span><span class="s1">"</span><span class="o">'||</span><span class="n">v_s</span><span class="o">||'</span><span class="s1">"</span><span class="o">'</span><span class="p">;</span>
             <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
             <span class="k">RETURN</span> <span class="n">v_s</span><span class="p">;</span>
@@ -454,7 +454,7 @@ I’m not going to expand on what it does other than to say it converts Oracle t
 a user specified manner while meeting the quoting needs for CSV output.</p>
 
 <p>Now with the main <em>fetch_rows</em> body:</p>
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="k">IF</span> <span class="n">p_header_row</span> <span class="o">IN</span> <span class="p">(</span><span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">y</span><span class="o">'</span><span class="p">)</span> <span class="kr">THEN</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="k">IF</span> <span class="n">p_header_row</span> <span class="ow">IN</span> <span class="p">(</span><span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">y</span><span class="o">'</span><span class="p">)</span> <span class="kr">THEN</span>
             <span class="c1">-- We need to put out a header row, so we have to engage in replication_factor shenanigans.</span>
             <span class="c1">-- This is in case FETCH is called more than once. We get and put to the store</span>
             <span class="c1">-- the fetch count.</span>
@@ -473,13 +473,13 @@ If we do not need a header row, set our flag variable to skip that.</p>
         <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">get_row_set</span><span class="p">(</span><span class="n">v_rowset</span><span class="p">,</span> <span class="n">v_row_cnt</span><span class="p">,</span> <span class="n">v_col_cnt</span><span class="p">);</span>
 
         <span class="c1">-- set up for custom TO_CHAR conversions if requested for date and/or interval types</span>
-        <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_cnt</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_cnt</span>
         <span class="kr">LOOP</span>
-            <span class="k">IF</span> <span class="p">(</span><span class="n">p_date_format</span> <span class="o">IS</span> <span class="o">NOT</span> <span class="o">NULL</span> <span class="o">AND</span> <span class="n">v_env</span><span class="p">.</span><span class="n">get_columns</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="k">type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_date</span><span class="p">)</span>
+            <span class="k">IF</span> <span class="p">(</span><span class="n">p_date_format</span> <span class="ow">IS</span> <span class="ow">NOT</span> <span class="ow">NULL</span> <span class="ow">AND</span> <span class="n">v_env</span><span class="p">.</span><span class="n">get_columns</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="k">type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_date</span><span class="p">)</span>
             <span class="kr">THEN</span>
                 <span class="n">v_conv_fmts</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">t_conv_fmt</span><span class="p">(</span><span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_date</span><span class="p">,</span> <span class="n">p_date_format</span><span class="p">);</span>
-            <span class="kr">ELSIF</span> <span class="n">p_interval_format</span> <span class="o">IS</span> <span class="o">NOT</span> <span class="o">NULL</span> 
-                <span class="o">AND</span> <span class="n">v_env</span><span class="p">.</span><span class="n">get_columns</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="k">type</span> <span class="o">IN</span> <span class="p">(</span><span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_interval_ym</span><span class="p">,</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_interval_ds</span><span class="p">)</span> 
+            <span class="kr">ELSIF</span> <span class="n">p_interval_format</span> <span class="ow">IS</span> <span class="ow">NOT</span> <span class="ow">NULL</span> 
+                <span class="ow">AND</span> <span class="n">v_env</span><span class="p">.</span><span class="n">get_columns</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="k">type</span> <span class="ow">IN</span> <span class="p">(</span><span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_interval_ym</span><span class="p">,</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_interval_ds</span><span class="p">)</span> 
             <span class="kr">THEN</span>
                 <span class="n">v_conv_fmts</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">t_conv_fmt</span><span class="p">(</span><span class="n">v_env</span><span class="p">.</span><span class="n">get_columns</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="k">type</span><span class="p">,</span> <span class="n">p_interval_format</span><span class="p">);</span>
             <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
@@ -493,13 +493,13 @@ and possibly empty.</p>
             <span class="c1">-- the first row of our output will get a header row plus the data row</span>
             <span class="n">v_repfac</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">:=</span> <span class="mi">2</span><span class="p">;</span>
             <span class="c1">-- the rest of the rows will be 1 to 1 on the replication factor</span>
-            <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">2.</span><span class="p">.</span><span class="n">v_row_cnt</span>
+            <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">2</span><span class="o">..</span><span class="n">v_row_cnt</span>
             <span class="kr">LOOP</span>
                 <span class="n">v_repfac</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span>
             <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
             <span class="c1">-- these names are already double quoted and Oracle will not allow a doublequote inside a column alias</span>
             <span class="n">v_val_col</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_env</span><span class="p">.</span><span class="n">get_columns</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="k">name</span><span class="p">;</span>
-            <span class="kr">FOR</span> <span class="n">j</span> <span class="o">IN</span> <span class="mf">2.</span><span class="p">.</span><span class="n">v_col_cnt</span>
+            <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">2</span><span class="o">..</span><span class="n">v_col_cnt</span>
             <span class="kr">LOOP</span>
                 <span class="n">v_val_col</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_val_col</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="n">v_env</span><span class="p">.</span><span class="n">get_columns</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="k">name</span><span class="p">;</span> <span class="c1">--join the column names with ,</span>
             <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
@@ -516,7 +516,7 @@ input row, then one each for all the others.</p>
 
 <p>Next we loop through the input rows building the corresponding output column (we only output a single column!).</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_row_cnt</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_row_cnt</span>
         <span class="kr">LOOP</span>
             <span class="n">v_out_row_i</span> <span class="o">:=</span> <span class="n">v_out_row_i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
             <span class="c1">-- concatenate the string representations of columns with ',' separator</span>
@@ -525,7 +525,7 @@ input row, then one each for all the others.</p>
             <span class="c1">-- of non-numeric fields with double quotes. If there is a double quote in</span>
             <span class="c1">-- that data it will backwack it. Newlines in the field are passed through unchanged.</span>
             <span class="n">v_val_col</span><span class="p">(</span><span class="n">v_out_row_i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">apply_cust_conv</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span> <span class="c1">--DBMS_TF.col_to_char(v_rowset(1), i);</span>
-            <span class="kr">FOR</span> <span class="n">j</span> <span class="o">IN</span> <span class="mf">2.</span><span class="p">.</span><span class="n">v_col_cnt</span>
+            <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">2</span><span class="o">..</span><span class="n">v_col_cnt</span>
             <span class="kr">LOOP</span>
                 <span class="n">v_val_col</span><span class="p">(</span><span class="n">v_out_row_i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_val_col</span><span class="p">(</span><span class="n">v_out_row_i</span><span class="p">)</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="n">apply_cust_conv</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span> <span class="c1">--DBMS_TF.col_to_char(v_rowset(j), i);</span>
             <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
@@ -535,7 +535,7 @@ input row, then one each for all the others.</p>
 <p>If we generated a header row on this pass we submit our <em>replication_factor</em> table,
 then store our state for the next fetch pass.</p>
 
-<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="k">IF</span> <span class="n">p_header_row</span> <span class="o">IN</span> <span class="p">(</span><span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">y</span><span class="o">'</span><span class="p">)</span> <span class="kr">THEN</span>    <span class="c1">-- save for possible next fetch call</span>
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="k">IF</span> <span class="n">p_header_row</span> <span class="ow">IN</span> <span class="p">(</span><span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">y</span><span class="o">'</span><span class="p">)</span> <span class="kr">THEN</span>    <span class="c1">-- save for possible next fetch call</span>
             <span class="k">IF</span> <span class="n">v_fetch_pass</span> <span class="o">=</span> <span class="mi">0</span> <span class="kr">THEN</span>
                 <span class="c1">-- only on the first fetch </span>
                 <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">row_replication</span><span class="p">(</span><span class="n">replication_factor</span> <span class="o">=&gt;</span> <span class="n">v_repfac</span><span class="p">);</span>

@@ -194,7 +194,7 @@ to a file as base64 encoded text.</p>
 <span class="k">DECLARE</span>
     <span class="kr">c</span> <span class="kt">SYS_REFCURSOR</span><span class="p">;</span>
 
-    <span class="k">FUNCTION</span> <span class="n">base64encode</span><span class="p">(</span><span class="n">p_blob</span> <span class="o">IN</span> <span class="kt">BLOB</span><span class="p">)</span>
+    <span class="k">FUNCTION</span> <span class="n">base64encode</span><span class="p">(</span><span class="n">p_blob</span> <span class="ow">IN</span> <span class="kt">BLOB</span><span class="p">)</span>
     <span class="k">RETURN</span> <span class="kt">CLOB</span>
     <span class="c1">-- -----------------------------------------------------------------------------------</span>
     <span class="c1">-- File Name    : https://oracle-base.com/dba/miscellaneous/base64encode.sql</span>
@@ -206,7 +206,7 @@ to a file as base64 encoded text.</p>
         <span class="n">l_clob</span> <span class="kt">CLOB</span><span class="p">;</span>
         <span class="n">l_step</span> <span class="kt">PLS_INTEGER</span> <span class="o">:=</span> <span class="mi">12000</span><span class="p">;</span> <span class="c1">-- make sure you set a multiple of 3 not higher than 24573</span>
     <span class="k">BEGIN</span>
-        <span class="kr">FOR</span> <span class="n">i</span> <span class="o">IN</span> <span class="mi">0</span> <span class="o">..</span> <span class="nf">TRUNC</span><span class="p">((</span><span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">getlength</span><span class="p">(</span><span class="n">p_blob</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span><span class="o">/</span><span class="n">l_step</span><span class="p">)</span> <span class="kr">LOOP</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">0</span> <span class="o">..</span> <span class="nf">TRUNC</span><span class="p">((</span><span class="n">DBMS_LOB</span><span class="p">.</span><span class="n">getlength</span><span class="p">(</span><span class="n">p_blob</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span><span class="o">/</span><span class="n">l_step</span><span class="p">)</span> <span class="kr">LOOP</span>
             <span class="n">l_clob</span> <span class="o">:=</span> <span class="n">l_clob</span> <span class="o">||</span> <span class="n">UTL_RAW</span><span class="p">.</span><span class="n">cast_to_varchar2</span><span class="p">(</span><span class="n">UTL_ENCODE</span><span class="p">.</span><span class="n">base64_encode</span><span class="p">(</span><span class="n">DBMS_LOB</span><span class="p">.</span><span class="nf">substr</span><span class="p">(</span><span class="n">p_blob</span><span class="p">,</span> <span class="n">l_step</span><span class="p">,</span> <span class="n">i</span> <span class="o">*</span> <span class="n">l_step</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)));</span>
         <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
         <span class="k">RETURN</span> <span class="n">l_clob</span><span class="p">;</span>

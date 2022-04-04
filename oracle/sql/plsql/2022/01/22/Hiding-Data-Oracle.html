@@ -249,9 +249,9 @@ but that seems draconian. Tracking everything by the <em>user</em> identificatio
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">CREATE</span> <span class="kr">TABLE</span> <span class="n">as_sftp_private_keys</span>
 <span class="p">(</span>
-    <span class="k">host</span>  <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span> <span class="o">NOT</span> <span class="kr">NULL</span>
-    <span class="p">,</span><span class="k">id</span>   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span> <span class="o">NOT</span> <span class="kr">NULL</span>
-    <span class="p">,</span><span class="k">key</span>  <span class="kt">CLOB</span> <span class="o">NOT</span> <span class="kr">NULL</span>
+    <span class="k">host</span>  <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span> <span class="ow">NOT</span> <span class="kr">NULL</span>
+    <span class="p">,</span><span class="k">id</span>   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span> <span class="ow">NOT</span> <span class="kr">NULL</span>
+    <span class="p">,</span><span class="k">key</span>  <span class="kt">CLOB</span> <span class="ow">NOT</span> <span class="kr">NULL</span>
     <span class="p">,</span><span class="k">CONSTRAINT</span> <span class="n">as_sftp_private_keys_pk</span> <span class="k">PRIMARY</span> <span class="k">KEY</span><span class="p">(</span><span class="k">host</span><span class="p">,</span> <span class="k">id</span><span class="p">)</span>
 <span class="p">);</span>
 </code></pre></div></div>
@@ -329,7 +329,7 @@ if the operation is not allowed. This is different than the others where it quie
 to cause your operation to not match any rows.</p>
 
 <div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">GRANT</span> <span class="k">EXECUTE</span> <span class="kr">ON</span> <span class="n">as_sftp_keymgmt_security</span> <span class="kt">TO</span> <span class="kr">public</span><span class="p">;</span>
-<span class="kr">CREATE</span> <span class="o">OR</span> <span class="nf">REPLACE</span> <span class="kr">PUBLIC</span> <span class="kr">SYNONYM</span> <span class="n">as_sftp_keymgmt_security</span> <span class="kr">FOR</span> <span class="n">lee</span><span class="p">.</span><span class="n">as_sftp_keymgmt_security</span> <span class="p">;</span>
+<span class="kr">CREATE</span> <span class="ow">OR</span> <span class="nf">REPLACE</span> <span class="kr">PUBLIC</span> <span class="kr">SYNONYM</span> <span class="n">as_sftp_keymgmt_security</span> <span class="kr">FOR</span> <span class="n">lee</span><span class="p">.</span><span class="n">as_sftp_keymgmt_security</span> <span class="p">;</span>
 <span class="k">BEGIN</span>
     <span class="k">BEGIN</span>
         <span class="n">DBMS_RLS</span><span class="p">.</span><span class="n">drop_policy</span><span class="p">(</span><span class="o">'</span><span class="s1">LEE</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">AS_SFTP_PRIVATE_KEYS</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">USER_DATA_SELECT_POLICY</span><span class="o">'</span><span class="p">);</span>
@@ -395,13 +395,13 @@ call stack! You must look back a few levels to find the original caller.</p>
             dbms_output.put_line('i='||i||' owner: '||v_owner||' name: '||v_name);
         END LOOP;
         */</span>
-        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
         <span class="n">v_name</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name);</span>
         <span class="c1">--owa_util.who_called_me(v_owner, v_name, v_lineno, v_caller_t);</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name||' lineno: '||v_lineno||' caller_t: '||v_caller_t);</span>
         <span class="c1">--dbms_output.put_line(DBMS_UTILITY.format_call_stack);</span>
-        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="o">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.GET_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
+        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="ow">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.GET_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
             <span class="k">RETURN</span> <span class="kr">NULL</span><span class="p">;</span>
         <span class="kr">ELSE</span>
             <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.GET_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
@@ -437,13 +437,13 @@ call stack! You must look back a few levels to find the original caller.</p>
             dbms_output.put_line('i='||i||' owner: '||v_owner||' name: '||v_name);
         END LOOP;
         */</span>
-        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
         <span class="n">v_name</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name);</span>
         <span class="c1">--owa_util.who_called_me(v_owner, v_name, v_lineno, v_caller_t);</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name||' lineno: '||v_lineno||' caller_t: '||v_caller_t);</span>
         <span class="c1">--dbms_output.put_line(DBMS_UTILITY.format_call_stack);</span>
-        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="o">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.INSERT_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
+        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="ow">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.INSERT_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
             <span class="k">RETURN</span> <span class="kr">NULL</span><span class="p">;</span>
         <span class="kr">ELSE</span>
             <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.INSERT_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
@@ -478,13 +478,13 @@ call stack! You must look back a few levels to find the original caller.</p>
             dbms_output.put_line('i='||i||' owner: '||v_owner||' name: '||v_name);
         END LOOP;
         */</span>
-        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
         <span class="n">v_name</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name);</span>
         <span class="c1">--owa_util.who_called_me(v_owner, v_name, v_lineno, v_caller_t);</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name||' lineno: '||v_lineno||' caller_t: '||v_caller_t);</span>
         <span class="c1">--dbms_output.put_line(DBMS_UTILITY.format_call_stack);</span>
-        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="o">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.UPDATE_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
+        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="ow">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.UPDATE_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
             <span class="k">RETURN</span> <span class="kr">NULL</span><span class="p">;</span>
         <span class="kr">ELSE</span>
             <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.UPDATE_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
@@ -520,13 +520,13 @@ call stack! You must look back a few levels to find the original caller.</p>
             dbms_output.put_line('i='||i||' owner: '||v_owner||' name: '||v_name);
         END LOOP;
         */</span>
-        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="k">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+        <span class="n">v_owner</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">owner</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
         <span class="n">v_name</span> <span class="o">:=</span> <span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">concatenate_subprogram</span><span class="p">(</span><span class="n">UTL_CALL_STACK</span><span class="p">.</span><span class="n">subprogram</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name);</span>
         <span class="c1">--owa_util.who_called_me(v_owner, v_name, v_lineno, v_caller_t);</span>
         <span class="c1">--dbms_output.put_line('owner: '||v_owner||' name: '||v_name||' lineno: '||v_lineno||' caller_t: '||v_caller_t);</span>
         <span class="c1">--dbms_output.put_line(DBMS_UTILITY.format_call_stack);</span>
-        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="o">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.DELETE_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
+        <span class="k">IF</span> <span class="n">v_owner</span> <span class="o">=</span> <span class="o">'</span><span class="s1">LEE</span><span class="o">'</span> <span class="ow">AND</span> <span class="n">v_name</span> <span class="o">=</span> <span class="o">'</span><span class="s1">AS_SFTP_KEYMGMT.DELETE_PRIV_KEY</span><span class="o">'</span> <span class="kr">THEN</span>
             <span class="k">RETURN</span> <span class="kr">NULL</span><span class="p">;</span>
         <span class="kr">ELSE</span>
             <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="o">'</span><span class="s1">security check found not called by LEE.AS_SFTP_KEYMGMT.DELETE_PRIV_KEY.</span><span class="o">'</span><span class="p">);</span>
@@ -558,7 +558,7 @@ call stack! You must look back a few levels to find the original caller.</p>
     <span class="k">BEGIN</span>
         <span class="kr">SELECT</span> <span class="k">key</span> <span class="kr">INTO</span> <span class="n">v_clob</span>
         <span class="kr">FROM</span> <span class="n">as_sftp_private_keys</span> <span class="n">k</span>
-        <span class="kr">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="o">AND</span> <span class="n">k</span><span class="p">.</span><span class="k">id</span> <span class="o">=</span> <span class="n">i_user</span>
+        <span class="kr">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="ow">AND</span> <span class="n">k</span><span class="p">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">i_user</span>
         <span class="p">;</span>
         <span class="k">RETURN</span> <span class="n">v_clob</span><span class="p">;</span>
     <span class="k">EXCEPTION</span>
@@ -591,7 +591,7 @@ call stack! You must look back a few levels to find the original caller.</p>
     <span class="k">BEGIN</span>
         <span class="kr">UPDATE</span> <span class="n">as_sftp_private_keys</span>
             <span class="nf">SET</span> <span class="k">key</span> <span class="o">=</span> <span class="n">i_key</span>
-            <span class="kr">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="o">AND</span> <span class="k">id</span> <span class="o">=</span> <span class="n">i_user</span>
+            <span class="kr">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="ow">AND</span> <span class="k">id</span> <span class="o">=</span> <span class="n">i_user</span>
             <span class="p">;</span>
         <span class="k">COMMIT</span><span class="p">;</span>
     <span class="k">END</span> <span class="n">update_priv_key</span><span class="p">;</span>
@@ -600,7 +600,7 @@ call stack! You must look back a few levels to find the original caller.</p>
     <span class="kr">IS</span>
     <span class="k">BEGIN</span>
         <span class="kr">DELETE</span> <span class="kr">FROM</span> <span class="n">as_sftp_private_keys</span>
-            <span class="kr">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="o">AND</span> <span class="k">id</span> <span class="o">=</span> <span class="n">i_user</span>
+            <span class="kr">WHERE</span> <span class="k">host</span> <span class="o">=</span> <span class="n">i_host</span> <span class="ow">AND</span> <span class="k">id</span> <span class="o">=</span> <span class="n">i_user</span>
             <span class="p">;</span>
         <span class="k">COMMIT</span><span class="p">;</span>
     <span class="k">END</span> <span class="n">delete_priv_key</span><span class="p">;</span>
