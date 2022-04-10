@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    <title>Oracle REGEXP_INSTR and Beginning of Line Anchor - Lee Lindley Scratchpad</title>
+    <meta name="author" content="Lee Lindley" />
+    <meta name="description" content="Oracle REGEXP_INSTR and Beginning of Line Anchor" />
+    <meta name="keywords" content="Oracle REGEXP_INSTR and Beginning of Line Anchor, Lee Lindley Scratchpad, oracle, sql, plsql" />
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+    <meta content="" property="fb:app_id">
+    <meta content="Lee Lindley Scratchpad" property="og:site_name">
+
+    
+
+    
+      <meta content="Oracle REGEXP_INSTR and Beginning of Line Anchor" property="og:title">
+      <meta content="article" property="og:type">
+    
+
+    
+      <meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description">
+    
+
+    
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/Regexp_instr-Beginning-of-line-anchor.html" property="og:url">
+    
+
+    
+      <meta content="2022-04-10T02:45:00-04:00" property="article:published_time">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
+    
+
+    
+
+    
+      
+        <meta content="oracle" property="article:section">
+      
+    
+
+    
+      
+        <meta content="oracle" property="article:tag">
+      
+        <meta content="sql" property="article:tag">
+      
+        <meta content="plsql" property="article:tag">
+      
+        <meta content="regexp" property="article:tag">
+      
+    
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@">
+    <meta name="twitter:creator" content="@">
+
+    
+      <meta name="twitter:title" content="Oracle REGEXP_INSTR and Beginning of Line Anchor">
+    
+
+    
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/Regexp_instr-Beginning-of-line-anchor.html">
+    
+
+    
+      <meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux">
+    
+
+    
+
+    <!-- Font awesome icons -->
+    <link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <!-- syntax highlighting CSS -->
+    <link rel="stylesheet" href="/static/css/syntax.css">
+    <!-- Bootstrap core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/super-search.css">
+    <link rel="stylesheet" href="/static/css/thickbox.css">
+    <link rel="stylesheet" href="/static/css/projects.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-sm-3">
+        <div class="fixed-condition">
+          <h1 class="author-name"><a href="/">Lee Lindley</a></h1>
+          
+            <div class="profile-about">
+              I'm Just Another Perl Hacker who wound up in a big Oracle Database playground
+            </div>
+          
+          <div class="social">
+            <ul>
+              
+                <li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+              
+                <li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></li>
+              
+            </ul>
+          </div>
+          <div class="search" id="js-search">
+            <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input">
+            <ul class="search__results" id="js-search__results"></ul>
+          </div>
+          <hr />
+          <ul class="sidebar-nav">
+            <strong>Navigation</strong>
+            <li><a href="/">Home</a></li>
+            
+              <li><a class="about" href="/about/">About Me</a></li>
+            
+              <li><a class="about" href="/projects/">My Projects</a></li>
+            
+              <li><a class="about" href="/feed.xml">XML Feed</a></li>
+            
+          </ul>
+        </div>
+        <!-- end /.fixed-condition -->
+      </div>
+      <div class="col-sm-8 col-offset-1 main-layout">
+        <header class="post-header">
+  <h1 class="post-title">Oracle REGEXP_INSTR and Beginning of Line Anchor</h1>
+</header>
+
+<span class="time">10 Apr 2022</span>
+
+  <span class="categories">
+    &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>
+  </span>
+
+
+<div class="content">
+  <div class="post"><h1 id="the-problem">The Problem</h1>
+
+<p><em>REGEXP_INSTR</em>, <em>REGEXP_COUNT</em>, <em>REGEXP_REPLACE</em>, and <em>REGEXP_SUBSTR</em> all have a <em>position</em> parameter
+defined as</p>
+
+<blockquote>
+  <p><em>position</em> is a positive integer indicating the character of <em>source_char</em> where Oracle should begin the search. The default is 1, meaning that Oracle begins the search at the first character of <em>source_char</em>.</p>
+</blockquote>
+
+<p>This is handy when you want to walk through a string applying the regular expression starting at different points, such as after the last match.</p>
+
+<p>Problem: <strong>When <em>position</em> is not 1, the beginning of line anchor ‘^’ does not match the beginning of the substring</strong>.</p>
+
+<blockquote>
+  <p>There is also an <em>occurence</em> parameter that can be used to similar effect. I presume that internally the regular expression
+engine keeps track of the last match rather than parsing the entire string again, but Oracle does not say. Without details
+about it I’m leary of trusting it for high performance, and in fact have some tangential evidence that using <em>occurence</em>
+for this purpose is not as performant as using <em>position</em>. I could be wrong but am not going to try to prove it today.</p>
+</blockquote>
+
+<h1 id="regexp_instr">REGEXP_INSTR</h1>
+
+<p>This matches the beginning of the string which is two space characters. Since we specify <em>return_opt</em>=1,
+we are returned the character position AFTER the matched string. This meets expectations.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_INSTR</span><span class="p">(</span><span class="o">'</span><span class="s1">  &lt;&lt;= string starts with space</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">^</span><span class="se">\s</span><span class="s1">*</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*occurence */</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*return_opt*/</span> <span class="mi">1</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">end_position</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>3
+</code></pre></div></div>
+
+<p>Same thing but without any leading spaces in <em>source_char</em>. 
+Since we have the zero or more modifer for spaces, we still expect a match
+on the zero width start of line anchor.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_INSTR</span><span class="p">(</span><span class="o">'</span><span class="s1">String starts with S</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">^</span><span class="se">\s</span><span class="s1">*</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*occurence */</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*return_opt*/</span> <span class="mi">1</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">end_position</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1
+</code></pre></div></div>
+
+<p>We do get a match (non-zero return value). As expected the character position AFTER the matched string (which is 0 length) 
+is still 1.</p>
+
+<p>What happens when we advance
+the position so that it is no longer at the start of <em>source_char</em>? Here I set <em>position</em> to 2 so that
+we start looking for a match at character position 2.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_INSTR</span><span class="p">(</span><span class="o">'</span><span class="s1">String starts with S</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="o">'</span><span class="s1">^</span><span class="se">\s</span><span class="s1">*</span><span class="o">'</span><span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">2</span><span class="p">,</span> <span class="cm">/*occurence */</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*return_opt*/</span> <span class="mi">1</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">end_position</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0
+</code></pre></div></div>
+
+<p>That was a huge surprise to me. 
+The ‘^’ anchor no longer matches the beginning of what we think of as the string we are matching 
+(sub-string starting at position 2). I don’t know that I can say it is a bug because Oracle does not 
+explain how <em>position</em> is applied, and Oracle is careful in the wording that ‘^’ matches the start of the
+<strong>entire source string</strong> (or after a newline when the ‘m’ <em>match_param</em> is specified). Nowhere does it
+say that ‘^’ matches at starting <em>position</em>.</p>
+
+<p>Needless to say, it does NOT work the way I expect which is as demonstrated by using <em>SUBSTR</em> to achieve
+the goal of starting at position 2 rather than using the <em>position</em> argument to <em>REGEXP_INSTR</em>.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_INSTR</span><span class="p">(</span><span class="nf">SUBSTR</span><span class="p">(</span><span class="o">'</span><span class="s1">String starts with S</span><span class="o">'</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+                    <span class="p">,</span> <span class="o">'</span><span class="s1">^</span><span class="se">\s</span><span class="s1">*</span><span class="o">'</span><span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*occurence */</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*return_opt*/</span> <span class="mi">1</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">end_position</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1
+</code></pre></div></div>
+
+<p>We can work with this if we must, but we are making a copy of the rest of the string to do it rather than 
+walking through it in place. This does not make me happy if I’m writing a tight subroutine that is called millions
+of times.</p>
+
+<p>If we can write the <em>pattern</em> such that it works correctly without ‘^’, we can be efficient using <em>position</em>.</p>
+
+<h1 id="regexp_count">REGEXP_COUNT</h1>
+
+<p>The behavior is the same for <em>REGEXP_COUNT</em> as <em>REGEXP_SUBSTR. Starting with the *position</em>=1 we get what we expect.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_COUNT</span><span class="p">(</span><span class="o">'</span><span class="s1">XXX
+Xab
+Xcd</span><span class="o">'</span>
+                    <span class="p">,</span><span class="o">'</span><span class="s1">^X</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*match_param*/</span> <span class="o">'</span><span class="s1">m</span><span class="o">'</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">cnt</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>3
+</code></pre></div></div>
+
+<p>Moving to <em>position</em>=2 my expectation would be to match the ‘X’ in the second character position 
+along with the ones after newlines to give an answer of 3.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_COUNT</span><span class="p">(</span><span class="o">'</span><span class="s1">XXX
+Xab
+Xcd</span><span class="o">'</span>
+                    <span class="p">,</span><span class="o">'</span><span class="s1">^X</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">2</span><span class="p">,</span> <span class="cm">/*match_param*/</span> <span class="o">'</span><span class="s1">m</span><span class="o">'</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">cnt</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>2
+</code></pre></div></div>
+
+<p>Of course the behavior is same as for REGEXP_INSTR and we do not match until after a newline.</p>
+
+<p>Interestingly if we advance to <em>position</em>=4 which means it is sitting on a newline character as
+the starting position for the string, we still get an answer of 2.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_COUNT</span><span class="p">(</span><span class="o">'</span><span class="s1">XXX
+Xab
+Xcd</span><span class="o">'</span>
+                    <span class="p">,</span><span class="o">'</span><span class="s1">^X</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">4</span><span class="p">,</span> <span class="cm">/*match_param*/</span> <span class="o">'</span><span class="s1">m</span><span class="o">'</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">cnt</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>2
+</code></pre></div></div>
+
+<p>When we advance to character position 5 which is after the newline, the ‘^’ no longer matches at our
+start of string position and the first X on line 2 is not matched. We only match on the 3rd line.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_COUNT</span><span class="p">(</span><span class="o">'</span><span class="s1">XXX
+Xab
+Xcd</span><span class="o">'</span>
+                    <span class="p">,</span><span class="o">'</span><span class="s1">^X</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">5</span><span class="p">,</span> <span class="cm">/*match_param*/</span> <span class="o">'</span><span class="s1">m</span><span class="o">'</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">cnt</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1
+</code></pre></div></div>
+
+<h1 id="regexp_replace">REGEXP_REPLACE</h1>
+
+<p>Starting position of 1 works as expected as we anchor at the beginning of <em>source_char</em>.
+The starting ‘X’ on all three lines is replaced by ‘Y’.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_REPLACE</span><span class="p">(</span><span class="o">'</span><span class="s1">XXX
+Xab
+Xcd</span><span class="o">'</span>
+                    <span class="p">,</span><span class="o">'</span><span class="s1">^X</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*occurence*/</span> <span class="mi">0</span><span class="p">,</span> <span class="cm">/*match_param*/</span> <span class="o">'</span><span class="s1">m</span><span class="o">'</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">x_to_y</span>
+<span class="kr">FROM</span> <span class="n">dual</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>YXX
+Yab
+Ycd
+</code></pre></div></div>
+
+<p>Starting position of 2 my expectation is that the ‘X’ in character position 2 of line 1 be changed to ‘Y’. That
+does not happen.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_REPLACE</span><span class="p">(</span><span class="o">'</span><span class="s1">XXX
+Xab
+Xcd</span><span class="o">'</span>
+                    <span class="p">,</span><span class="o">'</span><span class="s1">^X</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">2</span><span class="p">,</span> <span class="cm">/*occurence*/</span> <span class="mi">0</span><span class="p">,</span> <span class="cm">/*match_param*/</span> <span class="o">'</span><span class="s1">m</span><span class="o">'</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">x_to_y</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>XXX
+Yab
+Ycd
+</code></pre></div></div>
+
+<h1 id="regexp_substr">REGEXP_SUBSTR</h1>
+
+<p>Starting position of 1 works as expected.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_SUBSTR</span><span class="p">(</span><span class="o">'</span><span class="s1">XXX
+Xab
+Xcd</span><span class="o">'</span>
+                    <span class="p">,</span><span class="o">'</span><span class="s1">^X.*</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*occurence*/</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*match_param*/</span> <span class="o">'</span><span class="s1">m</span><span class="o">'</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">x_to_y</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>XXX
+</code></pre></div></div>
+
+<p>Setting <em>occurence</em> to 2 also works as expected.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_SUBSTR</span><span class="p">(</span><span class="o">'</span><span class="s1">XXX
+Xab
+Xcd</span><span class="o">'</span>
+                    <span class="p">,</span><span class="o">'</span><span class="s1">^X.*</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*occurence*/</span> <span class="mi">2</span><span class="p">,</span> <span class="cm">/*match_param*/</span> <span class="o">'</span><span class="s1">m</span><span class="o">'</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">x_to_y</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Xab
+</code></pre></div></div>
+
+<p>Setting <em>position</em> to 2 we do not get a match until after a newline which is same behavior as the other
+regular expression functions.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">SELECT</span> <span class="nf">REGEXP_SUBSTR</span><span class="p">(</span><span class="o">'</span><span class="s1">XXX
+Xab
+Xcd</span><span class="o">'</span>
+                    <span class="p">,</span><span class="o">'</span><span class="s1">^X.*</span><span class="o">'</span>
+                    <span class="p">,</span> <span class="cm">/*position*/</span> <span class="mi">2</span><span class="p">,</span> <span class="cm">/*occurence*/</span> <span class="mi">1</span><span class="p">,</span> <span class="cm">/*match_param*/</span> <span class="o">'</span><span class="s1">m</span><span class="o">'</span>
+                   <span class="p">)</span> <span class="kr">AS</span> <span class="n">x_to_y</span>
+<span class="kr">FROM</span> <span class="n">dual</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Xab
+</code></pre></div></div>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>Maybe Oracle can claim this is working as designed. As far as I’m concerned it is a bug, but not one I
+expect them to fix. It would break too much code already dependent on this behavior.  Oracle should amend 
+the documentation to explain this behavior as it is different from the way we work with regular
+expressions to walk through a string in other languages like Perl.</p>
+</div>
+</div>
+
+
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+            <div class="panel-body">
+              <h4>Related Posts</h4>
+              <ul>
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/02/Object-Methods-in-SQL.html">Cost of UDT Object Methods in SQL</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html">Devops Data Deployment for Oracle</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>, <a href="/category/oracle">oracle</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/23/CSV-Clob-PTT.html">CSV Clob and Private Temporary Table</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+  
+  </ul>
+</div>
+
+
+<div class="PageNavigation">
+  
+    <a class="prev" href="/oracle/sql/plsql/2022/04/02/Object-Methods-in-SQL.html">&laquo; Cost of UDT Object Methods in SQL</a>
+  
+  
+</div>
+
+<div class="disqus-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    /* <![CDATA[ */
+    var disqus_shortname = "leelindleyscratchpad";
+    var disqus_identifier = "https://lee-lindley.github.io_Oracle REGEXP_INSTR and Beginning of Line Anchor";
+    var disqus_title = "Oracle REGEXP_INSTR and Beginning of Line Anchor";
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    /* ]]> */
+  </script>
+</div>
+
+        <footer>
+          &copy; Lee Lindley
+          
+            - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.
+          
+          <div class="btn-github" style="float:right;">
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+          </div>
+        </footer>
+      </div>
+      <!-- end /.col-sm-8 -->
+    </div>
+    <!-- end /.container -->
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/super-search.js"></script>
+    <script src="/static/js/thickbox-compressed.js"></script>
+    <script src="/static/js/projects.js"></script>
+  </body>
+</html>
+
