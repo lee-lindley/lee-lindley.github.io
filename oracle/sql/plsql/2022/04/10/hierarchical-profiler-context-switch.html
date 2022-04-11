@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="/static/img/favicon.ico" />
+    <title>Profiling PL/SQL to Examine Context Switch Penalty - Lee Lindley Scratchpad</title>
+    <meta name="author" content="Lee Lindley" />
+    <meta name="description" content="Profiling PL/SQL to Examine Context Switch Penalty" />
+    <meta name="keywords" content="Profiling PL/SQL to Examine Context Switch Penalty, Lee Lindley Scratchpad, oracle, sql, plsql" />
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
+    <meta content="" property="fb:app_id">
+    <meta content="Lee Lindley Scratchpad" property="og:site_name">
+
+    
+
+    
+      <meta content="Profiling PL/SQL to Examine Context Switch Penalty" property="og:title">
+      <meta content="article" property="og:type">
+    
+
+    
+      <meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description">
+    
+
+    
+      <meta content="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/hierarchical-profiler-context-switch.html" property="og:url">
+    
+
+    
+      <meta content="2022-04-10T12:30:00-04:00" property="article:published_time">
+      <meta content="https://lee-lindley.github.io/about/" property="article:author">
+    
+
+    
+
+    
+      
+        <meta content="oracle" property="article:section">
+      
+    
+
+    
+      
+        <meta content="oracle" property="article:tag">
+      
+        <meta content="sql" property="article:tag">
+      
+        <meta content="plsql" property="article:tag">
+      
+        <meta content="profiler" property="article:tag">
+      
+    
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@">
+    <meta name="twitter:creator" content="@">
+
+    
+      <meta name="twitter:title" content="Profiling PL/SQL to Examine Context Switch Penalty">
+    
+
+    
+      <meta name="twitter:url" content="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/hierarchical-profiler-context-switch.html">
+    
+
+    
+      <meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux">
+    
+
+    
+
+    <!-- Font awesome icons -->
+    <link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <!-- syntax highlighting CSS -->
+    <link rel="stylesheet" href="/static/css/syntax.css">
+    <!-- Bootstrap core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/super-search.css">
+    <link rel="stylesheet" href="/static/css/thickbox.css">
+    <link rel="stylesheet" href="/static/css/projects.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+
+    
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-sm-3">
+        <div class="fixed-condition">
+          <h1 class="author-name"><a href="/">Lee Lindley</a></h1>
+          
+            <div class="profile-about">
+              I'm Just Another Perl Hacker who wound up in a big Oracle Database playground
+            </div>
+          
+          <div class="social">
+            <ul>
+              
+                <li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a></li>
+              
+                <li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></li>
+              
+            </ul>
+          </div>
+          <div class="search" id="js-search">
+            <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input">
+            <ul class="search__results" id="js-search__results"></ul>
+          </div>
+          <hr />
+          <ul class="sidebar-nav">
+            <strong>Navigation</strong>
+            <li><a href="/">Home</a></li>
+            
+              <li><a class="about" href="/about/">About Me</a></li>
+            
+              <li><a class="about" href="/projects/">My Projects</a></li>
+            
+              <li><a class="about" href="/feed.xml">XML Feed</a></li>
+            
+          </ul>
+        </div>
+        <!-- end /.fixed-condition -->
+      </div>
+      <div class="col-sm-8 col-offset-1 main-layout">
+        <header class="post-header">
+  <h1 class="post-title">Profiling PL/SQL to Examine Context Switch Penalty</h1>
+</header>
+
+<span class="time">10 Apr 2022</span>
+
+  <span class="categories">
+    &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>
+  </span>
+
+
+<div class="content">
+  <div class="post"><h1 id="introduction">Introduction</h1>
+
+<p>In a prior post, <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/02/Object-Methods-in-SQL.html">Cost of UDT Object Methods in SQL</a>, 
+I hypothesized a performance issue was due to <strong>Context Switching</strong> between SQL and PL/SQL engine. Moving
+the suspect PL/SQL function call into a PIPELINED Table function solved the issue.</p>
+
+<p>I had three outstanding doubts about what is really going on.</p>
+
+<ol>
+  <li>The magnitude of the performance penalty caught me off gaurd. I’ve remediated context switch issues with 
+function calls in a SQL SELECT list before. I haven’t seen one where the impact was this dramatic except
+where the PL/SQL function was also calling SQL.</li>
+  <li>I am unsure whether Object type method calls in a SELECT list incur the context switch penalty. I still do not know and this analysis did not answer that question, but it did put the related subject of collection creation/extension cost into perspective.</li>
+  <li>Unrelated, documentation for chained PIPELINED Table functions suggests bulk collect logic is not needed. I wanted to verify that.</li>
+</ol>
+
+<h1 id="plsql-hierarchical-profiler">PL/SQL Hierarchical Profiler</h1>
+
+<p>If you haven’t used the profiler before, this <a href="https://www.thatjeffsmith.com/archive/2019/02/sql-developer-the-pl-sql-hierarchical-profiler/">Jeff Smith post</a> is a nice shortcut for getting started with SqlDeveloper taking care of some of the details.
+Remember to recompile with debug any of your packages and types that are called by the outer block if you want details
+for them. Once you get your feet wet, you can read the Oracle 
+document <em>Database Development Guide</em>, Chapter 15, <em>Using the PL/SQL Hierarchical Profiler</em>.</p>
+
+<h1 id="chained-pieplined-table-functions-and-bulk-fetch">Chained PIEPLINED Table Functions and Bulk Fetch</h1>
+
+<p>My working solution used chained PIPELINED Table functions. Per what I perceived the
+documetation to be implying (without ever coming out and saying it), I implemented the function that reads the cursor
+from the chain (not the first entry in the chain) without any bulk collection/array processing. The profiler
+showed that function taking 3.1% of the execution time.</p>
+
+<p>Adding BULK COLLECT LIMIT 100 to the cursor fetch and processing the resulting array caused it to take 3.2% of the execution
+time (which could be noise) and there was no reduction in total run time. 
+This appears to confirm that there is no advantage to buffering that cursor from one
+pipe row call to another. It is extra, unneeded processing.</p>
+
+<h1 id="refactored-code-to-analyze">Refactored Code to Analyze</h1>
+
+<p>The two variants we are comparing share most code. The one that does almost everything in the
+PL/SQL engine with a chained pipeline function is called like so:</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">q'[</span><span class="sx">INSERT /*+ APPEND WITH_PLSQL */ INTO ora$ptt_csv 
+WITH
+a AS (
+    SELECT t.p AS pu
+        --perlish_util_udt(t.arr) AS pu
+    FROM TABLE(
+                app_csv_pkg.split_lines_to_fields(
+                    CURSOR(SELECT * 
+                           FROM TABLE( app_csv_pkg.split_clob_to_lines(:p_clob, p_skip_lines =&gt; 1) )
+                    )
+                    , p_separator =&gt; :p_separator, p_strip_dquote =&gt; :p_strip_dquote, p_keep_nulls =&gt; 'Y'
+                )
+    ) t
+) SELECT </span><span class="o">]'</span>
+        <span class="c1">-- must use table alias and fully qualify object name with it to be able to call function or get attribute of object</span>
+        <span class="c1">-- Thus alias x for a and use x.p.get vs a.p.get.</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">X.pu.get($##index_val##) AS "$_"</span><span class="o">'</span><span class="p">).</span><span class="n">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+,</span><span class="o">'</span><span class="p">)</span>
+        <span class="o">||'</span><span class="s1">
+FROM a X</span><span class="o">'</span><span class="p">;</span>
+        <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_sql</span><span class="p">);</span>
+        <span class="k">EXECUTE</span> <span class="k">IMMEDIATE</span> <span class="n">v_sql</span> <span class="k">USING</span>  <span class="n">p_clob</span><span class="p">,</span> <span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The one that does the <em>perlish_util_udt</em> constructor call (which calls <em>app_csv_pkg.split_csv</em>) from SQL is called like so:</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="n">v_sql</span> <span class="o">:=</span> <span class="o">q'{</span><span class="sx">INSERT /*+ APPEND WITH_PLSQL */ INTO ora$ptt_csv 
+WITH 
+a AS (
+    SELECT perlish_util_udt(
+            p_csv =&gt; t.s
+            ,p_separator =&gt; :p_separator, p_strip_dquote =&gt; :p_strip_dquote, p_keep_nulls =&gt; 'Y'
+            ,p_expected_cnt =&gt; :p_expected_cnt
+        ) AS pu
+    FROM TABLE( app_csv_pkg.split_clob_to_lines(:p_clob, p_skip_lines =&gt; 1) ) t
+) SELECT </span><span class="o">}'</span>
+        <span class="c1">-- must use table alias and fully qualify object name with it to be able to call function or get attribute of object</span>
+        <span class="c1">-- Thus alias x for a and use x.p.get vs a.p.get.</span>
+        <span class="o">||</span><span class="n">v_cols</span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="o">'</span><span class="s1">X.pu.get($##index_val##) AS "$_"</span><span class="o">'</span><span class="p">).</span><span class="n">join</span><span class="p">(</span><span class="o">'</span><span class="s1">
+,</span><span class="o">'</span><span class="p">)</span>
+        <span class="o">||'</span><span class="s1">
+FROM a X</span><span class="o">'</span><span class="p">;</span>
+        <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">put_line</span><span class="p">(</span><span class="n">v_sql</span><span class="p">);</span>
+        <span class="k">EXECUTE</span> <span class="k">IMMEDIATE</span> <span class="n">v_sql</span> <span class="k">USING</span>  <span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">v_cols</span><span class="p">.</span><span class="n">arr</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">,</span> <span class="n">p_clob</span> <span class="p">;</span>
+</code></pre></div></div>
+
+<p>The <em>perlish_util_udt</em> constructor calls <em>app_csv_pkg.csv</em>. Both are called directly from PL/SQL in the first
+variant, but from SQL in the second. That is where we focus for this analysis.</p>
+
+<p>Both were compiled with the following settings for the initial timed run:</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">ALTER</span> <span class="k">SESSION</span> <span class="nf">SET</span> <span class="k">plsql_code_type</span> <span class="o">=</span> <span class="k">NATIVE</span><span class="p">;</span>
+<span class="kr">ALTER</span> <span class="k">SESSION</span> <span class="nf">SET</span> <span class="k">plsql_optimize_level</span><span class="o">=</span><span class="mi">3</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Using a 10,766 row, 20 column CLOB input file the total run times are</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">Variant</th>
+      <th style="text-align: right">Run Time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">PL/SQL</td>
+      <td style="text-align: right">9.0</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">SQL</td>
+      <td style="text-align: right">94.9</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>If you read the prior article you will notice these times do not foot to those. There were multiple
+optimizations to the code since that article, most notably using <em>REGEXP_INSTR</em> to parse the CSV rows
+rather than <em>REGEXP_SUBSTR</em>. There is still a large percentage disparity between the two variants,
+though both are much faster now.</p>
+
+<h1 id="running-with-hierarchical-profile-enabled">Running with Hierarchical Profile Enabled</h1>
+
+<p>The <em>app_csv_pkg.split_csv</em> procedure is modifed here to support additional data capture. 
+You can see the 
+original full package at <a href="https://github.com/lee-lindley/plsql_utilities">https://github.com/lee-lindley/plsql_utilities</a>.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">PROCEDURE</span> <span class="n">split_csv</span> <span class="p">(</span>
+         <span class="n">po_arr</span> <span class="kr">OUT</span> <span class="k">NOCOPY</span>  <span class="o">&amp;&amp;</span><span class="n">d_arr_varchar2_udt</span><span class="p">.</span>
+        <span class="p">,</span><span class="n">p_s</span>                <span class="kt">CLOB</span>
+        <span class="p">,</span><span class="n">p_separator</span>        <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">,</span><span class="o">'</span>
+        <span class="p">,</span><span class="n">p_keep_nulls</span>       <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">N</span><span class="o">'</span>
+        <span class="p">,</span><span class="n">p_strip_dquote</span>     <span class="kt">VARCHAR2</span>    <span class="kr">DEFAULT</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="c1">-- also unquotes \" and "" pairs within the field to just "</span>
+        <span class="p">,</span><span class="n">p_expected_cnt</span>     <span class="kt">NUMBER</span>      <span class="kr">DEFAULT</span> <span class="mi">0</span> <span class="c1">-- will get an array with at least this many elements</span>
+    <span class="p">)</span> 
+    <span class="c1">-- when p_s IS NULL, returns initialized collection with COUNT=0</span>
+    <span class="kr">IS</span>
+        <span class="n">v_str</span>                   <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">32767</span><span class="p">);</span>    <span class="c1">-- individual parsed values cannot exceed 4000 chars</span>
+        <span class="n">v_i</span>                     <span class="kt">BINARY_INTEGER</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">v_pos</span>                   <span class="kt">BINARY_INTEGER</span><span class="p">;</span>
+        <span class="n">v_pos_last</span>              <span class="kt">BINARY_INTEGER</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="n">v_last_had_separator</span>    <span class="kt">BINARY_INTEGER</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">v_len</span>                   <span class="kt">BINARY_INTEGER</span><span class="p">;</span>
+        <span class="n">v_regexp</span>                <span class="kt">VARCHAR2</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span> <span class="o">:=</span> <span class="nf">REPLACE</span><span class="p">(</span><span class="n">gc_csv_regexp</span><span class="p">,</span> <span class="o">'</span><span class="s1">__p_separator__</span><span class="o">'</span><span class="p">,</span> <span class="n">p_separator</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The local procedures defined next are to separate calls to built-in methods so that the profiler
+can capture the time spent on each separately.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="c1">-- these are to get profile info</span>
+        <span class="k">PROCEDURE</span> <span class="n">l_create_arr</span> <span class="kr">IS</span> <span class="k">BEGIN</span> <span class="n">po_arr</span> <span class="o">:=</span> <span class="o">&amp;&amp;</span><span class="n">d_arr_varchar2_udt</span><span class="p">.();</span> <span class="k">END</span><span class="p">;</span>
+        <span class="k">PROCEDURE</span> <span class="n">l_extend_arr</span><span class="p">(</span><span class="n">p_cnt</span> <span class="kt">NUMBER</span><span class="p">)</span> <span class="kr">IS</span> <span class="k">BEGIN</span> <span class="n">po_arr</span><span class="p">.</span><span class="n">EXTEND</span><span class="p">(</span><span class="n">p_cnt</span><span class="p">);</span> <span class="k">END</span><span class="p">;</span>
+        <span class="k">PROCEDURE</span> <span class="n">l_instr</span> <span class="kr">IS</span> <span class="k">BEGIN</span> <span class="n">v_pos</span> <span class="o">:=</span> <span class="nf">REGEXP_INSTR</span><span class="p">(</span><span class="n">p_s</span><span class="p">,</span> <span class="n">v_regexp</span><span class="p">,</span> <span class="n">v_pos_last</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span> <span class="k">END</span><span class="p">;</span>
+        <span class="k">PROCEDURE</span> <span class="n">l_substr</span> <span class="kr">IS</span> <span class="k">BEGIN</span> <span class="n">v_str</span> <span class="o">:=</span> <span class="nf">TRIM</span><span class="p">(</span><span class="nf">SUBSTR</span><span class="p">(</span><span class="n">p_s</span><span class="p">,</span> <span class="n">v_pos_last</span><span class="p">,</span> <span class="n">v_len</span><span class="p">));</span> <span class="k">END</span><span class="p">;</span>
+        <span class="k">PROCEDURE</span> <span class="n">l_repl_sep</span> <span class="kr">IS</span> <span class="k">BEGIN</span> <span class="n">v_str</span> <span class="o">:=</span> <span class="nf">REGEXP_REPLACE</span><span class="p">(</span><span class="n">v_str</span><span class="p">,</span> <span class="o">'</span><span class="se">\\</span><span class="s1">(</span><span class="o">'||</span><span class="n">p_separator</span><span class="o">||'</span><span class="s1">)</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="se">\1</span><span class="o">'</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span> <span class="k">END</span><span class="p">;</span>
+        <span class="k">PROCEDURE</span> <span class="n">l_strip_dq</span> <span class="kr">IS</span> <span class="k">BEGIN</span> 
+	                        <span class="n">v_str</span> <span class="o">:=</span> <span class="nf">REGEXP_REPLACE</span><span class="p">(</span><span class="n">v_str</span><span class="p">,</span> 
+	                                    <span class="o">'</span><span class="s1">^"|"$</span><span class="o">'</span>         <span class="c1">-- leading " or ending "</span>
+	                                    <span class="o">||'</span><span class="s1">|["</span><span class="se">\\</span><span class="s1">]</span><span class="o">'</span>  <span class="c1">-- or one of chars " or \</span>
+	                                        <span class="o">||'</span><span class="s1">(")</span><span class="o">'</span>     <span class="c1">-- that is followed by a " and we capture that one in \1</span>
+	                                    <span class="p">,</span><span class="o">'</span><span class="se">\1</span><span class="o">'</span>           <span class="c1">-- We put any '"' we captured back without the backwack or " quote</span>
+	                                    <span class="p">,</span><span class="mi">1</span>              <span class="c1">-- start at position 1 in v_str</span>
+	                                    <span class="p">,</span><span class="mi">0</span>              <span class="c1">-- 0 occurence means replace all of these we find</span>
+	                                <span class="p">);</span> 
+        <span class="k">END</span><span class="p">;</span>
+	<span class="k">BEGIN</span>
+        <span class="c1">--po_arr := &amp;&amp;d_arr_varchar2_udt.();</span>
+        <span class="n">l_create_arr</span><span class="p">;</span>
+        <span class="k">IF</span> <span class="n">p_expected_cnt</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="kr">THEN</span>
+            <span class="c1">--po_arr.EXTEND(p_expected_cnt);</span>
+            <span class="n">l_extend_arr</span><span class="p">(</span><span class="n">p_expected_cnt</span><span class="p">);</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+        <span class="k">IF</span> <span class="n">p_s</span> <span class="ow">IS</span> <span class="ow">NOT</span> <span class="ow">NULL</span> <span class="kr">THEN</span>
+            <span class="kr">LOOP</span>
+                <span class="c1">--v_pos := REGEXP_INSTR(p_s, v_regexp, v_pos_last, 1, 1); -- get end char of matching string</span>
+                <span class="n">l_instr</span><span class="p">;</span>
+                <span class="c1">-- the regexp WILL match until it matches the end of the string. Once v_pos_last </span>
+                <span class="c1">-- is on a character past the end of the string, it will return 0.</span>
+                <span class="kr">EXIT</span> <span class="k">WHEN</span> <span class="n">v_pos</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+                <span class="n">v_last_had_separator</span> <span class="o">:=</span> <span class="k">CASE</span> <span class="k">WHEN</span> <span class="nf">SUBSTR</span><span class="p">(</span><span class="n">p_s</span><span class="p">,</span> <span class="n">v_pos</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="n">p_separator</span> <span class="kr">THEN</span> <span class="mi">1</span> <span class="kr">ELSE</span> <span class="mi">0</span> <span class="k">END</span><span class="p">;</span>
+                <span class="n">v_len</span> <span class="o">:=</span> <span class="p">(</span><span class="n">v_pos</span> <span class="o">-</span> <span class="n">v_pos_last</span><span class="p">)</span> <span class="o">-</span> <span class="n">v_last_had_separator</span><span class="p">;</span>
+                <span class="k">IF</span> <span class="n">v_len</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="kr">THEN</span>
+                    <span class="c1">--v_str := TRIM(SUBSTR(p_s, v_pos_last, v_len)); -- could still be null after trim</span>
+                    <span class="n">l_substr</span><span class="p">;</span>
+                <span class="kr">ELSE</span>
+                    <span class="n">v_str</span> <span class="o">:=</span> <span class="kr">NULL</span><span class="p">;</span>
+                <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+                <span class="k">IF</span> <span class="n">v_str</span> <span class="ow">IS</span> <span class="ow">NOT</span> <span class="ow">NULL</span> <span class="ow">OR</span> <span class="n">p_keep_nulls</span> <span class="o">=</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="kr">THEN</span>
+                    <span class="k">IF</span> <span class="nf">SUBSTR</span><span class="p">(</span><span class="n">v_str</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="o">'</span><span class="s1">"</span><span class="o">'</span> <span class="kr">THEN</span>
+                        <span class="k">IF</span> <span class="n">p_strip_dquote</span> <span class="o">=</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="kr">THEN</span> <span class="c1">-- otherwise keep everything after trim which means should end on dquote</span>
+                            <span class="cm">/*
+	                        v_str := REGEXP_REPLACE(v_str, 
+	                                    '^"|"$'         -- leading " or ending "
+	                                    ||'|["\\]'  -- or one of chars " or \
+	                                        ||'(")'     -- that is followed by a " and we capture that one in \1
+	                                    ,'\1'           -- We put any '"' we captured back without the backwack or " quote
+	                                    ,1              -- start at position 1 in v_str
+	                                    ,0              -- 0 occurence means replace all of these we find
+	                                ); 
+                            */</span>
+                            <span class="n">l_strip_dq</span><span class="p">;</span>
+                        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+                    <span class="kr">ELSIF</span> <span class="n">v_str</span> <span class="ow">IS</span> <span class="ow">NOT</span> <span class="ow">NULL</span> <span class="kr">THEN</span>
+                        <span class="c1">--v_str := REGEXP_REPLACE(v_str, '\\('||p_separator||')', '\1', 1, 0);</span>
+                        <span class="n">l_repl_sep</span><span class="p">;</span>
+                    <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+
+                    <span class="n">v_i</span> <span class="o">:=</span> <span class="n">v_i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+                    <span class="k">IF</span> <span class="n">v_i</span> <span class="o">&gt;</span> <span class="n">p_expected_cnt</span> <span class="kr">THEN</span> <span class="c1">-- otherwise we already have room</span>
+	                    <span class="c1">--po_arr.EXTEND;</span>
+                        <span class="n">l_extend_arr</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+                    <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+	                <span class="n">po_arr</span><span class="p">(</span><span class="n">v_i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_str</span><span class="p">;</span>
+                <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+                <span class="n">v_pos_last</span> <span class="o">:=</span> <span class="n">v_pos</span><span class="p">;</span> <span class="c1">-- walk the string to next token</span>
+            <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+            <span class="k">IF</span> <span class="n">v_last_had_separator</span> <span class="o">=</span> <span class="mi">1</span> <span class="ow">AND</span> <span class="n">p_keep_nulls</span> <span class="o">=</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span> <span class="kr">THEN</span> <span class="c1">-- trailing null</span>
+                <span class="n">v_i</span> <span class="o">:=</span> <span class="n">v_i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+                <span class="k">IF</span> <span class="n">v_i</span> <span class="o">&gt;</span> <span class="n">p_expected_cnt</span> <span class="kr">THEN</span> <span class="c1">-- otherwise we already have room</span>
+                    <span class="c1">--po_arr.EXTEND;</span>
+                    <span class="n">l_extend_arr</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+                <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+                <span class="n">po_arr</span><span class="p">(</span><span class="n">v_i</span><span class="p">)</span> <span class="o">:=</span> <span class="kr">NULL</span><span class="p">;</span> <span class="c1">-- do not think this is necessary, but make it explicit</span>
+            <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
+        <span class="k">END</span> <span class="k">IF</span><span class="p">;</span> <span class="c1">-- end if input string not null</span>
+	<span class="k">END</span> <span class="n">split_csv</span>
+	<span class="p">;</span>
+</code></pre></div></div>
+
+<p>Recompiling in DEBUG mode and with Profiling turned on, I expected some overhead to add to the run
+times and we do see that.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">ALTER</span> <span class="k">TYPE</span> <span class="n">perlish_util_udt</span> <span class="k">COMPILE</span> <span class="k">DEBUG</span><span class="p">;</span>
+<span class="kr">ALTER</span> <span class="k">PACKAGE</span> <span class="n">app_csv_pkg</span> <span class="k">COMPILE</span> <span class="k">DEBUG</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+    <span class="n">DBMS_HPROF</span><span class="p">.</span><span class="n">start_profiling</span><span class="p">(</span><span class="o">'</span><span class="s1">PLSHPROF_DIR</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">test.trc</span><span class="o">'</span><span class="p">);</span>
+<span class="c1">-- clob not listed for brevity</span>
+<span class="n">APP_CSV_PKG</span><span class="p">.</span><span class="n">create_ptt_csv</span><span class="p">(</span><span class="nf">TO_CLOB</span><span class="p">(</span><span class="o">q'{</span><span class="sx">...
+...
+</span><span class="o">}'</span><span class="p">)</span>
+<span class="p">);</span>
+    <span class="n">DBMS_HPROF</span><span class="p">.</span><span class="n">stop_profiling</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="o">/</span>
+<span class="kr">SELECT</span> <span class="nf">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="kr">FROM</span> <span class="n">ora$ptt_csv</span>
+<span class="o">/</span>
+<span class="k">COMMIT</span>
+<span class="o">/</span>
+<span class="k">DECLARE</span>
+    <span class="n">runid</span> <span class="kt">NUMBER</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+    <span class="n">runid</span> <span class="o">:=</span> <span class="n">DBMS_HPROF</span><span class="p">.</span><span class="n">analyze</span><span class="p">(</span><span class="k">LOCATION</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">PLSHPROF_DIR</span><span class="o">'</span><span class="p">,</span> <span class="n">FILENAME</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">test.trc</span><span class="o">'</span><span class="p">);</span>
+    <span class="n">DBMS_OUTPUT</span><span class="p">.</span><span class="n">PUT_LINE</span><span class="p">(</span><span class="o">'</span><span class="s1">runid = </span><span class="o">'</span> <span class="o">||</span> <span class="n">runid</span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="o">/</span>
+</code></pre></div></div>
+
+<p>The times are longer with profiling and debug mode, but still proportional.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="text-align: left">Variant</th>
+      <th style="text-align: right">Run Time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: left">PL/SQL</td>
+      <td style="text-align: right">13.0</td>
+    </tr>
+    <tr>
+      <td style="text-align: left">SQL</td>
+      <td style="text-align: right">141.7</td>
+    </tr>
+  </tbody>
+</table>
+
+<h1 id="reading-the-profiler-data">Reading the Profiler Data</h1>
+
+<p>SqlDeveloper can show it to you including the HTML report it causes to be created in the database directory.
+That is convenient and I use it, but for this article I teased out the data I wanted to show.</p>
+
+<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kr">with</span> <span class="n">a</span> <span class="kr">as</span> <span class="p">(</span>
+<span class="kr">select</span> <span class="k">function</span><span class="p">,</span> <span class="k">namespace</span><span class="p">,</span> <span class="nf">sum</span><span class="p">(</span><span class="n">subtree_elapsed_time</span><span class="p">)</span> <span class="kr">as</span> <span class="n">subtree_elapsed_time</span><span class="p">,</span> <span class="nf">sum</span><span class="p">(</span><span class="n">function_elapsed_time</span><span class="p">)</span> <span class="kr">as</span> <span class="n">function_elapsed_time</span>
+<span class="kr">from</span> <span class="n">dbmshp_function_info</span>
+<span class="kr">where</span> <span class="n">runid</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="kr">group</span> <span class="kr">by</span> <span class="k">function</span><span class="p">,</span> <span class="k">namespace</span>
+<span class="p">),</span> <span class="n">b</span> <span class="kr">as</span> <span class="p">(</span>
+<span class="kr">select</span> <span class="k">function</span><span class="p">,</span> <span class="k">namespace</span><span class="p">,</span> <span class="nf">sum</span><span class="p">(</span><span class="n">subtree_elapsed_time</span><span class="p">)</span> <span class="kr">as</span> <span class="n">subtree_elapsed_time</span><span class="p">,</span> <span class="nf">sum</span><span class="p">(</span><span class="n">function_elapsed_time</span><span class="p">)</span> <span class="kr">as</span> <span class="n">function_elapsed_time</span>
+<span class="kr">from</span> <span class="n">dbmshp_function_info</span>
+<span class="kr">where</span> <span class="n">runid</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="kr">group</span> <span class="kr">by</span> <span class="k">function</span><span class="p">,</span> <span class="k">namespace</span>
+<span class="p">)</span> <span class="kr">select</span> <span class="nf">NVL</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">function</span><span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="n">function</span><span class="p">)</span> <span class="kr">as</span> <span class="k">function</span>
+    <span class="p">,</span><span class="nf">NVL</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">namespace</span><span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="n">namespace</span><span class="p">)</span> <span class="kr">as</span> <span class="k">namespace</span>
+    <span class="p">,</span><span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">subtree_elapsed_time</span><span class="o">/</span><span class="mi">1000000</span><span class="p">,</span> <span class="o">'</span><span class="s1">999,999.9</span><span class="o">'</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">called_from_sql_cum</span>
+    <span class="p">,</span><span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">subtree_elapsed_time</span><span class="o">/</span><span class="mi">1000000</span><span class="p">,</span> <span class="o">'</span><span class="s1">999,999.9</span><span class="o">'</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">called_from_plql_cum</span>
+    <span class="p">,</span><span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">function_elapsed_time</span><span class="o">/</span><span class="mi">1000000</span><span class="p">,</span> <span class="o">'</span><span class="s1">999,999.9</span><span class="o">'</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">called_from_sql_secs</span>
+    <span class="p">,</span><span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">function_elapsed_time</span><span class="o">/</span><span class="mi">1000000</span><span class="p">,</span> <span class="o">'</span><span class="s1">999,999.9</span><span class="o">'</span><span class="p">)</span> <span class="kr">AS</span> <span class="n">called_from_plsql_secs</span>
+<span class="kr">from</span> <span class="n">a</span>
+<span class="k">full</span> <span class="k">outer</span> <span class="k">join</span> <span class="n">b</span>
+    <span class="kr">on</span> <span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">function</span> <span class="o">=</span> <span class="n">a</span><span class="p">.</span><span class="n">function</span> <span class="c1">--and b.line# = a.line#</span>
+    <span class="p">)</span>
+        <span class="ow">OR</span> <span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">function</span> <span class="o">=</span> <span class="o">'</span><span class="s1">CREATE_PTT_CSV</span><span class="o">'</span> <span class="ow">AND</span> <span class="n">a</span><span class="p">.</span><span class="n">function</span> <span class="o">=</span> <span class="o">'</span><span class="s1">CREATE_PTT_CSV_UDT</span><span class="o">'</span><span class="p">)</span>
+<span class="kr">order</span> <span class="kr">by</span> <span class="nf">NVL</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">subtree_elapsed_time</span><span class="p">,</span> <span class="n">b</span><span class="p">.</span><span class="n">subtree_elapsed_time</span><span class="p">)</span> <span class="kr">desc</span>
+    <span class="p">;</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>You may notice that the total times are a bit less than reported above. The difference I believe
+is that I’m reporting above the elapsed time in sqlplus, which includes the time to load the
+CLOB into memory.</p>
+</blockquote>
+
+<table class="img-table-centered">
+  <thead>
+    <tr>
+      <th style="text-align: center"><em>PL/SQL Hierarchical Profiler Data</em></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="text-align: center"><img src="/images/Screenshot 2022-04-10 201308.gif" alt="" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>I find it interesting that two of the operations I was concerned with, creating the collection
+(SPLIT_CSV.L_CREATE_ARR) and extending/growing the collection (SPLIT_CSV.L_EXTEND_ARR), are non-factors.</p>
+
+<p>My original premise was that context switching was the villain. If that were the entire story,
+I would expect the overall time for the function called from SQL to show the longer run time
+while the internal components of the call did not. In other words the impact of the context switch
+should only be at the beginning and end of the single call as we move memory around for the 
+context switch. That is NOT what we see here.</p>
+
+<p>Individual operations that should be taking place inside the PL/SQL engine for both runs have
+an elapsed time sum that is ten to twenty times longer when the function is called from SQL
+than when called from PL/SQL.</p>
+
+<p>It is possible that I do not understand all implications of “context switching” here.</p>
+
+<p>If the only discrepancies were in the regular expression engine, I would feel much better as that
+beast could be a weirdo. But we have anomalous behavior in the simple substring operation as well (SPLIT_CSV.L_SUBSTR)
+and that has nothing to do with the regular expression engine.</p>
+
+<p>What the problem operations all have in common is reading and/or writing character data in memory. It may be
+that each of these operations incur the context switch penalty as they negotiate the “other”
+memory space.</p>
+
+<p>I’m now at a point where I need to revisit my understanding of what context switch means for the
+SQL/PL_SQL interface. It isn’t like I haven’t been reading everything I could find on the subject
+for the last two weeks, yet somehow, exactly what goes on here has alluded me.</p>
+
+<p>Stay tuned.</p>
+</div>
+</div>
+
+
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+            <div class="panel-body">
+              <h4>Related Posts</h4>
+              <ul>
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/Regexp_instr-Beginning-of-line-anchor.html">Oracle REGEXP_INSTR and Beginning of Line Anchor</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/02/Object-Methods-in-SQL.html">Cost of UDT Object Methods in SQL</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html">Devops Data Deployment for Oracle</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>, <a href="/category/oracle">oracle</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html">A Ruby/Rouge Lexer Class for Oracle PL/SQL</a>
+                  
+                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+            
+                <li class="relatedPost">
+                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
+                  
+                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
+                  
+                </li>
+          
+          
+        
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+    
+      
+        
+          
+      
+          
+      
+          
+      
+    
+        
+          
+      
+          
+      
+          
+      
+    
+  
+  
+  </ul>
+</div>
+
+
+<div class="PageNavigation">
+  
+    <a class="prev" href="/oracle/sql/plsql/2022/04/10/Regexp_instr-Beginning-of-line-anchor.html">&laquo; Oracle REGEXP_INSTR and Beginning of Line Anchor</a>
+  
+  
+</div>
+
+<div class="disqus-comments">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+    /* <![CDATA[ */
+    var disqus_shortname = "leelindleyscratchpad";
+    var disqus_identifier = "https://lee-lindley.github.io_Profiling PL/SQL to Examine Context Switch Penalty";
+    var disqus_title = "Profiling PL/SQL to Examine Context Switch Penalty";
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+    /* ]]> */
+  </script>
+</div>
+
+        <footer>
+          &copy; Lee Lindley
+          
+            - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.
+          
+          <div class="btn-github" style="float:right;">
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
+          </div>
+        </footer>
+      </div>
+      <!-- end /.col-sm-8 -->
+    </div>
+    <!-- end /.container -->
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/super-search.js"></script>
+    <script src="/static/js/thickbox-compressed.js"></script>
+    <script src="/static/js/projects.js"></script>
+  </body>
+</html>
+

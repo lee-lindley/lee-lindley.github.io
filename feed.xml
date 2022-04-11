@@ -5,9 +5,389 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 10 Apr 2022 11:54:22 -0400</pubDate>
-    <lastBuildDate>Sun, 10 Apr 2022 11:54:22 -0400</lastBuildDate>
+    <pubDate>Sun, 10 Apr 2022 21:21:56 -0400</pubDate>
+    <lastBuildDate>Sun, 10 Apr 2022 21:21:56 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Profiling PL/SQL to Examine Context Switch Penalty</title>
+        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;In a prior post, &lt;a href=&quot;https://lee-lindley.github.io/oracle/sql/plsql/2022/04/02/Object-Methods-in-SQL.html&quot;&gt;Cost of UDT Object Methods in SQL&lt;/a&gt;, 
+I hypothesized a performance issue was due to &lt;strong&gt;Context Switching&lt;/strong&gt; between SQL and PL/SQL engine. Moving
+the suspect PL/SQL function call into a PIPELINED Table function solved the issue.&lt;/p&gt;
+
+&lt;p&gt;I had three outstanding doubts about what is really going on.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The magnitude of the performance penalty caught me off gaurd. I’ve remediated context switch issues with 
+function calls in a SQL SELECT list before. I haven’t seen one where the impact was this dramatic except
+where the PL/SQL function was also calling SQL.&lt;/li&gt;
+  &lt;li&gt;I am unsure whether Object type method calls in a SELECT list incur the context switch penalty. I still do not know and this analysis did not answer that question, but it did put the related subject of collection creation/extension cost into perspective.&lt;/li&gt;
+  &lt;li&gt;Unrelated, documentation for chained PIPELINED Table functions suggests bulk collect logic is not needed. I wanted to verify that.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h1 id=&quot;plsql-hierarchical-profiler&quot;&gt;PL/SQL Hierarchical Profiler&lt;/h1&gt;
+
+&lt;p&gt;If you haven’t used the profiler before, this &lt;a href=&quot;https://www.thatjeffsmith.com/archive/2019/02/sql-developer-the-pl-sql-hierarchical-profiler/&quot;&gt;Jeff Smith post&lt;/a&gt; is a nice shortcut for getting started with SqlDeveloper taking care of some of the details.
+Remember to recompile with debug any of your packages and types that are called by the outer block if you want details
+for them. Once you get your feet wet, you can read the Oracle 
+document &lt;em&gt;Database Development Guide&lt;/em&gt;, Chapter 15, &lt;em&gt;Using the PL/SQL Hierarchical Profiler&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;chained-pieplined-table-functions-and-bulk-fetch&quot;&gt;Chained PIEPLINED Table Functions and Bulk Fetch&lt;/h1&gt;
+
+&lt;p&gt;My working solution used chained PIPELINED Table functions. Per what I perceived the
+documetation to be implying (without ever coming out and saying it), I implemented the function that reads the cursor
+from the chain (not the first entry in the chain) without any bulk collection/array processing. The profiler
+showed that function taking 3.1% of the execution time.&lt;/p&gt;
+
+&lt;p&gt;Adding BULK COLLECT LIMIT 100 to the cursor fetch and processing the resulting array caused it to take 3.2% of the execution
+time (which could be noise) and there was no reduction in total run time. 
+This appears to confirm that there is no advantage to buffering that cursor from one
+pipe row call to another. It is extra, unneeded processing.&lt;/p&gt;
+
+&lt;h1 id=&quot;refactored-code-to-analyze&quot;&gt;Refactored Code to Analyze&lt;/h1&gt;
+
+&lt;p&gt;The two variants we are comparing share most code. The one that does almost everything in the
+PL/SQL engine with a chained pipeline function is called like so:&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;q'[&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;INSERT /*+ APPEND WITH_PLSQL */ INTO ora$ptt_csv 
+WITH
+a AS (
+    SELECT t.p AS pu
+        --perlish_util_udt(t.arr) AS pu
+    FROM TABLE(
+                app_csv_pkg.split_lines_to_fields(
+                    CURSOR(SELECT * 
+                           FROM TABLE( app_csv_pkg.split_clob_to_lines(:p_clob, p_skip_lines =&amp;gt; 1) )
+                    )
+                    , p_separator =&amp;gt; :p_separator, p_strip_dquote =&amp;gt; :p_strip_dquote, p_keep_nulls =&amp;gt; 'Y'
+                )
+    ) t
+) SELECT &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]'&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;-- must use table alias and fully qualify object name with it to be able to call function or get attribute of object&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;-- Thus alias x for a and use x.p.get vs a.p.get.&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;X.pu.get($##index_val##) AS &quot;$_&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;
+,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;
+FROM a X&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;DBMS_OUTPUT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;put_line&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;EXECUTE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IMMEDIATE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;p_clob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_strip_dquote&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The one that does the &lt;em&gt;perlish_util_udt&lt;/em&gt; constructor call (which calls &lt;em&gt;app_csv_pkg.split_csv&lt;/em&gt;) from SQL is called like so:&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;INSERT /*+ APPEND WITH_PLSQL */ INTO ora$ptt_csv 
+WITH 
+a AS (
+    SELECT perlish_util_udt(
+            p_csv =&amp;gt; t.s
+            ,p_separator =&amp;gt; :p_separator, p_strip_dquote =&amp;gt; :p_strip_dquote, p_keep_nulls =&amp;gt; 'Y'
+            ,p_expected_cnt =&amp;gt; :p_expected_cnt
+        ) AS pu
+    FROM TABLE( app_csv_pkg.split_clob_to_lines(:p_clob, p_skip_lines =&amp;gt; 1) ) t
+) SELECT &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;-- must use table alias and fully qualify object name with it to be able to call function or get attribute of object&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;-- Thus alias x for a and use x.p.get vs a.p.get.&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;X.pu.get($##index_val##) AS &quot;$_&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;
+,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;
+FROM a X&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;DBMS_OUTPUT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;put_line&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;EXECUTE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IMMEDIATE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_strip_dquote&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_clob&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The &lt;em&gt;perlish_util_udt&lt;/em&gt; constructor calls &lt;em&gt;app_csv_pkg.csv&lt;/em&gt;. Both are called directly from PL/SQL in the first
+variant, but from SQL in the second. That is where we focus for this analysis.&lt;/p&gt;
+
+&lt;p&gt;Both were compiled with the following settings for the initial timed run:&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;ALTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;SESSION&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;SET&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;plsql_code_type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NATIVE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;ALTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;SESSION&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;SET&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;plsql_optimize_level&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Using a 10,766 row, 20 column CLOB input file the total run times are&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: left&quot;&gt;Variant&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Run Time&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: left&quot;&gt;PL/SQL&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;9.0&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: left&quot;&gt;SQL&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;94.9&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;If you read the prior article you will notice these times do not foot to those. There were multiple
+optimizations to the code since that article, most notably using &lt;em&gt;REGEXP_INSTR&lt;/em&gt; to parse the CSV rows
+rather than &lt;em&gt;REGEXP_SUBSTR&lt;/em&gt;. There is still a large percentage disparity between the two variants,
+though both are much faster now.&lt;/p&gt;
+
+&lt;h1 id=&quot;running-with-hierarchical-profile-enabled&quot;&gt;Running with Hierarchical Profile Enabled&lt;/h1&gt;
+
+&lt;p&gt;The &lt;em&gt;app_csv_pkg.split_csv&lt;/em&gt; procedure is modifed here to support additional data capture. 
+You can see the 
+original full package at &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities&quot;&gt;https://github.com/lee-lindley/plsql_utilities&lt;/a&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;split_csv&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+         &lt;span class=&quot;n&quot;&gt;po_arr&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OUT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;NOCOPY&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d_arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_s&lt;/span&gt;                &lt;span class=&quot;kt&quot;&gt;CLOB&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;        &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_keep_nulls&lt;/span&gt;       &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;N&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_strip_dquote&lt;/span&gt;     &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;    &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- also unquotes \&quot; and &quot;&quot; pairs within the field to just &quot;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_expected_cnt&lt;/span&gt;     &lt;span class=&quot;kt&quot;&gt;NUMBER&lt;/span&gt;      &lt;span class=&quot;kr&quot;&gt;DEFAULT&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- will get an array with at least this many elements&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
+    &lt;span class=&quot;c1&quot;&gt;-- when p_s IS NULL, returns initialized collection with COUNT=0&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt;                   &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;32767&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;-- individual parsed values cannot exceed 4000 chars&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;v_i&lt;/span&gt;                     &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;v_pos&lt;/span&gt;                   &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;v_pos_last&lt;/span&gt;              &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;v_last_had_separator&lt;/span&gt;    &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;v_len&lt;/span&gt;                   &lt;span class=&quot;kt&quot;&gt;BINARY_INTEGER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;v_regexp&lt;/span&gt;                &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1024&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;REPLACE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gc_csv_regexp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;__p_separator__&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The local procedures defined next are to separate calls to built-in methods so that the profiler
+can capture the time spent on each separately.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;c1&quot;&gt;-- these are to get profile info&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;l_create_arr&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;po_arr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d_arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.();&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;l_extend_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_cnt&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NUMBER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;po_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;EXTEND&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_cnt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;l_instr&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_pos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;REGEXP_INSTR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_regexp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_pos_last&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;l_substr&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;TRIM&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;SUBSTR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_pos_last&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;l_repl_sep&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;REGEXP_REPLACE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\\&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;PROCEDURE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;l_strip_dq&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt; 
+	                        &lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;REGEXP_REPLACE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
+	                                    &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;^&quot;|&quot;$&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;         &lt;span class=&quot;c1&quot;&gt;-- leading &quot; or ending &quot;&lt;/span&gt;
+	                                    &lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;|[&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\\&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;-- or one of chars &quot; or \&lt;/span&gt;
+	                                        &lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;(&quot;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;     &lt;span class=&quot;c1&quot;&gt;-- that is followed by a &quot; and we capture that one in \1&lt;/span&gt;
+	                                    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;           &lt;span class=&quot;c1&quot;&gt;-- We put any '&quot;' we captured back without the backwack or &quot; quote&lt;/span&gt;
+	                                    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;              &lt;span class=&quot;c1&quot;&gt;-- start at position 1 in v_str&lt;/span&gt;
+	                                    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;              &lt;span class=&quot;c1&quot;&gt;-- 0 occurence means replace all of these we find&lt;/span&gt;
+	                                &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; 
+        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;--po_arr := &amp;amp;&amp;amp;d_arr_varchar2_udt.();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;l_create_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_expected_cnt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;--po_arr.EXTEND(p_expected_cnt);&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;l_extend_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_expected_cnt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_s&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;NULL&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;--v_pos := REGEXP_INSTR(p_s, v_regexp, v_pos_last, 1, 1); -- get end char of matching string&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;l_instr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;-- the regexp WILL match until it matches the end of the string. Once v_pos_last &lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;-- is on a character past the end of the string, it will return 0.&lt;/span&gt;
+                &lt;span class=&quot;kr&quot;&gt;EXIT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_pos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;v_last_had_separator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;CASE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;SUBSTR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_pos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_separator&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;ELSE&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;v_len&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_pos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_pos_last&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_last_had_separator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_len&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
+                    &lt;span class=&quot;c1&quot;&gt;--v_str := TRIM(SUBSTR(p_s, v_pos_last, v_len)); -- could still be null after trim&lt;/span&gt;
+                    &lt;span class=&quot;n&quot;&gt;l_substr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;kr&quot;&gt;ELSE&lt;/span&gt;
+                    &lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;NULL&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;OR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_keep_nulls&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;SUBSTR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
+                        &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_strip_dquote&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- otherwise keep everything after trim which means should end on dquote&lt;/span&gt;
+                            &lt;span class=&quot;cm&quot;&gt;/*
+	                        v_str := REGEXP_REPLACE(v_str, 
+	                                    '^&quot;|&quot;$'         -- leading &quot; or ending &quot;
+	                                    ||'|[&quot;\\]'  -- or one of chars &quot; or \
+	                                        ||'(&quot;)'     -- that is followed by a &quot; and we capture that one in \1
+	                                    ,'\1'           -- We put any '&quot;' we captured back without the backwack or &quot; quote
+	                                    ,1              -- start at position 1 in v_str
+	                                    ,0              -- 0 occurence means replace all of these we find
+	                                ); 
+                            */&lt;/span&gt;
+                            &lt;span class=&quot;n&quot;&gt;l_strip_dq&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                    &lt;span class=&quot;kr&quot;&gt;ELSIF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;NULL&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt;
+                        &lt;span class=&quot;c1&quot;&gt;--v_str := REGEXP_REPLACE(v_str, '\\('||p_separator||')', '\1', 1, 0);&lt;/span&gt;
+                        &lt;span class=&quot;n&quot;&gt;l_repl_sep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+                    &lt;span class=&quot;n&quot;&gt;v_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_expected_cnt&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- otherwise we already have room&lt;/span&gt;
+	                    &lt;span class=&quot;c1&quot;&gt;--po_arr.EXTEND;&lt;/span&gt;
+                        &lt;span class=&quot;n&quot;&gt;l_extend_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+	                &lt;span class=&quot;n&quot;&gt;po_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;v_pos_last&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_pos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- walk the string to next token&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_last_had_separator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_keep_nulls&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- trailing null&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;v_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_expected_cnt&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- otherwise we already have room&lt;/span&gt;
+                    &lt;span class=&quot;c1&quot;&gt;--po_arr.EXTEND;&lt;/span&gt;
+                    &lt;span class=&quot;n&quot;&gt;l_extend_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;po_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- do not think this is necessary, but make it explicit&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- end if input string not null&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;split_csv&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Recompiling in DEBUG mode and with Profiling turned on, I expected some overhead to add to the run
+times and we do see that.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;ALTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;perlish_util_udt&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;COMPILE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;DEBUG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;ALTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;PACKAGE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app_csv_pkg&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;COMPILE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;DEBUG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;DBMS_HPROF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;start_profiling&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;PLSHPROF_DIR&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;test.trc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;-- clob not listed for brevity&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;APP_CSV_PKG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;create_ptt_csv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CLOB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;...
+...
+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;DBMS_HPROF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stop_profiling&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ora$ptt_csv&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;COMMIT&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;DECLARE&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;runid&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NUMBER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;runid&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DBMS_HPROF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;analyze&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;LOCATION&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;PLSHPROF_DIR&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FILENAME&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;test.trc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;DBMS_OUTPUT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PUT_LINE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;runid = &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;runid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The times are longer with profiling and debug mode, but still proportional.&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: left&quot;&gt;Variant&lt;/th&gt;
+      &lt;th style=&quot;text-align: right&quot;&gt;Run Time&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: left&quot;&gt;PL/SQL&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;13.0&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: left&quot;&gt;SQL&lt;/td&gt;
+      &lt;td style=&quot;text-align: right&quot;&gt;141.7&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h1 id=&quot;reading-the-profiler-data&quot;&gt;Reading the Profiler Data&lt;/h1&gt;
+
+&lt;p&gt;SqlDeveloper can show it to you including the HTML report it causes to be created in the database directory.
+That is convenient and I use it, but for this article I teased out the data I wanted to show.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;select&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;namespace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;subtree_elapsed_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subtree_elapsed_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function_elapsed_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function_elapsed_time&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dbmshp_function_info&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;where&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;runid&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;group&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;by&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;namespace&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;select&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;namespace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;subtree_elapsed_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subtree_elapsed_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function_elapsed_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function_elapsed_time&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dbmshp_function_info&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;where&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;runid&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;group&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;by&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;namespace&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;select&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;NVL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;function&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;NVL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;namespace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;namespace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;namespace&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;subtree_elapsed_time&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1000000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;999,999.9&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;called_from_sql_cum&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;subtree_elapsed_time&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1000000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;999,999.9&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;called_from_plql_cum&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function_elapsed_time&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1000000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;999,999.9&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;called_from_sql_secs&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function_elapsed_time&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1000000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;999,999.9&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;called_from_plsql_secs&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;full&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;outer&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;join&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;on&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;--and b.line# = a.line#&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;ow&quot;&gt;OR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;CREATE_PTT_CSV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;CREATE_PTT_CSV_UDT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;order&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;by&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;NVL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;subtree_elapsed_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;subtree_elapsed_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;desc&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;You may notice that the total times are a bit less than reported above. The difference I believe
+is that I’m reporting above the elapsed time in sqlplus, which includes the time to load the
+CLOB into memory.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;table class=&quot;img-table-centered&quot;&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;em&gt;PL/SQL Hierarchical Profiler Data&lt;/em&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;/images/Screenshot 2022-04-10 201308.gif&quot; alt=&quot;&quot; /&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;I find it interesting that two of the operations I was concerned with, creating the collection
+(SPLIT_CSV.L_CREATE_ARR) and extending/growing the collection (SPLIT_CSV.L_EXTEND_ARR), are non-factors.&lt;/p&gt;
+
+&lt;p&gt;My original premise was that context switching was the villain. If that were the entire story,
+I would expect the overall time for the function called from SQL to show the longer run time
+while the internal components of the call did not. In other words the impact of the context switch
+should only be at the beginning and end of the single call as we move memory around for the 
+context switch. That is NOT what we see here.&lt;/p&gt;
+
+&lt;p&gt;Individual operations that should be taking place inside the PL/SQL engine for both runs have
+an elapsed time sum that is ten to twenty times longer when the function is called from SQL
+than when called from PL/SQL.&lt;/p&gt;
+
+&lt;p&gt;It is possible that I do not understand all implications of “context switching” here.&lt;/p&gt;
+
+&lt;p&gt;If the only discrepancies were in the regular expression engine, I would feel much better as that
+beast could be a weirdo. But we have anomalous behavior in the simple substring operation as well (SPLIT_CSV.L_SUBSTR)
+and that has nothing to do with the regular expression engine.&lt;/p&gt;
+
+&lt;p&gt;What the problem operations all have in common is reading and/or writing character data in memory. It may be
+that each of these operations incur the context switch penalty as they negotiate the “other”
+memory space.&lt;/p&gt;
+
+&lt;p&gt;I’m now at a point where I need to revisit my understanding of what context switch means for the
+SQL/PL_SQL interface. It isn’t like I haven’t been reading everything I could find on the subject
+for the last two weeks, yet somehow, exactly what goes on here has alluded me.&lt;/p&gt;
+
+&lt;p&gt;Stay tuned.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 10 Apr 2022 12:30:00 -0400</pubDate>
+        <link>https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/hierarchical-profiler-context-switch.html</link>
+        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/hierarchical-profiler-context-switch.html</guid>
+        
+        <category>oracle</category>
+        
+        <category>sql</category>
+        
+        <category>plsql</category>
+        
+        <category>profiler</category>
+        
+        
+        <category>oracle</category>
+        
+        <category>sql</category>
+        
+        <category>plsql</category>
+        
+      </item>
     
       <item>
         <title>Oracle REGEXP_INSTR and Beginning of Line Anchor</title>
@@ -2736,185 +3116,6 @@ be my guest and send a pull request if you get it working. There may be others w
         <pubDate>Tue, 18 Jan 2022 10:30:00 -0500</pubDate>
         <link>https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html</link>
         <guid isPermaLink="true">https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html</guid>
-        
-        <category>oracle</category>
-        
-        <category>plsql</category>
-        
-        <category>html</category>
-        
-        <category>table</category>
-        
-        <category>css</category>
-        
-        <category>xlst</category>
-        
-        <category>dbms_xmlgen</category>
-        
-        <category>xlstype</category>
-        
-        
-        <category>oracle</category>
-        
-        <category>plsql</category>
-        
-        <category>html</category>
-        
-      </item>
-    
-      <item>
-        <title>HTML Table Markup in Oracle</title>
-        <description>&lt;h1 id=&quot;html-table-markup-for-oracle-query-resultset&quot;&gt;HTML Table Markup for Oracle Query Resultset&lt;/h1&gt;
-
-&lt;h2 id=&quot;use-case---generate-html-table-markup-inside-oracle-database&quot;&gt;Use Case - Generate HTML Table Markup Inside Oracle Database&lt;/h2&gt;
-
-&lt;p&gt;Whenever a question is posted on this subject, the immediate knee-jerk reaction is to tell the hapless
-suppicant to use sql*plus HTML markup option. All well and good, but we do have use cases where
-going out to a client program from the database is not practical. One of the most common is
-to generate an HTML Table that is included in an email sent directly from the database.&lt;/p&gt;
-
-&lt;p&gt;There is a well established pattern to do this with &lt;em&gt;DBMS_XMLGEN&lt;/em&gt; and &lt;em&gt;XLSTYPE&lt;/em&gt; stylesheet processing.
-A web search will return plenty of examples.&lt;/p&gt;
-
-&lt;p&gt;There are a few issues with the technique, the most
-vexing of which is that all of the table data is left justified in the cells. If you want numbers
-to be right justified, the standard mechanism we reach for with TO_CHAR or LPAD(TO_CHAR to left pad the
-result with spaces does not work because HTML rendering ignores whitespace. 
-We need to add a modifier to the HTML Table Data (&amp;lt;td&amp;gt;) tag to right-align the cells, but only for particular columns.&lt;/p&gt;
-
-&lt;h2 id=&quot;css-style-sheet-solution&quot;&gt;CSS Style Sheet Solution&lt;/h2&gt;
-
-&lt;p&gt;The implemented solution can be found on my github &lt;a href=&quot;https://github.com/lee-lindley/app_html_table_pkg&quot;&gt;app_html_table_pkg&lt;/a&gt;
-repository page. If you are an HTML guru, you should skip straight to the package and skip my explanation.&lt;/p&gt;
-
-&lt;p&gt;I have of course dabbled in HTML but most of that was in pre-historic times before CSS stylesheets gained
-traction. I found the CSS subject overwhelming, and it was compounded by being a moving target. Much of the information
-you find on the web is no longer best practice.&lt;/p&gt;
-
-&lt;p&gt;We do not have control of the overall document in this case, or at least not always. We may not be able to
-put CSS style information in the HTML Header. Luckily for us, somewhere along the way the committee to make
-web page development obtuse decided we could use locally scoped styles, meaning it is legal and not
-just a hack to put styles directly in the HTML Body. Coolio!&lt;/p&gt;
-
-&lt;p&gt;I complain about how the rules seem obscure and a moving target, but once I finally got a handle on enough
-of the pieces, it turns out to be a relatively understandable and isolated bit of HTML code that will allow
-us to control the formatting of our table without impacting anything else in the document.&lt;/p&gt;
-
-&lt;h2 id=&quot;html-components&quot;&gt;HTML Components&lt;/h2&gt;
-
-&lt;h3 id=&quot;div&quot;&gt;div&lt;/h3&gt;
-
-&lt;p&gt;We wrap our entire construct in &amp;lt;div id=”plsql-table”&amp;gt;…&amp;lt;/div&amp;gt; to isolate it from the rest of the document.&lt;/p&gt;
-
-&lt;h3 id=&quot;style&quot;&gt;style&lt;/h3&gt;
-
-&lt;p&gt;Next we produce a &amp;lt;style type=”text/css” scoped&amp;gt; section encapsulating our style rules for the table.&lt;/p&gt;
-
-&lt;p&gt;We have directives that adjust the table border and spacing, the optional caption font and spacing,
-and directions for &amp;lt;th&amp;gt; table header and &amp;lt;td&amp;gt; element formatting. We can set background and foreground
-colors as well.&lt;/p&gt;
-
-&lt;p&gt;This is fairly standard HTML attribute processing that is familiar enough for most of us who are not CSS gurus.&lt;/p&gt;
-
-&lt;h3 id=&quot;specific-columnrow-styles&quot;&gt;specific column/row styles&lt;/h3&gt;
-
-&lt;p&gt;Where the solution becomes more complex is when we direct style elements to particular
-columns or rows. The one to solve our specific issue of right justifying particular columns is encoded
-as:&lt;/p&gt;
-
-&lt;div class=&quot;language-css highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;nt&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;td&lt;/span&gt;&lt;span class=&quot;nd&quot;&gt;:nth-of-type&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;text-align&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;right&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Huh. That was my first thought. I’ll read that as for any table row do this for the fourth table data element (aka column).
-I’m not going to try to explain the rules because I’ll butcher it, but that is what it does.&lt;/p&gt;
-
-&lt;p&gt;A related construct that lets us alternate the background color on rows is&lt;/p&gt;
-
-&lt;div class=&quot;language-css highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;nt&quot;&gt;tr&lt;/span&gt;&lt;span class=&quot;nd&quot;&gt;:nth-child&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;odd&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AliceBlue&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;That says for table row elements, on the odd rows use this background color. You could leave the even rows
-with the default background or make another directive for nth-child(even).&lt;/p&gt;
-
-&lt;h2 id=&quot;example&quot;&gt;Example&lt;/h2&gt;
-
-&lt;p&gt;Putting it all together the package can output an HTML table configured specifically
-for our query with any style adjustments you desire. You don’t have to understand it all. Most of the time
-you can copy/paste the default style and tweak it a bit. This one is on the fancy side while the 
-default from the package is an austere black and white.&lt;/p&gt;
-
-&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	&lt;span class=&quot;nt&quot;&gt;&amp;lt;div&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;id=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;plsql-table&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;style &lt;/span&gt;&lt;span class=&quot;na&quot;&gt;type=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;text/css&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;scoped&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-	
-	&lt;span class=&quot;nt&quot;&gt;table&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-	    &lt;span class=&quot;nl&quot;&gt;border&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1px&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;solid&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
-	    &lt;span class=&quot;nl&quot;&gt;border-spacing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
-	    &lt;span class=&quot;nl&quot;&gt;border-collapse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;collapse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;caption&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-	    &lt;span class=&quot;nl&quot;&gt;font-style&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;italic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	    &lt;span class=&quot;nl&quot;&gt;font-weight&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;bold&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	    &lt;span class=&quot;nl&quot;&gt;font-size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;larger&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	    &lt;span class=&quot;nl&quot;&gt;margin-bottom&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;0.5em&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;th&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-	    &lt;span class=&quot;nl&quot;&gt;text-align&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;left&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	    &lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;LightGrey&lt;/span&gt;
-	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;th&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;td&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-	    &lt;span class=&quot;nl&quot;&gt;border&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1px&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;solid&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;black&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
-	    &lt;span class=&quot;nl&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;m&quot;&gt;4px&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;6px&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;tr&lt;/span&gt;&lt;span class=&quot;nd&quot;&gt;:nth-child&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;odd&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;background-color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AliceBlue&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;td&lt;/span&gt;&lt;span class=&quot;nd&quot;&gt;:nth-of-type&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-	    &lt;span class=&quot;nl&quot;&gt;text-align&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;right&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;tr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;td&lt;/span&gt;&lt;span class=&quot;nd&quot;&gt;:nth-of-type&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-	    &lt;span class=&quot;nl&quot;&gt;text-align&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;right&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;/style&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;table&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;caption&amp;gt;&lt;/span&gt;Poorly Paid People&lt;span class=&quot;nt&quot;&gt;&amp;lt;/caption&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;tr&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;th&amp;gt;&lt;/span&gt;Emp ID&lt;span class=&quot;nt&quot;&gt;&amp;lt;/th&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;th&amp;gt;&lt;/span&gt;Full Name&lt;span class=&quot;nt&quot;&gt;&amp;lt;/th&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;th&amp;gt;&lt;/span&gt;Date_x002C_Hire&lt;span class=&quot;nt&quot;&gt;&amp;lt;/th&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;th&amp;gt;&lt;/span&gt;Salary&lt;span class=&quot;nt&quot;&gt;&amp;lt;/th&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;/tr&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;tr&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;td&amp;gt;&lt;/span&gt;999&lt;span class=&quot;nt&quot;&gt;&amp;lt;/td&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;td&amp;gt;&lt;/span&gt;  Baggins, Bilbo &lt;span class=&quot;ni&quot;&gt;&amp;amp;quot;&lt;/span&gt;badboy&lt;span class=&quot;ni&quot;&gt;&amp;amp;quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;&amp;lt;/td&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;td&amp;gt;&lt;/span&gt;12/31/1999&lt;span class=&quot;nt&quot;&gt;&amp;lt;/td&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;td&amp;gt;&lt;/span&gt;     $123.45&lt;span class=&quot;nt&quot;&gt;&amp;lt;/td&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;/tr&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;tr&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;td&amp;gt;&lt;/span&gt;206&lt;span class=&quot;nt&quot;&gt;&amp;lt;/td&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;td&amp;gt;&lt;/span&gt;Gietz, William&lt;span class=&quot;nt&quot;&gt;&amp;lt;/td&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;td&amp;gt;&lt;/span&gt;06/07/2002&lt;span class=&quot;nt&quot;&gt;&amp;lt;/td&amp;gt;&lt;/span&gt;
-	  &lt;span class=&quot;nt&quot;&gt;&amp;lt;td&amp;gt;&lt;/span&gt;   $8,300.00&lt;span class=&quot;nt&quot;&gt;&amp;lt;/td&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;/tr&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;tr&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;/table&amp;gt;&amp;lt;/div&amp;gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Here is how it is rendered in my browser:&lt;/p&gt;
-
-&lt;table class=&quot;img-table-centered&quot;&gt;
-  &lt;thead&gt;
-    &lt;tr&gt;
-      &lt;th style=&quot;text-align: center&quot;&gt;&lt;em&gt;HTML Table Markup from PL/SQL&lt;/em&gt;&lt;/th&gt;
-    &lt;/tr&gt;
-  &lt;/thead&gt;
-  &lt;tbody&gt;
-    &lt;tr&gt;
-      &lt;td style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;/images/html_table.gif&quot; alt=&quot;html_table.gif&quot; /&gt;&lt;/td&gt;
-    &lt;/tr&gt;
-  &lt;/tbody&gt;
-&lt;/table&gt;
-</description>
-        <pubDate>Sun, 16 Jan 2022 10:30:00 -0500</pubDate>
-        <link>https://lee-lindley.github.io/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html</link>
-        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/plsql/html/2022/01/16/HTML-Table-PLSQL.html</guid>
         
         <category>oracle</category>
         
