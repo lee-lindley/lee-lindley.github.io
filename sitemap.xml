@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 10 Apr 2022 21:21:56 -0400</pubDate>
-    <lastBuildDate>Sun, 10 Apr 2022 21:21:56 -0400</lastBuildDate>
+    <pubDate>Sun, 10 Apr 2022 21:32:20 -0400</pubDate>
+    <lastBuildDate>Sun, 10 Apr 2022 21:32:20 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -364,7 +364,7 @@ memory space.&lt;/p&gt;
 
 &lt;p&gt;I’m now at a point where I need to revisit my understanding of what context switch means for the
 SQL/PL_SQL interface. It isn’t like I haven’t been reading everything I could find on the subject
-for the last two weeks, yet somehow, exactly what goes on here has alluded me.&lt;/p&gt;
+for the last two weeks, yet somehow, exactly what goes on here has eluded me.&lt;/p&gt;
 
 &lt;p&gt;Stay tuned.&lt;/p&gt;
 </description>
