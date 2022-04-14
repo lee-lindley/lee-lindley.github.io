@@ -199,6 +199,22 @@ img.centered {
     font-size: 10px;
 }
 
+.index-table {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    border: none;
+    border-spacing: 0px;
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+.index-table td {
+    border: none;
+    padding: none;
+    font-size: 12px;
+    align: left;
+    vertical-align: bottom;
+}
 pre code {
     white-space: pre
 }

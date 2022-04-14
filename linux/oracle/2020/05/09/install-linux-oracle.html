@@ -1,294 +1,11 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="/static/img/favicon.ico" />
-    <title>Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine - Lee Lindley Scratchpad</title>
-    <meta name="author" content="Lee Lindley" />
-    <meta name="description" content="Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine" />
-    <meta name="keywords" content="Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine, Lee Lindley Scratchpad, linux, oracle" />
-    <link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml">
-    <meta content="" property="fb:app_id">
-    <meta content="Lee Lindley Scratchpad" property="og:site_name">
-
-    
-
-    
-      <meta content="Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine" property="og:title">
-      <meta content="article" property="og:type">
-    
-
-    
-      <meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description">
-    
-
-    
-      <meta content="https://lee-lindley.github.io/linux/oracle/2020/05/09/install-linux-oracle.html" property="og:url">
-    
-
-    
-      <meta content="2020-05-09T01:00:00-04:00" property="article:published_time">
-      <meta content="https://lee-lindley.github.io/about/" property="article:author">
-    
-
-    
-
-    
-      
-        <meta content="linux" property="article:section">
-      
-    
-
-    
-      
-        <meta content="oracle" property="article:tag">
-      
-        <meta content="linux" property="article:tag">
-      
-        <meta content="installation" property="article:tag">
-      
-        <meta content="windows 10" property="article:tag">
-      
-    
-
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:site" content="@">
-    <meta name="twitter:creator" content="@">
-
-    
-      <meta name="twitter:title" content="Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine">
-    
-
-    
-      <meta name="twitter:url" content="https://lee-lindley.github.io/linux/oracle/2020/05/09/install-linux-oracle.html">
-    
-
-    
-      <meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux">
-    
-
-    
-
-    <!-- Font awesome icons -->
-    <link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
-    <!-- syntax highlighting CSS -->
-    <link rel="stylesheet" href="/static/css/syntax.css">
-    <!-- Bootstrap core CSS -->
-    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/static/css/super-search.css">
-    <link rel="stylesheet" href="/static/css/thickbox.css">
-    <link rel="stylesheet" href="/static/css/projects.css">
-    <link rel="stylesheet" href="/static/css/main.css">
-
-    
-  </head>
-  <body>
-    <div class="container">
-      <div class="col-sm-3">
-        <div class="fixed-condition">
-          <h1 class="author-name"><a href="/">Lee Lindley</a></h1>
-          
-            <div class="profile-about">
-              I'm Just Another Perl Hacker who wound up in a big Oracle Database playground
-            </div>
-          
-          <div class="social">
-            <ul>
-              
-                <li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a></li>
-              
-                <li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></li>
-              
-            </ul>
-          </div>
-          <div class="search" id="js-search">
-            <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input">
-            <ul class="search__results" id="js-search__results"></ul>
-          </div>
-          <hr />
-          <ul class="sidebar-nav">
-            <strong>Navigation</strong>
-            <li><a href="/">Home</a></li>
-            
-              <li><a class="about" href="/about/">About Me</a></li>
-            
-              <li><a class="about" href="/projects/">My Projects</a></li>
-            
-              <li><a class="about" href="/feed.xml">XML Feed</a></li>
-            
-          </ul>
-        </div>
-        <!-- end /.fixed-condition -->
-      </div>
-      <div class="col-sm-8 col-offset-1 main-layout">
-        <header class="post-header">
-  <h1 class="post-title">Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine</h1>
-</header>
-
-<span class="time">09 May 2020</span>
-
-  <span class="categories">
-    &raquo; <a href="/category/linux">linux</a>, <a href="/category/oracle">oracle</a>
-  </span>
-
-
-<div class="content">
-  <div class="post"><h1 id="project">Project</h1>
-
-<p>Install <em>Oracle Enterprise Linux</em> and <em>Oracle Database 19c</em> on a dual boot Windows 10 machine.</p>
-
-<p>This will be a full Oracle install including ASM and grid for my professional experience rather than a minimal database under a virtual box.</p>
-
-<p>Note that I do not have a service contract with Oracle, am not paying $500 for one for my personal use, and therefore cannot get to the support documentation or the Oracle Unbreakable Linux Network (ULN). This includes all of the bug fixes and reports and lots of helpful information. If you run into trouble without this you are SOL. I learned the hard way to stick with the supported releases rather than go off trying to figure it out. I spent a week with Ubuntu and then another few days with Oracle Enterprise Linux 8 latest and greatest (which is not supported for Oracle 19c!!!). Just don’t do it. Frustration will be immense if you cannot get to the support documentation. [Note: You can get the database to install, but grid is another matter].</p>
-
-<p>This is our Home Theatre PC. Other than acting as a file server, the main usage it gets is Netflix via a web browser. That will work just find under Linux too, so I’m hopeful wife won’t mind which OS is running most of the time. That is the goal.</p>
-
-<h1 id="credits">Credits</h1>
-
-<p>I found all sorts of references using google searches and learned from them (as well as having been doing similar stuff for 35 years including sysadmin a very long time ago). Unfortunately, I did not save links except in a few cases where I included them. Rest assured though that if you google any of these subjects you will hit the same resources that I worked my way through. I wish I had done a better job with it. Nobody can know all this stuff. I mostly just fumbled my way through.</p>
-
-<h1 id="hardware">Hardware</h1>
-
-<ul>
-  <li>Intel NUC 7i5BNH with 512GB SSD with windows 10 installed.</li>
-  <li>LaCie d2 Professional SCSI Disk Device 4TB Thunderbolt USB drive ($200!!!!). It isn’t SSD but it is an enterprise level 4TB disk drive that is plenty fast through the USB-C Thunderbolt interface. I’ll be installing Oracle Linux and Oracle database on this drive.</li>
-  <li>“My Book” 3TB USB drive for windows public smb share for photos. This drive is shared by the windows boot as our “G” drive and I’ll be making the Linux boot share it the same way. The clients use the IP address to mount it and don’t care whether the machine is booted as Windows or Linux.</li>
-  <li>Although you can shrink the space on main windows drive and install Linux, I’m installing everything on the 4TB Lacie Thunderbolt disk. I’m leaving the main windows drive completely alone, though the boot loader may get touched along the way. My expectation is I can recover completely to the windows normal boot if needed.</li>
-</ul>
-
-<h1 id="partitioning-the-drive">Partitioning the Drive</h1>
-
-<p>Although you can let the Oracle Linux installer do this, it doesn’t behave the way I want. I want a raw partition to use with ASM for the Oracle data disks. I couldn’t figure out how to make the installer create that partition without putting a file system on it, so I would have to come back and do it later anyway. I found it easier just to use the Windows “Disk Management” tool to do it (or you can boot a gparted image from USB, but I didn’t find it necessary). On windows hit Start then type in “Disk Management”. I decided on the following:</p>
-
-<ul>
-  <li>200 MB (198) partition for EFI /boot/efi</li>
-  <li>1 GB partition for /boot</li>
-  <li>552 GB partition for Volume Manager</li>
-</ul>
-
-<p>I wanted to leave room for the volume manager partition to grow so I created a partition with 1124.81 GB (the remainder) that I later removed leaving a gap. I realize the volume manager probably could have dealt with it just fine with it split across the disk, but I haven’t explored it yet.</p>
-
-<p>I was going to create a 2TB partition for ASM, but ran into a snag (it was slightly over). The documentation says the 2TB limitation is fixed after Oracle 11, but it is apparently still a problem. Breaking it into two 1TB partitions works fine and also gives me more chance to play with ASM. So, two 1024 GB (1048576 MB) partitions after the gap to use with ASM.</p>
-
-<p>After creating the two partitions for ASM, I deleted the place holder for the volume manager partition growth (1124.81 GB now unallocated). The resulting allocation looks like this (DISK 2 which is the Lacie drive):</p>
-
-<p><img src="/images/050920_0017_installorac1.png" alt="" /></p>
-
-<h1 id="bios-setup">BIOS Setup</h1>
-
-<p>While in Windows you may want to Turn off Fast Startup. If you google it you will find plenty of entries on how to do it. I don’t think it actually matters for this and it might get turned back on by windows update, but there are reports of it interfering with dual boot. On my machine I have to press F2 during startup during a very limited period to get to the bios setup. While there I can extend that time so it isn’t so hard to catch it. Now I don’t remember where exactly I found that on the NUC bios, but it waits 5 or 10 seconds for keyboard interrupt now on a power cycle. Turn off Fast Boot and make sure Secure boot is off. Make sure boot from USB is turned on. Here are some pictures of my bios screen. Not sure how useful they will be, but can’t hurt:</p>
-
-<p><img src="/images/050920_0017_installorac2.jpg" alt="" /></p>
-
-<p><img src="/images/050920_0017_installorac3.jpg" alt="" /></p>
-
-<h1 id="download-the-oracle-linux-distribution">Download the Oracle Linux Distribution</h1>
-
-<p>I learned the hard way that the latest and greatest distribution (OL 8) is not supported for the Oracle database 19c!!!!!!! Go to the Oracle database documentation to find a table with supported Linux releases. At this time, it is OEL 7.4 with Unbreakable Kernel 5 (which is included by default). But I found out that when you auto update 7.4, you wind up with 7.8. I hope it will work because 7.4 unbreakable linux kernel did not support my network card. In any case I’m going to try 7.8</p>
-
-<p>Go to the Oracle.com website and fumble around until you get to the dropdown menu that has On Premise Products/Software. Pick Oracle Linux. From there you can get to Download Oracle Linux which takes you to edelivery.oracle.com. From there you have to create an account or sign in. You do not need a support contract for this.</p>
-
-<p>Search for Oracle Linux. Choose DLP: Oracle Linux 7.8. I know you want that tasty looking 8. Don’t do it. 7.8 is last supported release for the database. Add it to your cart and then go to Checkout on top right.</p>
-
-<p>Pick x86 64bit for Platforms/Languages. Don’t freak out at the 14.0 GB, we will trim it down on the next step. Hit continue. Agree to the license. Get rid of the feedback popup. Uncheck everything by unchecking top level. Then go back and pick:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>V995537-01.iso Oracle Linux Release 7 Update 8 for x86 (64 bit), 4.5 GB
-</code></pre></div></div>
-
-<p>That’s all you will need. Note that if you use the wget option, that shell script invokes wget with ask-password which the manual says will prompt for it, but I think it directed the prompt to stderr which was writing to a log file. I entered the password even though not prompted and it started downloading.</p>
-
-<h1 id="download-oracle-grid-and-oracle-database-19c">Download Oracle Grid and Oracle database 19c</h1>
-
-<p>Also get grid install and Oracle 19c from edelivery.oracle.com. You should be able to find them by searching. I did not take a screenshot of this. I have the files locally:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\-rwxrwxrwx. 1 nobody nobody 3059705302 Apr 29 10:55 LINUX.X64\_193000\_db\_home.zip 
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="shortcut icon" href="/static/img/favicon.ico" /><title>Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine - Lee Lindley Scratchpad</title><meta name="author" content="Lee Lindley" /><meta name="description" content="Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine" /><meta name="keywords" content="Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine, Lee Lindley Scratchpad, linux, oracle" /><link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml"><meta content="" property="fb:app_id"><meta content="Lee Lindley Scratchpad" property="og:site_name"><meta content="Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine" property="og:title"><meta content="article" property="og:type"><meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description"><meta content="https://lee-lindley.github.io/linux/oracle/2020/05/09/install-linux-oracle.html" property="og:url"><meta content="2020-05-09T01:00:00-04:00" property="article:published_time"><meta content="https://lee-lindley.github.io/about/" property="article:author"><meta content="linux" property="article:section"><meta content="oracle" property="article:tag"><meta content="linux" property="article:tag"><meta content="installation" property="article:tag"><meta content="windows 10" property="article:tag"><meta name="twitter:card" content="summary"><meta name="twitter:site" content="@"><meta name="twitter:creator" content="@"><meta name="twitter:title" content="Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine"><meta name="twitter:url" content="https://lee-lindley.github.io/linux/oracle/2020/05/09/install-linux-oracle.html"><meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux"><link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous"><link rel="stylesheet" href="/static/css/syntax.css"><link href="/static/css/bootstrap.min.css" rel="stylesheet"><link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css"><link rel="stylesheet" href="/static/css/super-search.css"><link rel="stylesheet" href="/static/css/thickbox.css"><link rel="stylesheet" href="/static/css/projects.css"><link rel="stylesheet" href="/static/css/main.css"><body><div class="container"><div class="col-sm-3"><div class="fixed-condition"><h1 class="author-name"><a href="/">Lee Lindley</a></h1><div class="profile-about"> I'm Just Another Perl Hacker who wound up in a big Oracle Database playground</div><div class="social"><ul><li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a><li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></ul></div><div class="search" id="js-search"> <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input"><ul class="search__results" id="js-search__results"></ul></div><hr /><ul class="sidebar-nav"> <strong>Navigation</strong><li><a href="/">Home</a><li><a class="about" href="/about/">About Me</a><li><a class="about" href="/projects/">My Projects</a><li><a class="about" href="/feed.xml">XML Feed</a></ul></div></div><div class="col-sm-8 col-offset-1 main-layout"><header class="post-header"><h1 class="post-title">Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine</h1></header><span class="time">09 May 2020</span> <span class="categories"> &raquo; <a href="/category/linux">linux</a>, <a href="/category/oracle">oracle</a> </span><div class="content"><div class="post"><h1 id="project">Project</h1><p>Install <em>Oracle Enterprise Linux</em> and <em>Oracle Database 19c</em> on a dual boot Windows 10 machine.<p>This will be a full Oracle install including ASM and grid for my professional experience rather than a minimal database under a virtual box.<p>Note that I do not have a service contract with Oracle, am not paying $500 for one for my personal use, and therefore cannot get to the support documentation or the Oracle Unbreakable Linux Network (ULN). This includes all of the bug fixes and reports and lots of helpful information. If you run into trouble without this you are SOL. I learned the hard way to stick with the supported releases rather than go off trying to figure it out. I spent a week with Ubuntu and then another few days with Oracle Enterprise Linux 8 latest and greatest (which is not supported for Oracle 19c!!!). Just don’t do it. Frustration will be immense if you cannot get to the support documentation. [Note: You can get the database to install, but grid is another matter].<p>This is our Home Theatre PC. Other than acting as a file server, the main usage it gets is Netflix via a web browser. That will work just find under Linux too, so I’m hopeful wife won’t mind which OS is running most of the time. That is the goal.<h1 id="credits">Credits</h1><p>I found all sorts of references using google searches and learned from them (as well as having been doing similar stuff for 35 years including sysadmin a very long time ago). Unfortunately, I did not save links except in a few cases where I included them. Rest assured though that if you google any of these subjects you will hit the same resources that I worked my way through. I wish I had done a better job with it. Nobody can know all this stuff. I mostly just fumbled my way through.<h1 id="hardware">Hardware</h1><ul><li>Intel NUC 7i5BNH with 512GB SSD with windows 10 installed.<li>LaCie d2 Professional SCSI Disk Device 4TB Thunderbolt USB drive ($200!!!!). It isn’t SSD but it is an enterprise level 4TB disk drive that is plenty fast through the USB-C Thunderbolt interface. I’ll be installing Oracle Linux and Oracle database on this drive.<li>“My Book” 3TB USB drive for windows public smb share for photos. This drive is shared by the windows boot as our “G” drive and I’ll be making the Linux boot share it the same way. The clients use the IP address to mount it and don’t care whether the machine is booted as Windows or Linux.<li>Although you can shrink the space on main windows drive and install Linux, I’m installing everything on the 4TB Lacie Thunderbolt disk. I’m leaving the main windows drive completely alone, though the boot loader may get touched along the way. My expectation is I can recover completely to the windows normal boot if needed.</ul><h1 id="partitioning-the-drive">Partitioning the Drive</h1><p>Although you can let the Oracle Linux installer do this, it doesn’t behave the way I want. I want a raw partition to use with ASM for the Oracle data disks. I couldn’t figure out how to make the installer create that partition without putting a file system on it, so I would have to come back and do it later anyway. I found it easier just to use the Windows “Disk Management” tool to do it (or you can boot a gparted image from USB, but I didn’t find it necessary). On windows hit Start then type in “Disk Management”. I decided on the following:<ul><li>200 MB (198) partition for EFI /boot/efi<li>1 GB partition for /boot<li>552 GB partition for Volume Manager</ul><p>I wanted to leave room for the volume manager partition to grow so I created a partition with 1124.81 GB (the remainder) that I later removed leaving a gap. I realize the volume manager probably could have dealt with it just fine with it split across the disk, but I haven’t explored it yet.<p>I was going to create a 2TB partition for ASM, but ran into a snag (it was slightly over). The documentation says the 2TB limitation is fixed after Oracle 11, but it is apparently still a problem. Breaking it into two 1TB partitions works fine and also gives me more chance to play with ASM. So, two 1024 GB (1048576 MB) partitions after the gap to use with ASM.<p>After creating the two partitions for ASM, I deleted the place holder for the volume manager partition growth (1124.81 GB now unallocated). The resulting allocation looks like this (DISK 2 which is the Lacie drive):<p><img src="/images/050920_0017_installorac1.png" alt="" /><h1 id="bios-setup">BIOS Setup</h1><p>While in Windows you may want to Turn off Fast Startup. If you google it you will find plenty of entries on how to do it. I don’t think it actually matters for this and it might get turned back on by windows update, but there are reports of it interfering with dual boot. On my machine I have to press F2 during startup during a very limited period to get to the bios setup. While there I can extend that time so it isn’t so hard to catch it. Now I don’t remember where exactly I found that on the NUC bios, but it waits 5 or 10 seconds for keyboard interrupt now on a power cycle. Turn off Fast Boot and make sure Secure boot is off. Make sure boot from USB is turned on. Here are some pictures of my bios screen. Not sure how useful they will be, but can’t hurt:<p><img src="/images/050920_0017_installorac2.jpg" alt="" /><p><img src="/images/050920_0017_installorac3.jpg" alt="" /><h1 id="download-the-oracle-linux-distribution">Download the Oracle Linux Distribution</h1><p>I learned the hard way that the latest and greatest distribution (OL 8) is not supported for the Oracle database 19c!!!!!!! Go to the Oracle database documentation to find a table with supported Linux releases. At this time, it is OEL 7.4 with Unbreakable Kernel 5 (which is included by default). But I found out that when you auto update 7.4, you wind up with 7.8. I hope it will work because 7.4 unbreakable linux kernel did not support my network card. In any case I’m going to try 7.8<p>Go to the Oracle.com website and fumble around until you get to the dropdown menu that has On Premise Products/Software. Pick Oracle Linux. From there you can get to Download Oracle Linux which takes you to edelivery.oracle.com. From there you have to create an account or sign in. You do not need a support contract for this.<p>Search for Oracle Linux. Choose DLP: Oracle Linux 7.8. I know you want that tasty looking 8. Don’t do it. 7.8 is last supported release for the database. Add it to your cart and then go to Checkout on top right.<p>Pick x86 64bit for Platforms/Languages. Don’t freak out at the 14.0 GB, we will trim it down on the next step. Hit continue. Agree to the license. Get rid of the feedback popup. Uncheck everything by unchecking top level. Then go back and pick:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>V995537-01.iso Oracle Linux Release 7 Update 8 for x86 (64 bit), 4.5 GB
+</code></pre></div></div><p>That’s all you will need. Note that if you use the wget option, that shell script invokes wget with ask-password which the manual says will prompt for it, but I think it directed the prompt to stderr which was writing to a log file. I entered the password even though not prompted and it started downloading.<h1 id="download-oracle-grid-and-oracle-database-19c">Download Oracle Grid and Oracle database 19c</h1><p>Also get grid install and Oracle 19c from edelivery.oracle.com. You should be able to find them by searching. I did not take a screenshot of this. I have the files locally:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\-rwxrwxrwx. 1 nobody nobody 3059705302 Apr 29 10:55 LINUX.X64\_193000\_db\_home.zip 
 \-rwxrwxrwx. 1 nobody nobody 2889184573 Apr 29 10:55 LINUX.X64\_193000\_grid\_home.zip
-</code></pre></div></div>
-
-<h1 id="burn-iso-image-to-usb-stick">Burn ISO image to USB stick</h1>
-
-<p>Download <em>rufus</em> executable for windows. You don’t even have to install it. Just download it to the same place as your iso file. You can use that to create the bootable USB.</p>
-
-<p>You can find plenty of instructions on the web about how to do that. The only non-obvious thing is choose FreeDOS for the format. I don’t know why, but it works. Install the iso file onto the USB.</p>
-
-<h1 id="boot-from-usb-stick-and-install">Boot from USB stick and Install</h1>
-
-<p>If you set up the bios correctly, then it should see the USB stick first on boot up.</p>
-
-<p><img src="/images/050920_0031_installorac1.jpg" alt="" /></p>
-
-<p><img src="/images/050920_0031_installorac2.jpg" alt="" /></p>
-
-<p>I picked Server with GUI as I want gnome desktop. I also added some optional products as shown on the right.</p>
-
-<p><img src="/images/050920_0031_installorac3.jpg" alt="" /></p>
-
-<h1 id="eno1-network-port">ENO1 network port</h1>
-
-<p><img src="/images/050920_0031_installorac4.jpg" alt="" /></p>
-
-<h1 id="allocating-disk-partitions">Allocating Disk Partitions</h1>
-
-<p>As mentioned above I had already created the partitions I wanted. You can do it here too. There are plenty of resources you can find about using the installer to do it. Here I’m just assigning the mount points to each partition and to the LVM.</p>
-
-<p><img src="/images/050920_0031_installorac5.jpg" alt="" /></p>
-
-<p>Note that the /boot/efi partition is standard type EFI format, and /boot is standard type XFS format.</p>
-
-<p>Swap is, well, swap format but is on the LVM partition. I made it twice the size of my 8GB of memory. Seems to be debatable how big it should be but 16GB is trivial.</p>
-
-<p>The rest go on the LVM partition along with swap and are XFS. I probably overallocated / at 30GB, but I’m putting the /u01 directory there for the Oracle binaries and anything else I install. I’m slightly paranoid about running out of root space from past experience. Your mileage may vary. /home is 500GB because I have it available and sometimes you just need somewhere to put stuff.</p>
-
-<p><img src="/images/050920_0031_installorac6.jpg" alt="" /></p>
-
-<p><img src="/images/050920_0031_installorac7.jpg" alt="" /></p>
-
-<p><img src="/images/050920_0031_installorac8.jpg" alt="" /></p>
-
-<p><img src="/images/050920_0031_installorac9.jpg" alt="" /></p>
-
-<p><img src="/images/050920_0031_installorac10.jpg" alt="" /></p>
-
-<h1 id="finish-the-install">Finish the Install</h1>
-
-<p>I gave myself an administrator account I can “sudo” from.</p>
-
-<p><img src="/images/050920_0031_installorac11.jpg" alt="" /></p>
-
-<p>Then let the install rip.</p>
-
-<p>When it finishes and wants to reboot, select that and give it a moment to shut down before pulling the USB stick. If you do it too soon, the shutdown hangs. If you it too late, it comes up on the installer boot image again. Either way just turn the machine off at that point. Pull the USB and it should boot to “grub” which will have the Unbreakable Linux kernel first in the boot list, with the RHL kernel next, a recovery image, and then the Windows image. You can rearrange the order later with “grubby” or directly in the grub config file. There are plenty of resources about that.</p>
-
-<p>Remember the way I’ve done this, if I pull the plug out on the Lacie driver, the original boot loader on the internal drive should be picked up. This is as safe as it can be as long as I don’t ever do anything to that original internal Windows drive.</p>
-
-<p>I booted from the unbreakable linux kernel and came up in gnome desktop, logged in as myself, then went to the Applications menu on the top left to get a gnonme-terminal and did:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo su -
-</code></pre></div></div>
-
-<p>Now I’m ready to rock.</p>
-
-<h1 id="software-updates">Software Updates</h1>
-
-<p>From gnome desktop ran <em>Applications/System Tools/Software Updates</em>. Eventually it came up with 59 updates. Installed them. Rebooted.</p>
-
-<h2 id="xterm">xterm</h2>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo su - 
+</code></pre></div></div><h1 id="burn-iso-image-to-usb-stick">Burn ISO image to USB stick</h1><p>Download <em>rufus</em> executable for windows. You don’t even have to install it. Just download it to the same place as your iso file. You can use that to create the bootable USB.<p>You can find plenty of instructions on the web about how to do that. The only non-obvious thing is choose FreeDOS for the format. I don’t know why, but it works. Install the iso file onto the USB.<h1 id="boot-from-usb-stick-and-install">Boot from USB stick and Install</h1><p>If you set up the bios correctly, then it should see the USB stick first on boot up.<p><img src="/images/050920_0031_installorac1.jpg" alt="" /><p><img src="/images/050920_0031_installorac2.jpg" alt="" /><p>I picked Server with GUI as I want gnome desktop. I also added some optional products as shown on the right.<p><img src="/images/050920_0031_installorac3.jpg" alt="" /><h1 id="eno1-network-port">ENO1 network port</h1><p><img src="/images/050920_0031_installorac4.jpg" alt="" /><h1 id="allocating-disk-partitions">Allocating Disk Partitions</h1><p>As mentioned above I had already created the partitions I wanted. You can do it here too. There are plenty of resources you can find about using the installer to do it. Here I’m just assigning the mount points to each partition and to the LVM.<p><img src="/images/050920_0031_installorac5.jpg" alt="" /><p>Note that the /boot/efi partition is standard type EFI format, and /boot is standard type XFS format.<p>Swap is, well, swap format but is on the LVM partition. I made it twice the size of my 8GB of memory. Seems to be debatable how big it should be but 16GB is trivial.<p>The rest go on the LVM partition along with swap and are XFS. I probably overallocated / at 30GB, but I’m putting the /u01 directory there for the Oracle binaries and anything else I install. I’m slightly paranoid about running out of root space from past experience. Your mileage may vary. /home is 500GB because I have it available and sometimes you just need somewhere to put stuff.<p><img src="/images/050920_0031_installorac6.jpg" alt="" /><p><img src="/images/050920_0031_installorac7.jpg" alt="" /><p><img src="/images/050920_0031_installorac8.jpg" alt="" /><p><img src="/images/050920_0031_installorac9.jpg" alt="" /><p><img src="/images/050920_0031_installorac10.jpg" alt="" /><h1 id="finish-the-install">Finish the Install</h1><p>I gave myself an administrator account I can “sudo” from.<p><img src="/images/050920_0031_installorac11.jpg" alt="" /><p>Then let the install rip.<p>When it finishes and wants to reboot, select that and give it a moment to shut down before pulling the USB stick. If you do it too soon, the shutdown hangs. If you it too late, it comes up on the installer boot image again. Either way just turn the machine off at that point. Pull the USB and it should boot to “grub” which will have the Unbreakable Linux kernel first in the boot list, with the RHL kernel next, a recovery image, and then the Windows image. You can rearrange the order later with “grubby” or directly in the grub config file. There are plenty of resources about that.<p>Remember the way I’ve done this, if I pull the plug out on the Lacie driver, the original boot loader on the internal drive should be picked up. This is as safe as it can be as long as I don’t ever do anything to that original internal Windows drive.<p>I booted from the unbreakable linux kernel and came up in gnome desktop, logged in as myself, then went to the Applications menu on the top left to get a gnonme-terminal and did:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo su -
+</code></pre></div></div><p>Now I’m ready to rock.<h1 id="software-updates">Software Updates</h1><p>From gnome desktop ran <em>Applications/System Tools/Software Updates</em>. Eventually it came up with 59 updates. Installed them. Rebooted.<h2 id="xterm">xterm</h2><div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sudo su - 
 yum -y install xterm # Now I can start X on another machine, ssh into this one and launch an xterm 
 # could use gnome-terminal but I'm old school.
-</code></pre></div></div>
-
-<h2 id="add-epel-repository">Add EPEL repository</h2>
-
-<p>Put the following lines in /etc/yum.repos.d/epel-yum-ol7.repo</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[ol7\_epel\] name=Oracle Linux $releasever EPEL ($basearch) 
+</code></pre></div></div><h2 id="add-epel-repository">Add EPEL repository</h2><p>Put the following lines in /etc/yum.repos.d/epel-yum-ol7.repo<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[ol7\_epel\] name=Oracle Linux $releasever EPEL ($basearch) 
 baseurl=http://yum.oracle.com/repo/OracleLinux/OL7/developer\_EPEL/$basearch/ 
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-oracle 
 gpgcheck=1 
@@ -305,36 +22,16 @@ ol7\_UEKR4/x86\_64 Latest Unbreakable Enterprise Kernel Release 4 for Oracle Lin
 ol7\_epel/x86\_64 Oracle Linux 7Server EPEL (x86\_64) 31,547 
 ol7\_latest/x86\_64 Oracle Linux 7Server Latest (x86\_64) 18,516 
 repolist: 50,159
-</code></pre></div></div>
-
-<h2 id="ntfs-3g">ntfs-3g</h2>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# yum -y install ntfs-3g 
+</code></pre></div></div><h2 id="ntfs-3g">ntfs-3g</h2><div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# yum -y install ntfs-3g 
 ...
 Complete!
-</code></pre></div></div>
-
-<p>At this point the File Manager/Media Manager could mount the NTFS filesystem from the 3TB USB disk drive named “My Drive” on /media/run/*my login id*/something… A “df” command showed me the device was /dev/sdc1. There are other ways to find the device. In any case I dismounted that automatic drive using file manager and put the following entry into /<em>etc/fstab</em>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/dev/sdc1   /mnt/g  ntfs-3g context="system\_u:object\_r:samba\_share\_t:s0",defaults,uid=nobody,gid=nobody 0   0
-</code></pre></div></div>
-
-<p>The context stuff may be required for samba, but that could have been a side effect of my experiment with security profiles. In any case it didn’t hurt anything, and with Secure Linux environment stuff you have to have that attribute for samba to share it. Also notice I’m mapping the username/groupname of all files on this drive as “nobody”. The default is “root” which is messy. Remember I am going to make this a public share.</p>
-
-<p>Now create the mount point and mount it:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# mkdir /mnt/g 
+</code></pre></div></div><p>At this point the File Manager/Media Manager could mount the NTFS filesystem from the 3TB USB disk drive named “My Drive” on /media/run/*my login id*/something… A “df” command showed me the device was /dev/sdc1. There are other ways to find the device. In any case I dismounted that automatic drive using file manager and put the following entry into /<em>etc/fstab</em>:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/dev/sdc1   /mnt/g  ntfs-3g context="system\_u:object\_r:samba\_share\_t:s0",defaults,uid=nobody,gid=nobody 0   0
+</code></pre></div></div><p>The context stuff may be required for samba, but that could have been a side effect of my experiment with security profiles. In any case it didn’t hurt anything, and with Secure Linux environment stuff you have to have that attribute for samba to share it. Also notice I’m mapping the username/groupname of all files on this drive as “nobody”. The default is “root” which is messy. Remember I am going to make this a public share.<p>Now create the mount point and mount it:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# mkdir /mnt/g 
 \[root@linux2 ~\]# mount /mnt/g 
 \[root@linux2 ~\]# ls -ld /mnt/g 
 drwxrwxrwx. 1 nobody nobody 20480 May 5 11:47 /mnt/g 
 \[root@linux2 ~\]#
-</code></pre></div></div>
-
-<h2 id="samba">samba</h2>
-
-<p>This reference was helpful: <a href="https://oracle-base.com/articles/linux/linux-samba-configuration">https://oracle-base.com/articles/linux/linux-samba-configuration</a></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 lee\]# yum -y install samba 
+</code></pre></div></div><h2 id="samba">samba</h2><p>This reference was helpful: <a href="https://oracle-base.com/articles/linux/linux-samba-configuration">https://oracle-base.com/articles/linux/linux-samba-configuration</a><div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 lee\]# yum -y install samba 
 Loaded plugins: langpacks, ulninfo 
 Package samba-4.10.4-10.el7.x86\_64 already installed and latest version 
 Nothing to do 
@@ -344,11 +41,7 @@ Redirecting to /bin/systemctl start smb.service
 Note: Forwarding request to 'systemctl enable smb.service'. 
 Created symlink from /etc/systemd/system/multi-user.target.wants/smb.service to /usr/lib/systemd/system/smb.service. 
 \[root@linux2 lee\]#
-</code></pre></div></div>
-
-<p>Next/ I put the following in <em>/etc/samba/smb.conf</em>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[global\] 
+</code></pre></div></div><p>Next/ I put the following in <em>/etc/samba/smb.conf</em>:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[global\] 
 workgroup = WORKGROUP 
 netbios name = linux2 
 security = user 
@@ -369,55 +62,13 @@ directory mask = 0664
 
 \[root@linux2 lee\]# service smb restart 
 Redirecting to /bin/systemctl restart smb.service
-</code></pre></div></div>
-
-<p>But it still doesn’t work. The reason is the Linux firewall.</p>
-
-<h2 id="firewall">Firewall</h2>
-
-<p>I’m going to add the samba ports, but while I’m here I’ll also add Remote Dekstop Protocol ports for the step that follows samba. You’ll need to set your DISPLAY to point to your X server. If you are on gnome desktop, set it to :0.0. But in a window with your login shell or before doing switch user to root, remember to do <em>xhost +</em> so that the root shell can open the display.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 lee\]# export DISPLAY=192.168.2.162:0.0 
+</code></pre></div></div><p>But it still doesn’t work. The reason is the Linux firewall.<h2 id="firewall">Firewall</h2><p>I’m going to add the samba ports, but while I’m here I’ll also add Remote Dekstop Protocol ports for the step that follows samba. You’ll need to set your DISPLAY to point to your X server. If you are on gnome desktop, set it to :0.0. But in a window with your login shell or before doing switch user to root, remember to do <em>xhost +</em> so that the root shell can open the display.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 lee\]# export DISPLAY=192.168.2.162:0.0 
 \[root@linux2 lee\]# firewall-config
-</code></pre></div></div>
-
-<p>This brings up a gui for configuring the firewall on Linux. I selected eno1, which is my hardwired network interface, and hit the “Change Zone” button. I changed it from “public” to “home”. Next I added the samba services to home as shown:</p>
-
-<p><img src="/images/050920_0154_installorac1.png" alt="" /></p>
-
-<p>Notice that was Runtime Configuration. Under Options menu choose “Runtime to Permanent” to save those changes. I also want to add “rdp” protocol so I can add xrdp and get the gnome desktop to my windows machine using Remote Desktop. To do that we have to add the ports which requires editing the Permanent config.</p>
-
-<p>Change the Configuration: dropdown from Run time to Permanent and go to the Services tab. Hit the “+” at bottom:</p>
-
-<p><img src="/images/050920_0154_installorac2.png" alt="" /></p>
-
-<p>Add “rdp” and click OK. Then select rdp from the list and click the Add button under Ports:</p>
-
-<p><img src="/images/050920_0154_installorac3.png" alt="" /></p>
-
-<p>Also add same port with “udp”.</p>
-
-<p>Select Zones tab. Select “home”. Add the new “rdp” service to home. Note that this is in the Permanent configuration. We will have to restart the service to pick it up. Under options select Reload Firewalld. After that you should be able to select rdp for the home zone. Now do options/Reload Firewalld again and you should see rdp checked for home zone.</p>
-
-<p>It shouldn’t be needed, but you can restart the daemon to be sure it will come up next time:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 lee\]# service firewalld stop 
+</code></pre></div></div><p>This brings up a gui for configuring the firewall on Linux. I selected eno1, which is my hardwired network interface, and hit the “Change Zone” button. I changed it from “public” to “home”. Next I added the samba services to home as shown:<p><img src="/images/050920_0154_installorac1.png" alt="" /><p>Notice that was Runtime Configuration. Under Options menu choose “Runtime to Permanent” to save those changes. I also want to add “rdp” protocol so I can add xrdp and get the gnome desktop to my windows machine using Remote Desktop. To do that we have to add the ports which requires editing the Permanent config.<p>Change the Configuration: dropdown from Run time to Permanent and go to the Services tab. Hit the “+” at bottom:<p><img src="/images/050920_0154_installorac2.png" alt="" /><p>Add “rdp” and click OK. Then select rdp from the list and click the Add button under Ports:<p><img src="/images/050920_0154_installorac3.png" alt="" /><p>Also add same port with “udp”.<p>Select Zones tab. Select “home”. Add the new “rdp” service to home. Note that this is in the Permanent configuration. We will have to restart the service to pick it up. Under options select Reload Firewalld. After that you should be able to select rdp for the home zone. Now do options/Reload Firewalld again and you should see rdp checked for home zone.<p>It shouldn’t be needed, but you can restart the daemon to be sure it will come up next time:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 lee\]# service firewalld stop 
 Redirecting to /bin/systemctl stop firewalld.service 
 \[root@linux2 lee\]# service firewalld start 
 Redirecting to /bin/systemctl start firewalld.service
-</code></pre></div></div>
-
-<p>I fired firewall-config back up and now I see that under the “home” profile the new “rdp” service is allowed.</p>
-
-<p>At this point samba is running and exposing my “/mnt/g” NTFS drive as the “g” share. The files on linux are owned by user “nobody”. It’s all read/write and my wife doesn’t yell at me any more about her pictures. It doesn’t matter if I’m booting windows or linux. In both cases using <em>\\ip-address\g</em> mounts the same drive!!!!!!!!!!!!!!!!</p>
-
-<p>It is not secure you say. Hey. Ask me if I care.</p>
-
-<h2 id="xrdp">Xrdp</h2>
-
-<p>I want to use Windows Remote Desktop client to get the gnome desktop on my PC so I’m not sitting in front of the TV to use it. Now that we have the EPEL repository configured, this is not that hard. Well, it was hard until I figured out the firewall issue that we addressed in the prior step, but now it is not hard.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 lee\]# yum -y install xrdp tigervnc-server 
+</code></pre></div></div><p>I fired firewall-config back up and now I see that under the “home” profile the new “rdp” service is allowed.<p>At this point samba is running and exposing my “/mnt/g” NTFS drive as the “g” share. The files on linux are owned by user “nobody”. It’s all read/write and my wife doesn’t yell at me any more about her pictures. It doesn’t matter if I’m booting windows or linux. In both cases using <em>\\ip-address\g</em> mounts the same drive!!!!!!!!!!!!!!!!<p>It is not secure you say. Hey. Ask me if I care.<h2 id="xrdp">Xrdp</h2><p>I want to use Windows Remote Desktop client to get the gnome desktop on my PC so I’m not sitting in front of the TV to use it. Now that we have the EPEL repository configured, this is not that hard. Well, it was hard until I figured out the firewall issue that we addressed in the prior step, but now it is not hard.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 lee\]# yum -y install xrdp tigervnc-server 
 Loaded plugins: langpacks, ulninfo 
 Resolving Dependencies 
 --&gt; Running transaction check 
@@ -473,45 +124,15 @@ tcp 0 0 127.0.0.1:3350 0.0.0.0:\* LISTEN 9514/xrdp-sesman
 \[root@linux2 lee\]# systemctl enable xrdp 
 Created symlink from /etc/systemd/system/multi-user.target.wants/xrdp.service to /usr/lib/systemd/system/xrdp.service. 
 \[root@linux2 lee\]#
-</code></pre></div></div>
-
-<p>Now from my laptop I run Windows Remote Desktop client entering the IP address of the Linux server (I’ll get around to naming service later) and it works!!!</p>
-
-<p><img src="/images/050920_0154_installorac4.png" alt="" /></p>
-
-<p>We may get a secondary authentication request to enter the password for “keyring”. I am living with that for now.</p>
-
-<p>We also get multiple authentication requests to create a color profile. Pffft. Google search turns up this:</p>
-
-<p><a href="https://unix.stackexchange.com/questions/417906/authentication-is-required-to-create-a-color-profile">https://unix.stackexchange.com/questions/417906/authentication-is-required-to-create-a-color-profile</a>.</p>
-
-<p>The answer that worked for me was to put the following in the file: <em>/etc/polkit-1/localauthority/50-local.d/color.pkla</em></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[Allow colord for all users\] 
+</code></pre></div></div><p>Now from my laptop I run Windows Remote Desktop client entering the IP address of the Linux server (I’ll get around to naming service later) and it works!!!<p><img src="/images/050920_0154_installorac4.png" alt="" /><p>We may get a secondary authentication request to enter the password for “keyring”. I am living with that for now.<p>We also get multiple authentication requests to create a color profile. Pffft. Google search turns up this:<p><a href="https://unix.stackexchange.com/questions/417906/authentication-is-required-to-create-a-color-profile">https://unix.stackexchange.com/questions/417906/authentication-is-required-to-create-a-color-profile</a>.<p>The answer that worked for me was to put the following in the file: <em>/etc/polkit-1/localauthority/50-local.d/color.pkla</em><div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[Allow colord for all users\] 
 Identity=unix-user:\* 
 Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile 
 ResultAny=yes 
 ResultInactive=yes 
 ResultActive=yes
-</code></pre></div></div>
-
-<p>Now when I use Windows Remote Desktop I do not get a secondary prompt for a password (except sometimes for keyring). I have a remote desktop that looks just like the main gnome screen on the actual computer. I can still run an X windows server locally on my laptop and set the DISPLAY variable to have applications come that way, but most of the time just using the rdp connection desktop window works fine.</p>
-
-<h2 id="oracle-database-preinstall-19c-10-1el7x86_64rpm">oracle-database-preinstall-19c-1.0-1.el7.x86_64.rpm</h2>
-
-<p>I have this file on the /mnt/g driver I was just mentioning. I suspect there is a way to get it with yum, but I already have it.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\# yum -y localinstall oracle-database-preinstall-19c-1.0-1.el7.x86\_64.rpm
-</code></pre></div></div>
-
-<p>It completed without issues. One of the things it did was create the “oracle” user account and most of the groups listed in the documentation; however, I’m going to install the grid software standalone per the 19c recommendation and so will be walking through that document adding the grid user and any missing groups.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\# yum update -y
-</code></pre></div></div>
-
-<p>Per this link <em>https://oracle-base.com/articles/19c/oracle-db-19c-installation-on-oracle-linux-7</em>, I ran through the following yum install commands. Some of them were not already present, but many were.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>yum install -y bc 
+</code></pre></div></div><p>Now when I use Windows Remote Desktop I do not get a secondary prompt for a password (except sometimes for keyring). I have a remote desktop that looks just like the main gnome screen on the actual computer. I can still run an X windows server locally on my laptop and set the DISPLAY variable to have applications come that way, but most of the time just using the rdp connection desktop window works fine.<h2 id="oracle-database-preinstall-19c-10-1el7x86_64rpm">oracle-database-preinstall-19c-1.0-1.el7.x86_64.rpm</h2><p>I have this file on the /mnt/g driver I was just mentioning. I suspect there is a way to get it with yum, but I already have it.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\# yum -y localinstall oracle-database-preinstall-19c-1.0-1.el7.x86\_64.rpm
+</code></pre></div></div><p>It completed without issues. One of the things it did was create the “oracle” user account and most of the groups listed in the documentation; however, I’m going to install the grid software standalone per the 19c recommendation and so will be walking through that document adding the grid user and any missing groups.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\# yum update -y
+</code></pre></div></div><p>Per this link <em>https://oracle-base.com/articles/19c/oracle-db-19c-installation-on-oracle-linux-7</em>, I ran through the following yum install commands. Some of them were not already present, but many were.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>yum install -y bc 
 yum install -y binutils 
 yum install -y compat-libcap1 
 yum install -y compat-libstdc++-33 
@@ -550,15 +171,7 @@ yum install -y targetcli # ACFS
 yum install -y smartmontools 
 yum install -y sysstat 
 yum install -y unixODBC
-</code></pre></div></div>
-
-<p>The Oracle Base document also recommends adding a password to the “oracle” account (and I presume “grid” account), setting secure Linux to permissive and stopping the firewall. Since these things are not discussed in the main documentation, I’m unsure about them. I’m going to skip and come back to them if I run into trouble that might be due to them.</p>
-
-<h1 id="google-chrome">Google Chrome</h1>
-
-<p>Although Firefox is fine, it has some quirks. Sometimes I would rather have Google Chrome. Installing it turned out to be ridiculously difficult, but I finally stumbled through some posts with enough information to figure it out.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 Downloads\]# wget https://dl.google.com/linux/direct/google-chrome-stable\_current\_x86\_64.rpm 
+</code></pre></div></div><p>The Oracle Base document also recommends adding a password to the “oracle” account (and I presume “grid” account), setting secure Linux to permissive and stopping the firewall. Since these things are not discussed in the main documentation, I’m unsure about them. I’m going to skip and come back to them if I run into trouble that might be due to them.<h1 id="google-chrome">Google Chrome</h1><p>Although Firefox is fine, it has some quirks. Sometimes I would rather have Google Chrome. Installing it turned out to be ridiculously difficult, but I finally stumbled through some posts with enough information to figure it out.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 Downloads\]# wget https://dl.google.com/linux/direct/google-chrome-stable\_current\_x86\_64.rpm 
 \[root@linux2 Downloads\]# wget http://mirror.centos.org/centos/7/os/x86\_64/Packages/vulkan-filesystem-1.1.97.0-1.el7.noarch.rpm 
 \[root@linux2 Downloads\]# wget http://mirror.centos.org/centos/7/os/x86\_64/Packages/vulkan-1.1.97.0-1.el7.x86\_64.rpm 
 \[root@linux2 Downloads\]# yum -y install libappindicator-gtk3-12.10.0-13.el7.x86\_64 
@@ -568,70 +181,26 @@ yum install -y unixODBC
 \[root@linux2 Downloads\]# yum -y install vulkan-filesystem-1.1.97.0-1.el7.noarch.rpm 
 \[root@linux2 Downloads\]# yum install -y vulkan-1.1.97.0-1.el7.x86\_64.rpm 
 \[root@linux2 Downloads\]# yum install -y google-chrome-stable\_current\_x86\_64.rpm
-</code></pre></div></div>
-
-<h1 id="installing-oracle-grid">Installing Oracle Grid</h1>
-
-<p>Going through the checklist starting with section 2 (Checking and Configuring Server Hardware for Oracle Database). <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/checking-server-hardware-and-memory-configuration.html">https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/checking-server-hardware-and-memory-configuration.html#GUID-DC04ABB6-1822-444A-AB1B-8C306079439C</a></p>
-
-<p>I have no issues.</p>
-
-<p>We already did the preinstall rpm.</p>
-
-<p>I do not have a support subscription, so skip Ksplice.</p>
-
-<p>We need to install cvuqdisk, but it is in the grid package. We need to unzip that package. Before we can do that we need to create the “grid” user and some more groups that were not created automatically by the preinstall rpm. Then we can install the cvuqdisk rpm from there. We will come back to this.</p>
-
-<p>The transparent huge page setting was taken care of for us I presume by the preinstall rpm:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 yum.repos.d\]# cat /sys/kernel/mm/transparent\_hugepage/enabled 
+</code></pre></div></div><h1 id="installing-oracle-grid">Installing Oracle Grid</h1><p>Going through the checklist starting with section 2 (Checking and Configuring Server Hardware for Oracle Database). <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/checking-server-hardware-and-memory-configuration.html">https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/checking-server-hardware-and-memory-configuration.html#GUID-DC04ABB6-1822-444A-AB1B-8C306079439C</a><p>I have no issues.<p>We already did the preinstall rpm.<p>I do not have a support subscription, so skip Ksplice.<p>We need to install cvuqdisk, but it is in the grid package. We need to unzip that package. Before we can do that we need to create the “grid” user and some more groups that were not created automatically by the preinstall rpm. Then we can install the cvuqdisk rpm from there. We will come back to this.<p>The transparent huge page setting was taken care of for us I presume by the preinstall rpm:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 yum.repos.d\]# cat /sys/kernel/mm/transparent\_hugepage/enabled 
 always madvise \[never\]
-</code></pre></div></div>
-
-<p>My disk has the correct scheduler for ASM:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 yum.repos.d\]# cat /sys/block/sda/queue/scheduler 
+</code></pre></div></div><p>My disk has the correct scheduler for ASM:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 yum.repos.d\]# cat /sys/block/sda/queue/scheduler 
 noop \[deadline\] cfq
-</code></pre></div></div>
-
-<h2 id="create-users-and-groups-for-grid">Create users and groups for grid</h2>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# /usr/sbin/groupadd -g 54327 asmdba 
+</code></pre></div></div><h2 id="create-users-and-groups-for-grid">Create users and groups for grid</h2><div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# /usr/sbin/groupadd -g 54327 asmdba 
 \[root@linux2 ~\]# /usr/sbin/groupadd -g 54328 asmoper 
 \[root@linux2 ~\]# /usr/sbin/groupadd -g 54329 asmadmin
-</code></pre></div></div>
-
-<p>The rest of the groups already exist from the preinstall rpm.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# /usr/sbin/useradd -u 54331 -g oinstall -G dba,asmdba,backupdba,dgdba,kmdba,racdba,asmoper,asmadmin grid
-</code></pre></div></div>
-
-<p>Although the “oracle” user already exists, edit /etc/group and add “oracle” to the list of users for the group “asmdba” or you can use “usermod” command as below.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# usermod -a -G asmdba oracle
-</code></pre></div></div>
-
-<p>For the users “grid” and “oracle” edit the .bash_profile and add the following two lines:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# vim ~grid/.bash\_profile ~oracle/.bash\_profile 2 files to edit
+</code></pre></div></div><p>The rest of the groups already exist from the preinstall rpm.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# /usr/sbin/useradd -u 54331 -g oinstall -G dba,asmdba,backupdba,dgdba,kmdba,racdba,asmoper,asmadmin grid
+</code></pre></div></div><p>Although the “oracle” user already exists, edit /etc/group and add “oracle” to the list of users for the group “asmdba” or you can use “usermod” command as below.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# usermod -a -G asmdba oracle
+</code></pre></div></div><p>For the users “grid” and “oracle” edit the .bash_profile and add the following two lines:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# vim ~grid/.bash\_profile ~oracle/.bash\_profile 2 files to edit
 
 umask 022 
 export ORACLE\_HOSTNAME=$(hostname)
-</code></pre></div></div>
-
-<p>Add the following lines to <em>/etc/security/limits.conf</em>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>oracle hard nofile 65536 
+</code></pre></div></div><p>Add the following lines to <em>/etc/security/limits.conf</em>:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>oracle hard nofile 65536 
 oracle soft stack 10240 
 oracle hard stack 32768 
 grid hard nofile 65536 
 grid soft stack 10240 
 grid hard stack 32768
-</code></pre></div></div>
-
-<p>Exit from the user grid/oracle and do “sudo su - grid” again to check the limits:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 ~\]$ ulimit -Sn 
+</code></pre></div></div><p>Exit from the user grid/oracle and do “sudo su - grid” again to check the limits:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 ~\]$ ulimit -Sn 
 1024 
 \[grid@linux2 ~\]$ ulimit -Hn 
 65536 
@@ -643,72 +212,34 @@ grid hard stack 32768
 10240 
 \[grid@linux2 ~\]$ ulimit -Hs 
 32768
-</code></pre></div></div>
-
-<h2 id="copying-grid-install-software">Copying grid install software</h2>
-
-<p>Create a directory for data files. Not sure we will use this and it is in the / partition, so we will see. Later I’m going to create a recovery area in /home.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# mkdir -p /u01/oradata 
+</code></pre></div></div><h2 id="copying-grid-install-software">Copying grid install software</h2><p>Create a directory for data files. Not sure we will use this and it is in the / partition, so we will see. Later I’m going to create a recovery area in /home.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# mkdir -p /u01/oradata 
 \[root@linux2 ~\]# chown grid:oinstall /u01/oradata 
 \[root@linux2 ~\]# chmod 775 /u01/oradata
-</code></pre></div></div>
-
-<p>I’m following section 10 “Installing Oracle Grid Infrastructure for a Standalone Server with a New Database Installation:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# mkdir -p /u01/app/oracle 
+</code></pre></div></div><p>I’m following section 10 “Installing Oracle Grid Infrastructure for a Standalone Server with a New Database Installation:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# mkdir -p /u01/app/oracle 
 \[root@linux2 ~\]# mkdir -p /u01/app/oraInventory 
 \[root@linux2 ~\]# chown -R oracle:oinstall /u01/app/oracle 
 \[root@linux2 ~\]# chown -R grid:oinstall /u01/app/oraInventory 
 \[root@linux2 ~\]# chmod -R 775 /u01/app
-</code></pre></div></div>
-
-<p>Note that the instructions say to do this as user “oracle”, but I’m going to be using user “grid”. I still want all of the directories above “grid” to be owned by “oracle”. I have my Oracle grid zip file on /mnt/g/lee. Yours will be somewhere else.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 oracle\]# mkdir -p /u01/app/oracle/product/19.0.0/grid 
+</code></pre></div></div><p>Note that the instructions say to do this as user “oracle”, but I’m going to be using user “grid”. I still want all of the directories above “grid” to be owned by “oracle”. I have my Oracle grid zip file on /mnt/g/lee. Yours will be somewhere else.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 oracle\]# mkdir -p /u01/app/oracle/product/19.0.0/grid 
 \[root@linux2 oracle\]# chmod -R 775 /u01/app/oracle/product 
 \[root@linux2 oracle\]# chown -R oracle:oinstall /u01/app/oracle/product 
 \[root@linux2 oracle\]# chown grid:oinstall /u01/app/oracle/product/19.0.0/grid 
 \[root@linux2 bin\]# mkdir /u01/app/grid 
 \[root@linux2 bin\]# chmod 775 /u01/app/grid 
 \[root@linux2 bin\]# chown grid:oinstall /u01/app/grid
-</code></pre></div></div>
-
-<p>Now switch over to user grid.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 ~\]$ cd /u01/app/oracle/product/19.0.0/grid 
+</code></pre></div></div><p>Now switch over to user grid.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 ~\]$ cd /u01/app/oracle/product/19.0.0/grid 
 \[grid@linux2 grid\]$ unzip -q /mnt/g/lee/LINUX.X64\_193000\_grid\_home.zip
-</code></pre></div></div>
-
-<p>Now that we have the zip file unpacked we can go back to the step where we need the cvq rpm and install that as user “root”:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 rpm\]# cd /u01/app/oracle/product/19.0.0/grid/cv/rpm 
+</code></pre></div></div><p>Now that we have the zip file unpacked we can go back to the step where we need the cvq rpm and install that as user “root”:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 rpm\]# cd /u01/app/oracle/product/19.0.0/grid/cv/rpm 
 \[root@linux2 rpm\]# CVUQDISK\_GRP=oinstall; export CVUQDISK\_GRP 
 \[root@linux2 rpm\]# rpm -iv cvuqdisk-1.0.10-1.rpm 
 Preparing packages... 
 cvuqdisk-1.0.10-1.x86\_64
-</code></pre></div></div>
-
-<h2 id="configure-asm-disks-with-grid">Configure asm disks with grid</h2>
-
-<p>This is done as “root”. Note that if you wind up needing to reinstall after this step (like if you run deinstall/deinstall), you may need to run a command to wipe out the disk header (dd if=/dev/zero of=/dev/sda4 bs=1024 count=100). Be very careful!!!!! But if you just follow the grid deinstall instructions without wiping out the header, and then try again, it won’t find the partitions.</p>
-
-<p>Something I’m not sure about, but I had trouble otherwise, is to use “udev” to configure the ownership of the device files for my disk partitions. I see hints that suggest ASM should be taking care of this, but I just don’t know. I’m creating the following file:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# vim /etc/udev/rules.d/99-oracleasm.rules
+</code></pre></div></div><h2 id="configure-asm-disks-with-grid">Configure asm disks with grid</h2><p>This is done as “root”. Note that if you wind up needing to reinstall after this step (like if you run deinstall/deinstall), you may need to run a command to wipe out the disk header (dd if=/dev/zero of=/dev/sda4 bs=1024 count=100). Be very careful!!!!! But if you just follow the grid deinstall instructions without wiping out the header, and then try again, it won’t find the partitions.<p>Something I’m not sure about, but I had trouble otherwise, is to use “udev” to configure the ownership of the device files for my disk partitions. I see hints that suggest ASM should be taking care of this, but I just don’t know. I’m creating the following file:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# vim /etc/udev/rules.d/99-oracleasm.rules
 
 KERNEL=="sda4", SUBSYSTEM=="block", OWNER="grid", GROUP="oinstall", MODE="0660" 
 KERNEL=="sda5", SUBSYSTEM=="block", OWNER="grid", GROUP="oinstall", MODE="0660"
-</code></pre></div></div>
-
-<p>Then run the following command to verify the rule:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\# udevadm test $(udevadm info --query=path --name=sda4)
-</code></pre></div></div>
-
-<p>Then to reload the rules and trigger them:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# udevadm control --reload-rules 
+</code></pre></div></div><p>Then run the following command to verify the rule:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\# udevadm test $(udevadm info --query=path --name=sda4)
+</code></pre></div></div><p>Then to reload the rules and trigger them:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# udevadm control --reload-rules 
 \[root@linux2 ~\]# udevadm trigger 
 \[root@linux2 ~\]# ls -lal /dev/sda\* 
 brw-rw----. 1 root disk 8, 0 May 7 23:53 /dev/sda 
@@ -717,13 +248,7 @@ brw-rw----. 1 root disk 8, 2 May 7 23:53 /dev/sda2
 brw-rw----. 1 root disk 8, 3 May 7 23:53 /dev/sda3 
 brw-rw----. 1 grid oinstall 8, 4 May 7 23:53 /dev/sda4 
 brw-rw----. 1 grid oinstall 8, 5 May 7 23:53 /dev/sda5
-</code></pre></div></div>
-
-<p>That will hold up across reboots.</p>
-
-<p>Now to label the partitions. We are back to using root.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 rpm\]# export ORACLE\_HOME=/u01/app/oracle/product/19.0.0/grid 
+</code></pre></div></div><p>That will hold up across reboots.<p>Now to label the partitions. We are back to using root.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 rpm\]# export ORACLE\_HOME=/u01/app/oracle/product/19.0.0/grid 
 \[root@linux2 rpm\]# export ORACLE\_BASE=/tmp 
 \[root@linux2 rpm\]# cd /u01/app/oracle/product/19.0.0/grid/bin 
 \[root@linux2 bin\]# fdisk -l # to find the partition name of my ASM allocation 
@@ -741,84 +266,20 @@ Label Duplicate Path
 ================================================================================ 
 DATA2 /dev/sda5 
 \[root@linux2 bin\]#
-</code></pre></div></div>
-
-<p>Now we switch to user “grid” (sudo su - grid). Recall that we already updated the profile setting environment as directed. If you get a message</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>_ERROR: Unable to verify the graphical display setup. This application requires X display. Make sure that xdpyinfo exist under PATH variable_
-</code></pre></div></div>
-
-<p>then you have two choices. You can run “xhost +” in a terminal of your original login user to allow X11 clients run by other users to connect to your gnome desktop (which I’m displaying via remote desktop protocol on my laptop), or you can set the DISPLAY variable to point to your local Xserver where you have done “xhost +” or started without authentication. Either way we need to set the DISPLAY variable. I echo the DISPLAY variable in a terminal window I launched from gnome and see “:11.0”. I’ll use that.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 grid\]$ pwd /u01/app/oracle/product/19.0.0/grid 
+</code></pre></div></div><p>Now we switch to user “grid” (sudo su - grid). Recall that we already updated the profile setting environment as directed. If you get a message<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>_ERROR: Unable to verify the graphical display setup. This application requires X display. Make sure that xdpyinfo exist under PATH variable_
+</code></pre></div></div><p>then you have two choices. You can run “xhost +” in a terminal of your original login user to allow X11 clients run by other users to connect to your gnome desktop (which I’m displaying via remote desktop protocol on my laptop), or you can set the DISPLAY variable to point to your local Xserver where you have done “xhost +” or started without authentication. Either way we need to set the DISPLAY variable. I echo the DISPLAY variable in a terminal window I launched from gnome and see “:11.0”. I’ll use that.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 grid\]$ pwd /u01/app/oracle/product/19.0.0/grid 
 \[grid@linux2 grid\]$ export DISPLAY=:11.0 
 \[grid@linux2 grid\]$ ./gridSetup.sh
-</code></pre></div></div>
-
-<p>Oops! The grid installer does not display correctly in my remote desktop client. Drats! It is probably an xresource or colormap thing or something. I don’t feel the urge to try to figure that out right now. OK, plan B. I run my local VcXsrv X11 server on my PC which I started with the “Disable access control” checked. Now I set my DISPLAY variable to point there and try again:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 grid\]$ export DISPLAY=192.168.2.162:0.0 
+</code></pre></div></div><p>Oops! The grid installer does not display correctly in my remote desktop client. Drats! It is probably an xresource or colormap thing or something. I don’t feel the urge to try to figure that out right now. OK, plan B. I run my local VcXsrv X11 server on my PC which I started with the “Disable access control” checked. Now I set my DISPLAY variable to point there and try again:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 grid\]$ export DISPLAY=192.168.2.162:0.0 
 \[grid@linux2 grid\]$ ./gridSetup.sh
-</code></pre></div></div>
-
-<p>This takes a little while to prepare and give you the next screen. You can look in the /tmp directory and below for logs if you get worried. I found mine in <em>/tmp/GridSetupActions2020-05-07_08-37-33AM/gridSetupActions2020-05-07_08-37-33AM.out</em>.</p>
-
-<p>I’m doing a standalone Server (Oracle Restart).</p>
-
-<p><img src="/images/050920_0058_installorac1.png" alt="" /></p>
-
-<p>It eventually gives me this window showing the partitions I labeled with asmcmd. I’m chosing “External” redundancy because I have no need of mirroring on this setup (and no separate disk to put it on). I select my disks. I was going to try to use ASM Filter Driver, but with two partitions instead of one (or perhaps something else I did since I last tried it), it tells me it is not supported. Based on other posts I’ve seen, it looked like trouble anyway.</p>
-
-<p><img src="/images/050920_0058_installorac2.png" alt="" /></p>
-
-<p>I don’t need separate passwords and am not worried about the password strength here so it scolds me.</p>
-
-<p><img src="/images/050920_0058_installorac3.png" alt="" /></p>
-
-<p>I’m not registering with any cloud.</p>
-
-<p><img src="/images/050920_0058_installorac4.png" alt="" /></p>
-
-<p>I’m happy with the user ids it finds.</p>
-
-<p><img src="/images/050920_0058_installorac5.png" alt="" /></p>
-
-<p>The next screen shows the “grid_base” directory that if you keep it will cause trouble with oraInventory. Change this to the /u01/app/grid directory that we created in preparation.</p>
-
-<p><img src="/images/050920_0058_installorac6.png" alt="" /></p>
-
-<p>Here is same screen with the directory name corrected.</p>
-
-<p><img src="/images/050920_0058_installorac7.png" alt="" /></p>
-
-<p>If it suggests creating an oraInventory beneath the product directory, that will be bad. That is going to be under oracle base for the database installation. Make sure it is under /u01/app instead. If you had left the default grid base location earlier, you would. have had the wrong directory here which causes trouble on the Oracle install. It is fixable later though.</p>
-
-<p><img src="/images/050920_0058_installorac8.png" alt="" /></p>
-
-<p>I’m going to run the configuration scripts manually rather than try to give it a way to do it with root.</p>
-
-<p><img src="/images/050920_0058_installorac9.png" alt="" /></p>
-
-<p><img src="/images/050920_0058_installorac10.png" alt="" /></p>
-
-<p>Press the Install button.</p>
-
-<p><img src="/images/050920_0058_installorac11.png" alt="" /></p>
-
-<p><img src="/images/050920_0058_installorac12.png" alt="" /></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 bin\]# /u01/app/oraInventory/orainstRoot.sh 
+</code></pre></div></div><p>This takes a little while to prepare and give you the next screen. You can look in the /tmp directory and below for logs if you get worried. I found mine in <em>/tmp/GridSetupActions2020-05-07_08-37-33AM/gridSetupActions2020-05-07_08-37-33AM.out</em>.<p>I’m doing a standalone Server (Oracle Restart).<p><img src="/images/050920_0058_installorac1.png" alt="" /><p>It eventually gives me this window showing the partitions I labeled with asmcmd. I’m chosing “External” redundancy because I have no need of mirroring on this setup (and no separate disk to put it on). I select my disks. I was going to try to use ASM Filter Driver, but with two partitions instead of one (or perhaps something else I did since I last tried it), it tells me it is not supported. Based on other posts I’ve seen, it looked like trouble anyway.<p><img src="/images/050920_0058_installorac2.png" alt="" /><p>I don’t need separate passwords and am not worried about the password strength here so it scolds me.<p><img src="/images/050920_0058_installorac3.png" alt="" /><p>I’m not registering with any cloud.<p><img src="/images/050920_0058_installorac4.png" alt="" /><p>I’m happy with the user ids it finds.<p><img src="/images/050920_0058_installorac5.png" alt="" /><p>The next screen shows the “grid_base” directory that if you keep it will cause trouble with oraInventory. Change this to the /u01/app/grid directory that we created in preparation.<p><img src="/images/050920_0058_installorac6.png" alt="" /><p>Here is same screen with the directory name corrected.<p><img src="/images/050920_0058_installorac7.png" alt="" /><p>If it suggests creating an oraInventory beneath the product directory, that will be bad. That is going to be under oracle base for the database installation. Make sure it is under /u01/app instead. If you had left the default grid base location earlier, you would. have had the wrong directory here which causes trouble on the Oracle install. It is fixable later though.<p><img src="/images/050920_0058_installorac8.png" alt="" /><p>I’m going to run the configuration scripts manually rather than try to give it a way to do it with root.<p><img src="/images/050920_0058_installorac9.png" alt="" /><p><img src="/images/050920_0058_installorac10.png" alt="" /><p>Press the Install button.<p><img src="/images/050920_0058_installorac11.png" alt="" /><p><img src="/images/050920_0058_installorac12.png" alt="" /><div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 bin\]# /u01/app/oraInventory/orainstRoot.sh 
 Changing permissions of /u01/app/oraInventory. 
 Adding read,write permissions for group. 
 Removing read,write,execute permissions for world. 
 # 
 Changing groupname of /u01/app/oraInventory to oinstall. 
 The execution of the script is complete.
-</code></pre></div></div>
-
-<p>And now the tricky one. Cross fingers. I got past the part I failed on OEL 8 and also on 7.8 when I had a greater than 2TB partition for ASM. This runs a while.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[\[root@linux2 bin\]# /u01/app/oracle/product/19.0.0/grid/root.sh 
+</code></pre></div></div><p>And now the tricky one. Cross fingers. I got past the part I failed on OEL 8 and also on 7.8 when I had a greater than 2TB partition for ASM. This runs a while.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[\[root@linux2 bin\]# /u01/app/oracle/product/19.0.0/grid/root.sh 
 Performing root user operation. 
 # 
 The following environment variables are set as: 
@@ -850,28 +311,12 @@ CRS-4664: Node linux2 successfully pinned.
 # 
 linux2 2020/05/08 10:45:13 /u01/app/grid/crsdata/linux2/olr/backup\_20200508\_104513.olr 724960844 
 2020/05/08 10:45:15 CLSRSC-327: Successfully configured Oracle Restart for a standalone server
-</code></pre></div></div>
-
-<p>Hooray! Click OK back on the installer window.</p>
-
-<p><img src="/images/050920_0058_installorac13.png" alt="" /></p>
-
-<p>This takes a long time. I see something going on in /tmp/hsperfdata_grid.</p>
-
-<p>And now I get a failure.</p>
-
-<p><img src="/images/050920_0058_installorac14.png" alt="" /></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Oracle Net Listener Startup: 
+</code></pre></div></div><p>Hooray! Click OK back on the installer window.<p><img src="/images/050920_0058_installorac13.png" alt="" /><p>This takes a long time. I see something going on in /tmp/hsperfdata_grid.<p>And now I get a failure.<p><img src="/images/050920_0058_installorac14.png" alt="" /><div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Oracle Net Listener Startup: 
 The information provided for this listener is currently in use by other software on this computer. 
 Check the trace file for details: /u01/app/oracle/product/19.0.0/grid\_base/cfgtoollogs/netca/trace\_OraGI19Home1-2005079AM2649.log 
 Oracle Net Services configuration failed. The exit code is 1 
 Oracle Net Configuration Assistant failed.
-</code></pre></div></div>
-
-<p>And in the trace log file mentioned above I find:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[main\] \[ 2020-05-07 10:01:43.447 EDT \] \[ConfigureListener.isPortFree:1292\] Creating ServerSocket on Port:1521, IP Address: linux2.localdomain/92.242.140.21 
+</code></pre></div></div><p>And in the trace log file mentioned above I find:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[main\] \[ 2020-05-07 10:01:43.447 EDT \] \[ConfigureListener.isPortFree:1292\] Creating ServerSocket on Port:1521, IP Address: linux2.localdomain/92.242.140.21 
 \[main\] \[ 2020-05-07 10:01:43.447 EDT \] \[ConfigureListener.isPortFree:1328\] Cannot assign requested address (Bind failed) 
 java.net.PlainSocketImpl.socketBind(Native Method) 
 java.net.AbstractPlainSocketImpl.bind(AbstractPlainSocketImpl.java:387) 
@@ -884,86 +329,28 @@ oracle.net.ca.SilentConfigure.performSilentConfigure(SilentConfigure.java:212)
 oracle.net.ca.InitialSetup.&lt;init&gt;(NetCA.java:4325) 
 oracle.net.ca.NetCA.main(NetCA.java:460) 
 \[main\] \[ 2020-05-07 10:01:43.447 EDT \] \[ConfigureListener.isPortFree:1341\] Returning is Port 1521 free: false
-</code></pre></div></div>
-
-<p>After a little googling and remembering advice I had read in the Oracle Base document, I found I had failed to update /etc/hosts with the name of this computer and the IP address. I added it to /etc/hosts:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 bin\]# cat /etc/hosts 
+</code></pre></div></div><p>After a little googling and remembering advice I had read in the Oracle Base document, I found I had failed to update /etc/hosts with the name of this computer and the IP address. I added it to /etc/hosts:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 bin\]# cat /etc/hosts 
 127.0.0.1 localhost localhost.localdomain localhost4 localhost4.localdomain4 
 ::1 localhost localhost.localdomain localhost6 localhost6.localdomain6 
 192.168.2.81 linux2.localdomain linux2
-</code></pre></div></div>
-
-<p>After this it completed the net configuration assistant, but failed the ASM assistant:</p>
-
-<p><img src="/images/050920_0058_installorac15.png" alt="" /></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[FATAL\] \[DBT-30002\] Disk group DATA creation failed. 
+</code></pre></div></div><p>After this it completed the net configuration assistant, but failed the ASM assistant:<p><img src="/images/050920_0058_installorac15.png" alt="" /><div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[FATAL\] \[DBT-30002\] Disk group DATA creation failed. 
 ORA-15018: diskgroup cannot be created 
 ORA-15031: disk specification '/dev/sda5' matches no disks 
 ORA-15025: could not open disk "/dev/sda5" 
 ORA-27041: unable to open file 
 Automatic Storage Management Configuration Assistant failed.
-</code></pre></div></div>
-
-<p>Some google searching leads me to believe that we have to manually assign ownership of the device files for the ASM partitions. Wish that had been mentioned in the documentation (or if it was, that I had noticed it). I proceeded with the “udev” rule to change the ownership of the device files as mentioned above. You should have already done that. At that point the /dev/sda[45] files were changed to grid:oinstall which takes care of it.</p>
-
-<p>Pressed continue and it finished. Yeaaaaaa!</p>
-
-<p><img src="/images/050920_0058_installorac16.png" alt="" /></p>
-
-<h1 id="testing-grid-installation">Testing Grid Installation</h1>
-
-<p>The next section in the install document is <em>Testing the Oracle Automatic Storage Management Installation</em>. I presume the sid I want is +ASM. When I look in the grid home dbs directory I see dbs/init.ora with a db_name=’ORCL’, but in the dbs directory I see some files with ‘+ASM’ in the name. I have zero experience with grid yet, so I’m guessing.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 grid\]$ export ORACLE\_HOME=/u01/app/oracle/product/19.0.0/grid 
+</code></pre></div></div><p>Some google searching leads me to believe that we have to manually assign ownership of the device files for the ASM partitions. Wish that had been mentioned in the documentation (or if it was, that I had noticed it). I proceeded with the “udev” rule to change the ownership of the device files as mentioned above. You should have already done that. At that point the /dev/sda[45] files were changed to grid:oinstall which takes care of it.<p>Pressed continue and it finished. Yeaaaaaa!<p><img src="/images/050920_0058_installorac16.png" alt="" /><h1 id="testing-grid-installation">Testing Grid Installation</h1><p>The next section in the install document is <em>Testing the Oracle Automatic Storage Management Installation</em>. I presume the sid I want is +ASM. When I look in the grid home dbs directory I see dbs/init.ora with a db_name=’ORCL’, but in the dbs directory I see some files with ‘+ASM’ in the name. I have zero experience with grid yet, so I’m guessing.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 grid\]$ export ORACLE\_HOME=/u01/app/oracle/product/19.0.0/grid 
 \[grid@linux2 grid\]$ export ORACLE\_SID=+ASM 
 \[grid@linux2 grid\]$ $ORACLE\_HOME/bin/asmcmd lsdg 
 State Type Rebal Sector Logical\_Sector Block AU Total\_MB Free\_MB Req\_mir\_free\_MB Usable\_file\_MB Offline\_d 
 MOUNTED EXTERN N 512 512 4096 4194304 2097152 2097040 0 2097040
-</code></pre></div></div>
-
-<p>Must have guessed right. That looks like both my 1 TB partitions were combined into a single group as expected. The ASM instance must be runing (a ps listing shows processes with +ASM in the name as well as a tnslsnr).</p>
-
-<p>I can also fire up $ORACLE_HOME_/bin/asmca_ and look around.</p>
-
-<p>The next section of the document informs us that every time we do any OS upgrades we need to relink the grid executables and provides some instructions. That’s beyond the scope for now, but try to remember this for the future.</p>
-
-<p>I won’t be using ACFS which is storage on stuff other than the database. And I don’t have access to support, so I don’t have any patches to apply.</p>
-
-<p>That’s it for grid.</p>
-
-<h1 id="installing-oracle-database">Installing Oracle Database</h1>
-
-<p>I already have to directories listed in step 2 of running the wizard, so all I need to do is create dbhome_1. I <em>sudo su - oracle</em>, and unpack my zip file.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[oracle@linux2 19.0.0\]$ mkdir -p /u01/app/oracle/product/19.0.0/dbhome\_1 
+</code></pre></div></div><p>Must have guessed right. That looks like both my 1 TB partitions were combined into a single group as expected. The ASM instance must be runing (a ps listing shows processes with +ASM in the name as well as a tnslsnr).<p>I can also fire up $ORACLE_HOME_/bin/asmca_ and look around.<p>The next section of the document informs us that every time we do any OS upgrades we need to relink the grid executables and provides some instructions. That’s beyond the scope for now, but try to remember this for the future.<p>I won’t be using ACFS which is storage on stuff other than the database. And I don’t have access to support, so I don’t have any patches to apply.<p>That’s it for grid.<h1 id="installing-oracle-database">Installing Oracle Database</h1><p>I already have to directories listed in step 2 of running the wizard, so all I need to do is create dbhome_1. I <em>sudo su - oracle</em>, and unpack my zip file.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[oracle@linux2 19.0.0\]$ mkdir -p /u01/app/oracle/product/19.0.0/dbhome\_1 
 \[oracle@linux2 19.0.0\]$ cd /u01/app/oracle/product/19.0.0/dbhome\_1 
 \[oracle@linux2 dbhome\_1\]$ unzip -q /mnt/g/lee/LINUX.X64\_193000\_db\_home.zip 
 \[oracle@linux2 dbhome\_1\]$ export DISPLAY=192.168.2.162:0.0 # you may be going local, but you will still need to set it and perhaps do xhost+ first
 \[oracle@linux2 dbhome\_1\]$ ./runInstaller 
 Launching Oracle Database Setup Wizard...
-</code></pre></div></div>
-
-<p>I’ll be creating the single instance database.</p>
-
-<p><img src="/images/050920_0129_installorac1.png" alt="" /></p>
-
-<p>After looking around a little bit I decided the “Desktop class” installation would be too limiting. I want to be able to play here which includes connecting from other machines. I picked “Server class”.</p>
-
-<p><img src="/images/050920_0129_installorac2.png" alt="" /></p>
-
-<p>Again, because I’m using this database to learn about big iron stuff, I picked Enterprise Edition. I don’t “need” it, but I want to be able to explore it. YMMV.</p>
-
-<p><img src="/images/050920_0129_installorac3.png" alt="" /></p>
-
-<p>Note that the next section describes an issue I subsequently fixed in the grid install process. I had made a mistake on the oracle inventory location. I leave this here in case you find yourself in the same situation.</p>
-
-<p><img src="/images/050920_0129_installorac4.png" alt="" /></p>
-
-<p>Hmm. Is this a permission issue?</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 19.0.0\]# ls -l 
+</code></pre></div></div><p>I’ll be creating the single instance database.<p><img src="/images/050920_0129_installorac1.png" alt="" /><p>After looking around a little bit I decided the “Desktop class” installation would be too limiting. I want to be able to play here which includes connecting from other machines. I picked “Server class”.<p><img src="/images/050920_0129_installorac2.png" alt="" /><p>Again, because I’m using this database to learn about big iron stuff, I picked Enterprise Edition. I don’t “need” it, but I want to be able to explore it. YMMV.<p><img src="/images/050920_0129_installorac3.png" alt="" /><p>Note that the next section describes an issue I subsequently fixed in the grid install process. I had made a mistake on the oracle inventory location. I leave this here in case you find yourself in the same situation.<p><img src="/images/050920_0129_installorac4.png" alt="" /><p>Hmm. Is this a permission issue?<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 19.0.0\]# ls -l 
 total 8 
 drwxr-xr-x. 68 oracle oinstall 4096 May 7 19:27 dbhome\_1 
 drwxr-x---. 85 root oinstall 4096 May 7 09:18 grid 
@@ -977,81 +364,17 @@ drwxrwxr-x. 68 oracle oinstall 4096 May 7 19:27 dbhome\_1
 drwxrwxr-x. 85 grid oinstall 4096 May 7 09:18 grid 
 drwxrwxr-x. 7 grid oinstall 84 May 7 10:32 grid\_base 
 drwxrwxr-x. 5 grid oinstall 92 May 7 19:20 oraInventory
-</code></pre></div></div>
-
-<p>I had to exit the installer and start it again. This time when I got to the step for Oracle base it did not complain immediately, but did give a popup when I continued.</p>
-
-<p><img src="/images/050920_0129_installorac5.png" alt="" /></p>
-
-<p>I see plenty of questions about this but don’t see an explanation I can follow other than the grid install was supposed to put the inventory in /u01/app/oraInventory. I’m not sure why it did not the first time (In my latest attempt as documented in this blog I correctly located it at /u01/app/oraInventory). I found this link on how to move oraInventory (<a href="https://logic.edchen.org/how-to-move-central-inventory/">https://logic.edchen.org/how-to-move-central-inventory/</a>). I changed /etc/OraInst.loc:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 19.0.0\]# cat /etc/oraInst.loc 
+</code></pre></div></div><p>I had to exit the installer and start it again. This time when I got to the step for Oracle base it did not complain immediately, but did give a popup when I continued.<p><img src="/images/050920_0129_installorac5.png" alt="" /><p>I see plenty of questions about this but don’t see an explanation I can follow other than the grid install was supposed to put the inventory in /u01/app/oraInventory. I’m not sure why it did not the first time (In my latest attempt as documented in this blog I correctly located it at /u01/app/oraInventory). I found this link on how to move oraInventory (<a href="https://logic.edchen.org/how-to-move-central-inventory/">https://logic.edchen.org/how-to-move-central-inventory/</a>). I changed /etc/OraInst.loc:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 19.0.0\]# cat /etc/oraInst.loc 
 #inventory\_loc=/u01/app/oracle/product/19.0.0/oraInventory 
 inventory\_loc=/u01/app/oraInventory 
 inst\_group=oinstall
-</code></pre></div></div>
-
-<p>The existing files are owned by grid, but since the group is oinstall we should be good. You may need to make sure any existing log directories are group writeable first. As user grid::</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 oraInventory\]$ cp -rp /u01/app/oracle/product/19.0.0/oraInventory /u01/app 
+</code></pre></div></div><p>The existing files are owned by grid, but since the group is oinstall we should be good. You may need to make sure any existing log directories are group writeable first. As user grid::<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[grid@linux2 oraInventory\]$ cp -rp /u01/app/oracle/product/19.0.0/oraInventory /u01/app 
 \[grid@linux2 oraInventory\]$ pwd 
 /u01/app/oraInventory 
 \[grid@linux2 oraInventory\]$ cp /etc/oraInst.loc . 
 \[grid@linux2 grid\]$ cd/u01/app/oracle/product/19.0.0/grid
 \[grid@linux2 grid\]$ cp /etc/oraInst.loc .
-</code></pre></div></div>
-
-<p>Now back as oracle user I try the installer again. We are past that hurdle and continuing. Note that since doing this I did deinstall of both the database and grid and started over.</p>
-
-<p><img src="/images/050920_0129_installorac6.png" alt="" /></p>
-
-<p>I’m customizing my database name and also going to create it as a container database. Total overkill, but I want to play with pluggable database containers.</p>
-
-<p><img src="/images/050920_0129_installorac7.png" alt="" /></p>
-
-<p>It defaults to NOT enabling automatic memory management because there is more than 4GB of memory. Not sure I understand that. Note that you have to move the slider to get close to 4.096 before you can edit the text box. I don’t know why.</p>
-
-<p><img src="/images/050920_0129_installorac8.png" alt="" /></p>
-
-<p>Although I have no plans to use anything but ascii, I’ll go with the default because that is what most large corporations do, I think.</p>
-
-<p><img src="/images/050920_0129_installorac9.png" alt="" /></p>
-
-<p>I’ll go ahead and install the sample schemas. They often make a good base for doing examples.</p>
-
-<p><img src="/images/050920_0129_installorac10.png" alt="" /></p>
-
-<p>I will be using ASM.</p>
-
-<p><img src="/images/050920_0129_installorac11.png" alt="" /></p>
-
-<p>No cloud for me.</p>
-
-<p><img src="/images/050920_0129_installorac12.png" alt="" /></p>
-
-<p>I will not be putting anything on this database I can’t afford to lose. In fact, I expect to tear it down and start over many times. But I tried it without recovery being set and wound up with an error later. I’ll enable recovery.</p>
-
-<p><img src="/images/050920_0129_installorac13.png" alt="" /></p>
-
-<p>It found my ASM disc group.</p>
-
-<p><img src="/images/050920_0129_installorac14.png" alt="" /></p>
-
-<p>Yes, I’m a bad person with passwords on this database.</p>
-
-<p><img src="/images/050920_0129_installorac15.png" alt="" /></p>
-
-<p><img src="/images/050920_0129_installorac16.png" alt="" /></p>
-
-<p>Just like with the grid install, I prefer to run the root scripts myself separately.</p>
-
-<p><img src="/images/050920_0129_installorac17.png" alt="" /></p>
-
-<p><img src="/images/050920_0129_installorac18.png" alt="" /></p>
-
-<p><img src="/images/050920_0129_installorac19.png" alt="" /></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# /u01/app/oracle/product/19.0.0/dbhome\_1/root.sh 
+</code></pre></div></div><p>Now back as oracle user I try the installer again. We are past that hurdle and continuing. Note that since doing this I did deinstall of both the database and grid and started over.<p><img src="/images/050920_0129_installorac6.png" alt="" /><p>I’m customizing my database name and also going to create it as a container database. Total overkill, but I want to play with pluggable database containers.<p><img src="/images/050920_0129_installorac7.png" alt="" /><p>It defaults to NOT enabling automatic memory management because there is more than 4GB of memory. Not sure I understand that. Note that you have to move the slider to get close to 4.096 before you can edit the text box. I don’t know why.<p><img src="/images/050920_0129_installorac8.png" alt="" /><p>Although I have no plans to use anything but ascii, I’ll go with the default because that is what most large corporations do, I think.<p><img src="/images/050920_0129_installorac9.png" alt="" /><p>I’ll go ahead and install the sample schemas. They often make a good base for doing examples.<p><img src="/images/050920_0129_installorac10.png" alt="" /><p>I will be using ASM.<p><img src="/images/050920_0129_installorac11.png" alt="" /><p>No cloud for me.<p><img src="/images/050920_0129_installorac12.png" alt="" /><p>I will not be putting anything on this database I can’t afford to lose. In fact, I expect to tear it down and start over many times. But I tried it without recovery being set and wound up with an error later. I’ll enable recovery.<p><img src="/images/050920_0129_installorac13.png" alt="" /><p>It found my ASM disc group.<p><img src="/images/050920_0129_installorac14.png" alt="" /><p>Yes, I’m a bad person with passwords on this database.<p><img src="/images/050920_0129_installorac15.png" alt="" /><p><img src="/images/050920_0129_installorac16.png" alt="" /><p>Just like with the grid install, I prefer to run the root scripts myself separately.<p><img src="/images/050920_0129_installorac17.png" alt="" /><p><img src="/images/050920_0129_installorac18.png" alt="" /><p><img src="/images/050920_0129_installorac19.png" alt="" /><div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 ~\]# /u01/app/oracle/product/19.0.0/dbhome\_1/root.sh 
 Performing root user operation. 
 # 
 The following environment variables are set as: 
@@ -1073,698 +396,17 @@ Note :
 2. tfactl will configure TFA Standalone Mode only if user has no access to TFA Service or TFA is not installed 
 # 
 \[root@linux2 ~\]#
-</code></pre></div></div>
-
-<p>Pressed the OK button on the root dialog.</p>
-
-<p><img src="/images/050920_0129_installorac20.png" alt="" /></p>
-
-<p>Running the command “iotop -o -d 5” I can see the database is writing to disk. At least that is better than just watching the installer sit there with “In Progress”. As a side note the Applications/System Tools/System Monitor app on gnome is not very impressive. There has to be a better tool.</p>
-
-<p><img src="/images/050920_0129_installorac21.png" alt="" /></p>
-
-<p>I found some logs I could watch</p>
-
-<p>[ oracle@linux2 cfgtoollogs]$ pwd /u01/app/oracle/product/19.0.0/dbhome_1/cfgtoollogs 
-   [oracle@linux2 cfgtoollogs]$ tail -f oracle.server_2020-05-08_09-30-54-AM.log 
-   INFO: Skipping line: 38% complete 
-   INFO: Skipping line: 38% complete 
-   INFO: Skipping line: 42% complete 
-   INFO: Skipping line: 42% complete 
-   INFO: Skipping line: 45% complete 
-   INFO: Skipping line: 45% complete 
-   INFO: Skipping line: 48% complete 
-   INFO: Skipping line: 48% complete 
-   INFO: Skipping line: Completing Database Creation 
-   INFO: Skipping line: Completing Database Creation</p>
-
-<p>Finally it finishes.</p>
-
-<p><img src="/images/050920_0129_installorac22.png" alt="" /></p>
-
-<p>But Firefox complains with that address - something about security. I found links to solutions having to do with XDB or private certificates or some such. I spent several hours looking without success. Someone with access to support might be able to figure it out. I might come back to that. I don’t need it though.</p>
-
-<p>The database is installed and functioning. Shutting down and starting up Linux brings the database down and up gracefully.</p>
-
-<h1 id="grid-and-oracle-login-profiles">grid and oracle login profiles</h1>
-
-<p>I configured the .bash_profile of the oracle user with the following lines.</p>
-
-<p>export PATH umask 022 export ORACLE_HOSTNAME=$(hostname) export ORAENV_ASK=NO export ORACLE_SID=leedb . oraenv -s</p>
-
-<p>Now I can do:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sqlplus / as sysdba 
+</code></pre></div></div><p>Pressed the OK button on the root dialog.<p><img src="/images/050920_0129_installorac20.png" alt="" /><p>Running the command “iotop -o -d 5” I can see the database is writing to disk. At least that is better than just watching the installer sit there with “In Progress”. As a side note the Applications/System Tools/System Monitor app on gnome is not very impressive. There has to be a better tool.<p><img src="/images/050920_0129_installorac21.png" alt="" /><p>I found some logs I could watch<p>[ oracle@linux2 cfgtoollogs]$ pwd /u01/app/oracle/product/19.0.0/dbhome_1/cfgtoollogs [oracle@linux2 cfgtoollogs]$ tail -f oracle.server_2020-05-08_09-30-54-AM.log INFO: Skipping line: 38% complete INFO: Skipping line: 38% complete INFO: Skipping line: 42% complete INFO: Skipping line: 42% complete INFO: Skipping line: 45% complete INFO: Skipping line: 45% complete INFO: Skipping line: 48% complete INFO: Skipping line: 48% complete INFO: Skipping line: Completing Database Creation INFO: Skipping line: Completing Database Creation<p>Finally it finishes.<p><img src="/images/050920_0129_installorac22.png" alt="" /><p>But Firefox complains with that address - something about security. I found links to solutions having to do with XDB or private certificates or some such. I spent several hours looking without success. Someone with access to support might be able to figure it out. I might come back to that. I don’t need it though.<p>The database is installed and functioning. Shutting down and starting up Linux brings the database down and up gracefully.<h1 id="grid-and-oracle-login-profiles">grid and oracle login profiles</h1><p>I configured the .bash_profile of the oracle user with the following lines.<p>export PATH umask 022 export ORACLE_HOSTNAME=$(hostname) export ORAENV_ASK=NO export ORACLE_SID=leedb . oraenv -s<p>Now I can do:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sqlplus / as sysdba 
 # or 
 sqlplus system
-</code></pre></div></div>
-
-<p>without having to set any more variables.</p>
-
-<p>I configured the .bash_profile of the grid user with the following lines:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>umask 022 
+</code></pre></div></div><p>without having to set any more variables.<p>I configured the .bash_profile of the grid user with the following lines:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>umask 022 
 export ORACLE\_HOSTNAME=$(hostname) 
 export ORACLE\_HOME=/u01/app/oracle/product/19.0.0/grid 
 export ORACLE\_SID="+ASM" 
 PATH=${PATH}:${ORACLE\_HOME}/bin
-</code></pre></div></div>
-
-<p>Now when I log in as user grid I can issue srvctl commands. See below.</p>
-
-<h1 id="starting-and-stopping">Starting and Stopping</h1>
-
-<p>If you have not already done so, read <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/configuring-automatic-restart-of-an-oracle-database.html">https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/configuring-automatic-restart-of-an-oracle-database.html#GUID-EA0104A2-B256-4866-9C8A-9B69F8D0F24E</a></p>
-
-<p>If you use sqlplus to shutdown your database you will be in for a surprise when you try to start it again. You can recover. After thinking I had lost the diskgroup I found I could get it all going again by logging in as “grid” and running a few commands:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>srvctl start diskgroup -diskgroup data 
+</code></pre></div></div><p>Now when I log in as user grid I can issue srvctl commands. See below.<h1 id="starting-and-stopping">Starting and Stopping</h1><p>If you have not already done so, read <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/configuring-automatic-restart-of-an-oracle-database.html">https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/configuring-automatic-restart-of-an-oracle-database.html#GUID-EA0104A2-B256-4866-9C8A-9B69F8D0F24E</a><p>If you use sqlplus to shutdown your database you will be in for a surprise when you try to start it again. You can recover. After thinking I had lost the diskgroup I found I could get it all going again by logging in as “grid” and running a few commands:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>srvctl start diskgroup -diskgroup data 
 srvctl start database -db leedb
-</code></pre></div></div>
-
-<p>In general you can let the normal Linux shudtown and startup take care of things. When you are ready, you need to learn about srvctl which is kind of the point of setting up the gird “restart” structure.</p>
-
-<h1 id="sqldeveloper">Sqldeveloper</h1>
-
-<p>You may be able to use yum to get sqldeveloper, but I downloaded the rpm. Before installing it you need the java sdk.</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 jvm\]# yum install java-1.8.0-openjdk-devel ... 
+</code></pre></div></div><p>In general you can let the normal Linux shudtown and startup take care of things. When you are ready, you need to learn about srvctl which is kind of the point of setting up the gird “restart” structure.<h1 id="sqldeveloper">Sqldeveloper</h1><p>You may be able to use yum to get sqldeveloper, but I downloaded the rpm. Before installing it you need the java sdk.<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>\[root@linux2 jvm\]# yum install java-1.8.0-openjdk-devel ... 
 \[root@linux2 jvm\]# yum install sqldeveloper-19.1.0.094.2042.noarch.rpm
-</code></pre></div></div>
-
-<p>It installs in /usr/local/bin. The first time you run sqldeveloper it prompts for the java sdk location. There are some soft links that take care of adjusting for upgrades. Answer with:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/usr/lib/jvm/java-openjdk
-</code></pre></div></div>
-
-<p>which will point to the latest and greatest that you just installed.</p>
-
-<h1 id="conclusion">Conclusion</h1>
-
-<p>This was much, much harder than it should have been. I spent more hours on this than I am willing to admit. Granted, I was learning some Linux things I didn’t know and some Oracle administration things I didn’t know as I was going, but even with that background this was a very hard slog.</p>
-
-<p>Access to Oracle support would have made it a little easier, but not that much. I do not know why it is such a cluster (pun intended).</p>
-
-<p>I hope a few people might find this useful.</p>
-</div>
-</div>
-
-
-  
-    
-      
-        
-          
-      
-          
-            
-            <div class="panel-body">
-              <h4>Related Posts</h4>
-              <ul>
-            
-                <li class="relatedPost">
-                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/hierarchical-profiler-context-switch.html">Profiling PL/SQL to Examine Context Switch Penalty</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
-                  
-                </li>
-          
-          
-        
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-            
-                <li class="relatedPost">
-                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/Regexp_instr-Beginning-of-line-anchor.html">Oracle REGEXP_INSTR and Beginning of Line Anchor</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
-                  
-                </li>
-          
-          
-        
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-            
-                <li class="relatedPost">
-                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/02/Object-Methods-in-SQL.html">Cost of UDT Object Methods in SQL</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)
-                  
-                </li>
-          
-          
-        
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-            
-                <li class="relatedPost">
-                  <a href="https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html">Devops Data Deployment for Oracle</a>
-                  
-                    (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>, <a href="/category/oracle">oracle</a>)
-                  
-                </li>
-          
-          
-        
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-            
-                <li class="relatedPost">
-                  <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)
-                  
-                </li>
-          
-          
-        
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-            
-                <li class="relatedPost">
-                  <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a>
-                  
-                    (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)
-                  
-                </li>
-          
-          
-        
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-    
-      
-        
-          
-      
-          
-      
-    
-        
-          
-      
-          
-      
-    
-  
-  
-  </ul>
-</div>
-
-
-<div class="PageNavigation">
-  
-  
-    <a class="next" href="/oracle/sql/plsql/2021/09/09/Oracle-Objects-AppInterface.html">Oracle Object Types as Application Interface &raquo;</a>
-  
-</div>
-
-<div class="disqus-comments">
-  <div id="disqus_thread"></div>
-  <script type="text/javascript">
-    /* <![CDATA[ */
-    var disqus_shortname = "leelindleyscratchpad";
-    var disqus_identifier = "https://lee-lindley.github.io_Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine";
-    var disqus_title = "Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine";
-
-    /* * * DON'T EDIT BELOW THIS LINE * * */
-    (function() {
-        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-    })();
-    /* ]]> */
-  </script>
-</div>
-
-        <footer>
-          &copy; Lee Lindley
-          
-            - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.
-          
-          <div class="btn-github" style="float:right;">
-            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
-            <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe>
-          </div>
-        </footer>
-      </div>
-      <!-- end /.col-sm-8 -->
-    </div>
-    <!-- end /.container -->
-
-    <!-- Bootstrap core JavaScript -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-    <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
-    <script src="/static/js/bootstrap.min.js"></script>
-    <script src="/static/js/super-search.js"></script>
-    <script src="/static/js/thickbox-compressed.js"></script>
-    <script src="/static/js/projects.js"></script>
-  </body>
-</html>
-
+</code></pre></div></div><p>It installs in /usr/local/bin. The first time you run sqldeveloper it prompts for the java sdk location. There are some soft links that take care of adjusting for upgrades. Answer with:<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/usr/lib/jvm/java-openjdk
+</code></pre></div></div><p>which will point to the latest and greatest that you just installed.<h1 id="conclusion">Conclusion</h1><p>This was much, much harder than it should have been. I spent more hours on this than I am willing to admit. Granted, I was learning some Linux things I didn’t know and some Oracle administration things I didn’t know as I was going, but even with that background this was a very hard slog.<p>Access to Oracle support would have made it a little easier, but not that much. I do not know why it is such a cluster (pun intended).<p>I hope a few people might find this useful.</div></div><div class="panel-body"><h4>Related Posts</h4><ul><li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/hierarchical-profiler-context-switch.html">Profiling PL/SQL to Examine Context Switch Penalty</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/Regexp_instr-Beginning-of-line-anchor.html">Oracle REGEXP_INSTR and Beginning of Line Anchor</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/02/Object-Methods-in-SQL.html">Cost of UDT Object Methods in SQL</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html">Devops Data Deployment for Oracle</a> (Categories: <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>, <a href="/category/oracle">oracle</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/sql/2022/03/06/Staging_Tables_vs_With.html">Staging Tables vs Single SQL</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/sql/plsql/perl/2022/01/24/CSV-Clob-Inline-External.html">Inline External Tables for CSV Load</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>, <a href="/category/perl">perl</a>)</ul></div><div class="PageNavigation"> <a class="next" href="/oracle/sql/plsql/2021/09/09/Oracle-Objects-AppInterface.html">Oracle Object Types as Application Interface &raquo;</a></div><div class="disqus-comments"><div id="disqus_thread"></div><script type="text/javascript"> /* <![CDATA[ */ var disqus_shortname = "leelindleyscratchpad"; var disqus_identifier = "https://lee-lindley.github.io_Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine"; var disqus_title = "Install Oracle Enterprise Linux and Oracle Database on a Dual Boot Windows 10 Machine"; /* * * DON'T EDIT BELOW THIS LINE * * */ (function() { var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true; dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js'; (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq); })(); /* ]]> */ </script></div><footer> &copy; Lee Lindley - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.<div class="btn-github" style="float:right;"> <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe> <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe></div></footer></div></div><script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script> <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script> <script src="/static/js/bootstrap.min.js"></script> <script src="/static/js/super-search.js"></script> <script src="/static/js/thickbox-compressed.js"></script> <script src="/static/js/projects.js"></script>
