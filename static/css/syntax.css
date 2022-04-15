@@ -74,7 +74,7 @@ pre {
 .highlight .py { color: #d0d0d0 } /* Name.Property */
 .highlight .nt { color: #6ab825; font-weight: bold } /* Name.Tag */
 .highlight .nv { color: #00CCCC } /* Name.Variable */
-.highlight .ow { color: #EEFFCC; font-weight: bold } /* Operator.Word FFFFB3*/
+.highlight .ow { color: #E5E600; font-weight: bold } /* Operator.Word FFFFB3 EEFFCC*/
 .highlight .w { color: #666666 } /* Text.Whitespace */
 .highlight .mf { color: #FFB319 } /* Literal.Number.Float */
 .highlight .mh { color: #FFB319 } /* Literal.Number.Hex */
