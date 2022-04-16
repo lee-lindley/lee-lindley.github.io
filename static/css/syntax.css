@@ -31,7 +31,7 @@ pre {
 .highlight .c { color: #FEFDFF; font-style: italic } /* Comment E0E2E4 EC7600*/
 .highlight .err { color: #a61717; /*background-color: #e3d2d2*/ } /* Error */
 .highlight .g { color: #d0d0d0 } /* Generic */
-.highlight .k { color: #00CC88; font-weight: bold } /* Keyword */
+.highlight .k { color: #00CC00; font-weight: bold } /* Keyword 00CC88*/
 .highlight .l { color: #EC7600 } /* Literal */ /* A1B3B8 */
 .highlight .n { color: #19D9FF } /* Name 00BFE6 */
 .highlight .o { color: #CCCC00 } /* Operator FFFF00*/
