@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 16 Apr 2022 20:29:39 -0400</pubDate>
-    <lastBuildDate>Sat, 16 Apr 2022 20:29:39 -0400</lastBuildDate>
+    <pubDate>Sat, 16 Apr 2022 20:32:46 -0400</pubDate>
+    <lastBuildDate>Sat, 16 Apr 2022 20:32:46 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -5798,27 +5798,27 @@ Mr. Lewis would never say the words “bludgeon optimizer into submission”).&l
             ON ...
         INNER JOIN big_table t3
             ON ...
-    '!;
-    ...
-    EXECUTE IMMEDIATE REPLACE(v_sql, '__USE_CASE_HINT__'
-        ,CASE WHEN p_is_nightly_batch 
-            THEN q'+
+    &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;..&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;EXECUTE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;IMMEDIATE&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;REPLACE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;__USE_CASE_HINT__&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;CASE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_is_nightly_batch&lt;/span&gt; 
+            &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;q'+&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;
                 leading(d t1 t2 t3)
                 full(d)
                 use_hash(t1) full(t1) swap_join_inputs(t1)
                 use_hash(t2) full(t2) no_swap_join_inputs(t2)
                 use_hash(t3) full(t3) swap_join_inputs(t3)
-                +'
-            ELSE q'+
+                &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+'&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;ELSE&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;q'+&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;
                 leading(d t1 t2 t3)
                 full(d)
                 use_nl(t1) index(t1)
                 use_nl(t2) index(t2)
                 use_nl(t3) index_ss(t3)
-                +'
-            END
-    );
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+                &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+'&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;As you can imagine it can get fairly complex especially if you have a very large query perhaps
 broken down using WITH query subfactoring (as I heartily recommend). It would be good to establish
