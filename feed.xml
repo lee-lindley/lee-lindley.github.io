@@ -5,9 +5,195 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 27 Apr 2022 11:30:08 -0400</pubDate>
-    <lastBuildDate>Wed, 27 Apr 2022 11:30:08 -0400</lastBuildDate>
+    <pubDate>Thu, 28 Apr 2022 16:46:17 -0400</pubDate>
+    <lastBuildDate>Thu, 28 Apr 2022 16:46:17 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Intalling Perl DBD::Oracle on RHL</title>
+        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;Over the years I’ve had many opportunities to struggle with compiling &lt;em&gt;Perl&lt;/em&gt; and &lt;em&gt;DBD::Oracle&lt;/em&gt; on many different
+flavors of Unix. It was never easy.&lt;/p&gt;
+
+&lt;p&gt;When package management (yum, etc..) became a thing and I eagerly started looking at it, reality slapped me back down.
+Nobody was packaging &lt;em&gt;DBD::Oracle&lt;/em&gt; and the reason seemed to be the Oracle client library license requirements.&lt;/p&gt;
+
+&lt;p&gt;When I went looking to do it all again on my home Linux instances, I was pleasantly surprised to find
+&lt;em&gt;DBD::Oracle&lt;/em&gt; was already included on my &lt;strong&gt;Oracle Linux Server release 7.9&lt;/strong&gt; server. Oracle apparently doesn’t
+have an issue getting a distribution license for their own dogfood and were able to include &lt;em&gt;DBD::Oracle&lt;/em&gt;. Nice!&lt;/p&gt;
+
+&lt;p&gt;I also have a &lt;strong&gt;Red Hat Enterprise Linux release 8.5 (Ootpa)&lt;/strong&gt; server running under Microsoft &lt;em&gt;Hyper-V&lt;/em&gt;.
+In spite of the close business relationship Oracle has with Red Hat, RHL does not have &lt;em&gt;DBD::Oracle&lt;/em&gt; installed,
+nor was it found in a &lt;em&gt;dnf&lt;/em&gt; search. Note that I’ve already installed
+Oracle Database on this puppy, so I’ve added Oracle repositories. If there is a yum repository out there that
+contains DBD::Oracle for Linux, I haven’t found it.&lt;/p&gt;
+
+&lt;p&gt;So here we go again.&lt;/p&gt;
+
+&lt;p&gt;I know before I start that I need my shell environment to be set so that I can connect with sqlplus.
+My database SID is &lt;strong&gt;rhl1db&lt;/strong&gt; which is a container database.
+This works for me given how I installed Oracle:&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ORACLE_HOSTNAME&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;hostname&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ORAENV_ASK&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;NO
+&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ORACLE_SID&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;rhl1db
+&lt;span class=&quot;nb&quot;&gt;.&lt;/span&gt; oraenv &lt;span class=&quot;nt&quot;&gt;-s&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;From the README for DBD::Oracle I know I need to set a variable &lt;strong&gt;ORACLE_USERID&lt;/strong&gt; with the connection string.
+I could include the @pdbname part there I think, but I also know I can use &lt;strong&gt;TWO_TASK&lt;/strong&gt; to specify
+the PDB. Remember my SID is for the Container DB. I’m going to connect to a PDB named &lt;strong&gt;rhl1pdb&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;TWO_TASK&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;rhl1pdb
+&lt;span class=&quot;nb&quot;&gt;export &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ORACLE_USERID&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;lee/MYPASSWORD
+sqlplus &lt;span class=&quot;nv&quot;&gt;$ORACLE_USERID&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# BINGO! I'm in&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;At this point I’ve taken care of prerequisites in my environment for doing the make. We could download
+it and run the steps outlined in the README, but I thought I would swing for the fence.&lt;/p&gt;
+
+&lt;h1 id=&quot;trying-cpan&quot;&gt;Trying CPAN&lt;/h1&gt;
+
+&lt;p&gt;First, I tried to run a cpan shell.&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;perl &lt;span class=&quot;nt&quot;&gt;-MCPAN&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-e&lt;/span&gt; shell
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Yeah, we could be so lucky. It wasn’t there, but ahoy! There is a yum package for it.&lt;/p&gt;
+
+&lt;p&gt;I’m running as root. I realize we are supposed to use &lt;em&gt;sudo&lt;/em&gt;. You do you, and leave the old dinosaur alone.&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;dnf search perl-CPAN
+&lt;span class=&quot;c&quot;&gt;# bingo&lt;/span&gt;
+dnf &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;perl-CPAN
+perl &lt;span class=&quot;nt&quot;&gt;-MCPAN&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-e&lt;/span&gt; shell
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Terminal does not support AddHistory.
+
+cpan shell -- CPAN exploration and modules installation (v2.18)
+Enter 'h' for help.
+
+cpan[1]&amp;gt; install DBD::Oracle
+Reading '/root/.local/share/.cpan/Metadata'
+    Database was generated on Thu, 28 Apr 2022 07:29:03 GMT
+Running install for module 'DBD::Oracle'
+...
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;My first attempt the make failed for missing library &lt;em&gt;aio&lt;/em&gt;. A little google search and we find we need to
+install &lt;em&gt;libaio-devel&lt;/em&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;dnf &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;libaio-devel
+perl &lt;span class=&quot;nt&quot;&gt;-MCPAN&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-e&lt;/span&gt; shell
+cpan[1]&amp;gt; &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;DBD::Oracle
+...
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This time it compiles, but I run into trouble in the tests. It wants &lt;em&gt;Test::More&lt;/em&gt; and &lt;em&gt;Devel::Peek&lt;/em&gt;. OK, I’ll try to get those.&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;perl &lt;span class=&quot;nt&quot;&gt;-MCPAN&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-e&lt;/span&gt; shell
+&lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;Test::More
+&lt;span class=&quot;c&quot;&gt;# that worked&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;Devel::Peek
+&lt;span class=&quot;c&quot;&gt;# no dice&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;em&gt;Devel::Peek&lt;/em&gt; is tied up somehow. I didn’t try to figure it out. I know that not all tests will pass anyway.
+How would you know that? You wouldn’t. It is the source of endless frustration for people new to this.
+But if you google install issues for DBD::Oracle you will see the blase response to just ignore the
+failed tests (when there are only a few non-critical failures!) and run make install anyway.&lt;/p&gt;
+
+&lt;p&gt;This time when I ran the install from CPAN shell it completed the majority of the tests and I honestly
+don’t care about the failures.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Scanning cache /root/.local/share/.cpan/build for sizes
+...
+Files=41, Tests=1867, 17 wallclock secs ( 0.27 usr  0.05 sys +  3.86 cusr  0.68 csys =  4.86 CPU)
+Result: FAIL
+Failed 5/41 test programs. 2/1867 subtests failed.
+make: *** [Makefile:1105: test_dynamic] Error 2
+  ZARQUON/DBD-Oracle-1.83.tar.gz
+  /usr/bin/make test -- NOT OK
+//hint// to see the cpan-testers results for installing this module, try:
+  reports ZARQUON/DBD-Oracle-1.83.tar.gz
+Failed during this command:
+ ZARQUON/DBD-Oracle-1.83.tar.gz               : make_test NO
+
+cpan[2]&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We are left with it not installed though. Bummer. Maybe there is a way to tell the CPAN shell to install even
+after a failed test, but I didn’t bother. At the top of the block above note that it tells me it
+is doing this make in a cache directory “/root/.local/share/.cpan/build”. I go down that path
+and find “DBD-Oracle-1.83-0”. In that directory is the Makefile that was created for this build. I do&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;make &lt;span class=&quot;nb&quot;&gt;install&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;All done.&lt;/p&gt;
+
+&lt;h1 id=&quot;testing-dbdoracle&quot;&gt;Testing DBD::Oracle&lt;/h1&gt;
+
+&lt;p&gt;My test script (sans my database password and notice I’m not root anymore):&lt;/p&gt;
+
+&lt;div class=&quot;language-perl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/env perl&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;DBI&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;DBD::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Oracle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;strict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;warnings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$dbh&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;DBI&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;connect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;('&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;dbi:Oracle:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;lee@rhl1pdb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;my secret password&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;
+                        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;RaiseError&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;AutoCommit&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;RowCacheSize&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;102400&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ora_module_name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Perl&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                      &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;die&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;Database connection not made: DBI::errstr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$dbh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;alter session set nls_date_format = 'mm/dd/yyyy'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$dbh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;selectrow_array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;SELECT sysdate from dual&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;),&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$dbh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;disconnect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And the output:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;lee@rhl1 [/home/lee/git/perl_oracle]
+$ ./test_dbd_oracle.pl 
+04/28/2022
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;That may have been the easiest install of &lt;em&gt;DBD::Oracle&lt;/em&gt; I’ve ever done.&lt;/p&gt;
+
+&lt;p&gt;Granted, I had already installed the Oracle database on this server, configured it, and configured
+connections (listener, TNS, etc…). I had all that working before I started. If you are on a new
+machine you must first install the Oracle client and get that all working. That’s also easier
+than it used to be, but no picnic.&lt;/p&gt;
+
+&lt;p&gt;Hope this helped.&lt;/p&gt;
+</description>
+        <pubDate>Thu, 28 Apr 2022 12:30:00 -0400</pubDate>
+        <link>https://lee-lindley.github.io/oracle/perl/linux/2022/04/28/Perl-DBD-Oracle-RHL.html</link>
+        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/perl/linux/2022/04/28/Perl-DBD-Oracle-RHL.html</guid>
+        
+        <category>oracle</category>
+        
+        <category>perl</category>
+        
+        <category>installation</category>
+        
+        <category>linux</category>
+        
+        <category>DBI</category>
+        
+        <category>DBD</category>
+        
+        <category>RHL</category>
+        
+        
+        <category>oracle</category>
+        
+        <category>perl</category>
+        
+        <category>linux</category>
+        
+      </item>
     
       <item>
         <title>Profiling PL/SQL to Examine Context Switch Penalty</title>
@@ -3081,64 +3267,6 @@ my goal. Hope it was helpful.&lt;/p&gt;
         <category>sql</category>
         
         <category>plsql</category>
-        
-      </item>
-    
-      <item>
-        <title>HTML Table Markup Redux</title>
-        <description>&lt;h1 id=&quot;css-hell&quot;&gt;CSS Hell&lt;/h1&gt;
-
-&lt;p&gt;Previously I wrote about a new package I published on github at &lt;a href=&quot;https://github.com/lee-lindley/app_html_table_pkg&quot;&gt;app_html_table_pkg&lt;/a&gt;. My celebration was premature. The universe reared up and bit me in the hind quarters for daring
-to mess around with HTML again. I knew better!&lt;/p&gt;
-
-&lt;p&gt;It turns out that Micrsoft Outlook and Google Gmail are partially braindead with respect to CSS. They support
-some of it, but not all. In particular the fancy features I used for right justifying specified 
-columns and alternating row colors were a bust.&lt;/p&gt;
-
-&lt;p&gt;I went back to work and retrofitted &lt;em&gt;app_html_table_pkg&lt;/em&gt; with a &lt;em&gt;p_older_css_support&lt;/em&gt; flag that you must use
-if you are sending the HTML to Outlook clients (and perhaps others).&lt;/p&gt;
-
-&lt;p&gt;Gmail is a complete bust. It does not even respect the older method of specifying 
-a style class in the HTML &amp;lt;tr&amp;gt;&amp;lt;td&amp;gt; tags.
-Bah! I’m not going to hard code everything in the HTML just to support Gmail.
-Most businesses that would use this are on Outlook I suspect.&lt;/p&gt;
-
-&lt;p&gt;With these changes, the tables display correctly (or mostly correct) in both the web and PC versions
-of Outlook 365 (PC version 2112 and also Version 2102). I do not know about older Outlook clients.&lt;/p&gt;
-
-&lt;p&gt;Google Chrome, Edge, Firefox, and Thunderbird email all support the original with &lt;em&gt;p_older_css_support&lt;/em&gt; not
-set to ‘Y’, but they also handle the less elegant way just fine.&lt;/p&gt;
-
-&lt;p&gt;I’m not even going there on email clients on phones and tablets. Not interested. If you want to hack at it,
-be my guest and send a pull request if you get it working. There may be others who want it too.&lt;/p&gt;
-
-</description>
-        <pubDate>Tue, 18 Jan 2022 10:30:00 -0500</pubDate>
-        <link>https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html</link>
-        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/plsql/html/2022/01/18/HTML-Table-PLSQL-Redux.html</guid>
-        
-        <category>oracle</category>
-        
-        <category>plsql</category>
-        
-        <category>html</category>
-        
-        <category>table</category>
-        
-        <category>css</category>
-        
-        <category>xlst</category>
-        
-        <category>dbms_xmlgen</category>
-        
-        <category>xlstype</category>
-        
-        
-        <category>oracle</category>
-        
-        <category>plsql</category>
-        
-        <category>html</category>
         
       </item>
     
