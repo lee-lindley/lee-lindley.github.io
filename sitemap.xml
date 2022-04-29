@@ -5,9 +5,94 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 28 Apr 2022 16:46:17 -0400</pubDate>
-    <lastBuildDate>Thu, 28 Apr 2022 16:46:17 -0400</lastBuildDate>
+    <pubDate>Fri, 29 Apr 2022 16:53:26 -0400</pubDate>
+    <lastBuildDate>Fri, 29 Apr 2022 16:53:26 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Syntax Highlighting for PL/SQL in vim</title>
+        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;In the blog post &lt;a href=&quot;https://lee-lindley.github.io/plsql/sql/2022/03/20/Ruby-Rouge-Lexer-PLSQL.html&quot;&gt;A Ruby/Rouge Lexer Class for Oracle PL/SQL&lt;/a&gt;
+I describe how I wound up creating a PL/SQL lexer in Ruby-Rouge so that I could make the PL/SQL code
+blocks in my posts look good.&lt;/p&gt;
+
+&lt;p&gt;I tried to apply my color scheme to &lt;em&gt;vim&lt;/em&gt; but quickly ran into trouble. The PL/SQL syntax file for &lt;em&gt;vim&lt;/em&gt;
+had not been updated since Oracle 9i and it had flaws such as not supporting q-quote operator. 
+It also did not have folding.&lt;/p&gt;
+
+&lt;p&gt;Previously having done work to get all of the 19c keywords straight, and familiar with what needed to
+be done to parse PL/SQL and SQL, I applied what I knew to the existing &lt;em&gt;plsql.vim&lt;/em&gt; file.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;It does a good job with Oracle SQL too, not just PL/SQL. &lt;em&gt;sqloracle.vim&lt;/em&gt; works differently (not better or worse), and folding support is simpler. You may be satisifed with &lt;em&gt;sql.vim/sqloracle.vim&lt;/em&gt; for SQL, especially if you write SQL for multiple databases.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h1 id=&quot;from-supplicant-to-maintainer&quot;&gt;From Supplicant to Maintainer&lt;/h1&gt;
+
+&lt;p&gt;I tried to
+find the maintainer of the file to offer my work. Sadly, that individual’s email account is no longer
+recognized by the provider, and he has not updated anything online in many years.&lt;/p&gt;
+
+&lt;p&gt;I contacted the &lt;em&gt;vim-dev&lt;/em&gt; mailing list asking what to do. Their suggestion was to assume ownership
+of the maintainer role. Balking at first, I quickly ran out of excuses I was willing to live with and agreed to do it.
+Once committed, I felt obligated to go at it full-bore.&lt;/p&gt;
+
+&lt;p&gt;I spent way more of my evenings trying to understand
+the arcane rules of both &lt;em&gt;vim&lt;/em&gt; regular expressions and the API rules for &lt;em&gt;syntax&lt;/em&gt;, especially &lt;em&gt;region&lt;/em&gt;’s, than
+I care to quantify. There are limitations that made it exceedingly difficult to do folding the way I initially
+envisioned it.&lt;/p&gt;
+
+&lt;h1 id=&quot;vim-plsql-syntax-file&quot;&gt;Vim PL/SQL Syntax File&lt;/h1&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/lee-lindley/vim_plsql_syntax&quot;&gt;vim_plsql_syntax&lt;/a&gt; repository now lives on &lt;em&gt;github&lt;/em&gt;. It contains both the 
+syntax file &lt;em&gt;plsql.vim&lt;/em&gt; and the colors file &lt;em&gt;lee.vim&lt;/em&gt;. The colors file is completely gratuitous. You don’t need
+to use it to take advantage of the updates in &lt;em&gt;plsql.vim&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;The repository &lt;em&gt;README.md&lt;/em&gt; is extensive. It includes screenshots and an installation section.&lt;/p&gt;
+
+&lt;p&gt;At this time the &lt;em&gt;main&lt;/em&gt;
+branch contains the version submitted to the &lt;em&gt;vim&lt;/em&gt; project for inclusion in version 9 (which should be released
+soon for some definition of soon). You should select a more current branch, which although they are works in process, 
+are passing my eyeball tests. Right now the branch 
+&lt;a href=&quot;https://github.com/lee-lindley/vim_plsql_syntax/tree/procedure_folding&quot;&gt;procedure_folding&lt;/a&gt; 
+is stable with some nice new folding features.  It is likely to be merged into &lt;em&gt;main&lt;/em&gt; soon.&lt;/p&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;I think I’ve done good work here, but if this is something that interests you, you will have to decide for yourself.
+I’m pretty happy with it. I will of course attempt to accomodate suggestions. Submitting a Pull Request is the best
+way to get what you want.&lt;/p&gt;
+
+&lt;p&gt;The secondary conclusion is to be careful when you report a problem. It isn’t that uncommon to be told “so fix it.”
+I’m apparently a really slow learner on that lesson.&lt;/p&gt;
+</description>
+        <pubDate>Fri, 29 Apr 2022 12:30:00 -0400</pubDate>
+        <link>https://lee-lindley.github.io/oracle/plsql/sql/vim/2022/04/29/vim-plsql-syntax.html</link>
+        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/plsql/sql/vim/2022/04/29/vim-plsql-syntax.html</guid>
+        
+        <category>oracle</category>
+        
+        <category>sql</category>
+        
+        <category>plsql</category>
+        
+        <category>vim</category>
+        
+        <category>syntax-highlighting</category>
+        
+        <category>syntax</category>
+        
+        
+        <category>oracle</category>
+        
+        <category>plsql</category>
+        
+        <category>sql</category>
+        
+        <category>vim</category>
+        
+      </item>
     
       <item>
         <title>Intalling Perl DBD::Oracle on RHL</title>
