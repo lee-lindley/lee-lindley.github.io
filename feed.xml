@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 30 Apr 2022 21:22:55 -0400</pubDate>
-    <lastBuildDate>Sat, 30 Apr 2022 21:22:55 -0400</lastBuildDate>
+    <pubDate>Sat, 30 Apr 2022 21:55:12 -0400</pubDate>
+    <lastBuildDate>Sat, 30 Apr 2022 21:55:12 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -47,14 +47,17 @@ they work.&lt;/p&gt;
 &lt;p&gt;That said, it has gotten easier as I demonstrated 
 in &lt;a href=&quot;https://lee-lindley.github.io/oracle/perl/linux/2022/04/28/Perl-DBD-Oracle-RHL.html&quot;&gt;Installing Perl DBD::Oracle on RHL&lt;/a&gt;.
 There is a good chance your Unix Admin isn’t allowed to alter the vendor &lt;em&gt;Perl&lt;/em&gt;. If that is the case you may
-may need to install your own &lt;em&gt;Perl&lt;/em&gt; and add &lt;em&gt;DBD::Oracle&lt;/em&gt; to that. Perhaps the Unix admin can do that for you.&lt;/p&gt;
+need to install your own &lt;em&gt;Perl&lt;/em&gt; and add &lt;em&gt;DBD::Oracle&lt;/em&gt; to that. Perhaps the Unix admin can do that for you.&lt;/p&gt;
 
 &lt;blockquote&gt;
   &lt;p&gt;I don’t mean to make light of this, but if you are going to have a useful scripting environment, whether it be
 &lt;em&gt;Perl&lt;/em&gt;, &lt;em&gt;Python&lt;/em&gt;, or something else, at some point the security mavens and corporate rule makers need to give
 you one and it needs to have the database connect libraries linked in. “Of course that’s true” you are thinking.
 Surprise! You may find the security mavens and IT infrastructure folk are not sympathetic to your need
-for a decent scripting environment with a built-in Oracle connection library on the ETL server.&lt;/p&gt;
+for a decent scripting environment with a built-in Oracle connection library on the ETL server. At one company I
+encountered a mindset that shell and &lt;em&gt;sqlplus&lt;/em&gt;, along with a vendor ETL tool, were all you need. It was a
+large, sophisticated organization too. They were responding to pressures from senior management that resulted in
+what I would call unintended consequences.&lt;/p&gt;
 &lt;/blockquote&gt;
 
 &lt;h1 id=&quot;running-data-through-perl&quot;&gt;Running Data Through Perl&lt;/h1&gt;
@@ -62,15 +65,17 @@ for a decent scripting environment with a built-in Oracle connection library on 
 &lt;p&gt;&lt;em&gt;Perl&lt;/em&gt; is fantastic as a scripting language. But like all scripting languages it has some overhead costs.
 It isn’t the bytecode, which is pretty efficient. The overhead is in the data structures which are fat pigs.
 If you look at the underlying structure of a &lt;em&gt;Perl&lt;/em&gt; &lt;em&gt;scalar&lt;/em&gt; variable, you will find multiple pointer and length
-members. For example it has a place to store an integer, a floating point number and a string among others.
-There is a lot of wasted space for any given scalar object.&lt;/p&gt;
+members. For example it has a place to store an integer, a floating point number, a string, an array, and something
+called “magic” among other things.  There is a lot of wasted space for any given scalar object.&lt;/p&gt;
 
 &lt;p&gt;Under normal
 circumstances that hardly matters. If you are running a &lt;em&gt;fetchrow_array&lt;/em&gt; operation over a large number of rows
 on a big &lt;em&gt;SQL&lt;/em&gt; query, you are creating and tearing down a scalar for every column on every row. It can really
 add up.&lt;/p&gt;
 
-&lt;p&gt;Yeah, don’t do that. You would be better off spooling it out from &lt;em&gt;sqlplus&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Yeah, don’t do that. You would be better off spooling it out from &lt;em&gt;sqlplus&lt;/em&gt;. On the other hand, if you are reading
+and writing large chunks of data through Perl, the overhead is negligible. The underlying data movement is
+all handled in tight C code and is efficient.&lt;/p&gt;
 
 &lt;h1 id=&quot;using-dbdoracle-to-read-clobblob-data&quot;&gt;Using DBD::Oracle to Read CLOB/BLOB Data&lt;/h1&gt;
 
@@ -89,8 +94,9 @@ you still have to stream the data out somehow.&lt;/p&gt;
 on the client, how can we get it from the database? Let’s walk through an example.&lt;/p&gt;
 
 &lt;p&gt;This first part is boilerplate you will have in all of your scripts unless you have 
-refactored it into a connection object, perhpas one that handles the password management.
-We need the Oracle Type definitions, thus the extra argument to use DBD::Oracle.&lt;/p&gt;
+refactored it into a connection object, perhpas one that handles the password management.&lt;/p&gt;
+
+&lt;p&gt;We need the Oracle Type definitions, thus the extra argument to use DBD::Oracle.&lt;/p&gt;
 
 &lt;div class=&quot;language-perl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/env perl&lt;/span&gt;
 &lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;DBI&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
@@ -105,7 +111,7 @@ We need the Oracle Type definitions, thus the extra argument to use DBD::Oracle.
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;Next we prepare our &lt;em&gt;PL/SQL&lt;/em&gt; anonymous block. This could have been a call to ExcelGen or your own procedure
 that produces a &lt;em&gt;BLOB&lt;/em&gt; or &lt;em&gt;CLOB&lt;/em&gt;. In this case I’m demonstrating with &lt;em&gt;app_csv_pkg&lt;/em&gt; where we pass it a query
-to run as a string. It executes the query, fetches the data and converts it into &lt;em&gt;CSV&lt;/em&gt; rows and concatenates
+to run as a string. It executes the query, fetches the data, converts it into &lt;em&gt;CSV&lt;/em&gt; rows, and concatenates
 them into a &lt;em&gt;CLOB&lt;/em&gt;. It then returns the &lt;em&gt;CLOB&lt;/em&gt; as an OUT parameter.&lt;/p&gt;
 
 &lt;p&gt;The local hash with &lt;em&gt;ora_auto_lob&lt;/em&gt; setting to false is so that we get back a &lt;em&gt;LOB&lt;/em&gt; locator rather than
@@ -146,6 +152,9 @@ many records the query returned and were placed in our &lt;em&gt;CLOB&lt;/em&gt;
 &lt;span class=&quot;nv&quot;&gt;$sth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;bind_param_inout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;:rec_count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$rec_count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
 &lt;span class=&quot;nv&quot;&gt;$sth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;After the &lt;em&gt;execute&lt;/em&gt;, &lt;em&gt;$rec_count&lt;/em&gt; has the number of rows which we can report and &lt;em&gt;$clob&lt;/em&gt; has a &lt;em&gt;LOB&lt;/em&gt;
+locator (which is only good to use during this transaction; a &lt;em&gt;commit&lt;/em&gt; or &lt;em&gt;rollback&lt;/em&gt; destroys the unerlying &lt;em&gt;LOB&lt;/em&gt;.)&lt;/p&gt;
+
 &lt;p&gt;Now we write out the data. We are writing to STDOUT here, but you could have opened
 a named file and be writing to that.&lt;/p&gt;
 
@@ -171,11 +180,13 @@ where the sweet spot is without some experimentation. Here I picked 256K bytes.&
 &lt;span class=&quot;nv&quot;&gt;$dbh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;rollback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# to end the transaction concerning temp lob locator and freeing it so perl destructor doesn't complain&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;I’m not going to print out the results, but this works just fine. My sample query output is not bigger than
-the chunk size, so it didn’t loop, but it will work.&lt;/p&gt;
+the chunk size, so it didn’t loop at first. I had to make it smaller and put in some debug
+prints to prove it, but it works.&lt;/p&gt;
 
 &lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
 
-&lt;p&gt;I’ve waved my hands around a lot and said you can get &lt;em&gt;CLOB&lt;/em&gt; and &lt;em&gt;BLOB&lt;/em&gt; data out on the client. I showed it
+&lt;p&gt;I’ve waved my hands around a lot in prior articles saying
+you can get &lt;em&gt;CLOB&lt;/em&gt; and &lt;em&gt;BLOB&lt;/em&gt; data out on the client. I showed it
 with &lt;em&gt;sqlplus&lt;/em&gt; and &lt;em&gt;sqlCL&lt;/em&gt;. I have used Tom Kyte’s &lt;em&gt;flat&lt;/em&gt; utility for years (though the security mavens
 don’t want me near a C compiler and Devops won’t give me a deploy method for it). It was time to put up
 some proof that we can do it all with a scripting language efficiently too. Here ya’ go.&lt;/p&gt;
