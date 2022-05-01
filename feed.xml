@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 30 Apr 2022 21:55:12 -0400</pubDate>
-    <lastBuildDate>Sat, 30 Apr 2022 21:55:12 -0400</lastBuildDate>
+    <pubDate>Sat, 30 Apr 2022 22:10:04 -0400</pubDate>
+    <lastBuildDate>Sat, 30 Apr 2022 22:10:04 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -94,7 +94,7 @@ you still have to stream the data out somehow.&lt;/p&gt;
 on the client, how can we get it from the database? Let’s walk through an example.&lt;/p&gt;
 
 &lt;p&gt;This first part is boilerplate you will have in all of your scripts unless you have 
-refactored it into a connection object, perhpas one that handles the password management.&lt;/p&gt;
+refactored it into a connection object, perhaps one that handles the password management.&lt;/p&gt;
 
 &lt;p&gt;We need the Oracle Type definitions, thus the extra argument to use DBD::Oracle.&lt;/p&gt;
 
@@ -153,12 +153,12 @@ many records the query returned and were placed in our &lt;em&gt;CLOB&lt;/em&gt;
 &lt;span class=&quot;nv&quot;&gt;$sth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;After the &lt;em&gt;execute&lt;/em&gt;, &lt;em&gt;$rec_count&lt;/em&gt; has the number of rows which we can report and &lt;em&gt;$clob&lt;/em&gt; has a &lt;em&gt;LOB&lt;/em&gt;
-locator (which is only good to use during this transaction; a &lt;em&gt;commit&lt;/em&gt; or &lt;em&gt;rollback&lt;/em&gt; destroys the unerlying &lt;em&gt;LOB&lt;/em&gt;.)&lt;/p&gt;
+locator (which is only good to use during this transaction; a &lt;em&gt;commit&lt;/em&gt; or &lt;em&gt;rollback&lt;/em&gt; destroys the underlying &lt;em&gt;LOB&lt;/em&gt;.)&lt;/p&gt;
 
 &lt;p&gt;Now we write out the data. We are writing to STDOUT here, but you could have opened
 a named file and be writing to that.&lt;/p&gt;
 
-&lt;p&gt;Rather than bring back the entire clob into one huge chunk of memory, we will read and 
+&lt;p&gt;Rather than bring back the entire CLOB into one huge chunk of memory, we will read and 
 write it in pieces. Each of these is a round trip to the database so do not make them
 too small, but neither do we want to use so much memory on both sides of the connection
 that it is an issue. Just like where Oracle has a rule of thumb that 100 rows is a good
