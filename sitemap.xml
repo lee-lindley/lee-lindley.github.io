@@ -5,9 +5,205 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 30 Apr 2022 09:55:01 -0400</pubDate>
-    <lastBuildDate>Sat, 30 Apr 2022 09:55:01 -0400</lastBuildDate>
+    <pubDate>Sat, 30 Apr 2022 21:22:55 -0400</pubDate>
+    <lastBuildDate>Sat, 30 Apr 2022 21:22:55 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Using Perl DBD::Oracle to write LOB content</title>
+        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;We have a need to get large volumes of data and/or &lt;em&gt;BLOB/CLOB&lt;/em&gt; content out of the database
+and onto disk on a remote client machine.&lt;/p&gt;
+
+&lt;p&gt;We can do it from &lt;em&gt;sqlplus&lt;/em&gt;. Even &lt;em&gt;BLOB&lt;/em&gt; data can be output as I demonstrated 
+in &lt;a href=&quot;https://lee-lindley.github.io/oracle/sql/plsql/2021/12/18/sqlplus-blob.html&quot;&gt;Extracting BLOB from Oracle with Sqlplus&lt;/a&gt;.
+I happen to think it is a clunky way to do things when there are nice scripting languages around, 
+but the one constant you can count on having available on a client is &lt;em&gt;sqlplus&lt;/em&gt; and some form of &lt;em&gt;shell&lt;/em&gt; script capability,
+even if it is &lt;em&gt;Powershell&lt;/em&gt; on Windows.&lt;/p&gt;
+
+&lt;p&gt;If you have access to &lt;em&gt;Pro-C&lt;/em&gt; compilation, there is a nice tool Tom Kyte published long ago named &lt;em&gt;flat&lt;/em&gt;
+you can find &lt;a href=&quot;https://asktom.oracle.com/pls/apex/f?p=100:11:0::::P11_QUESTION_ID:459020243348&quot;&gt;here&lt;/a&gt;.
+It is a super-fast and efficient solution.
+It doesn’t do &lt;em&gt;CLOB&lt;/em&gt; or &lt;em&gt;BLOB&lt;/em&gt;, but with a little elbow grease I’m sure one could manage it. &lt;em&gt;Pro-C&lt;/em&gt;
+has everything you need to handle a &lt;em&gt;LOB Locator&lt;/em&gt; and retrieve the content.&lt;/p&gt;
+
+&lt;p&gt;I know it is doable in Java, and I suspect most other languages that have database connection libraries.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;sqlCL&lt;/em&gt; can do it as described in &lt;a href=&quot;https://www.thatjeffsmith.com/archive/2020/07/using-sqlcl-to-write-out-blobs-to-files-in-20-lines-of-js/&quot;&gt;Using SQLcl to write out BLOBs to files in 20 lines of js&lt;/a&gt;; however, as I’ve mentioned
+in other posts, &lt;em&gt;sqlCL&lt;/em&gt; is strangely lacking on every ETL server I’ve had the pleasure of visiting. For that
+matter the security folk aren’t crazy about having java client programs on servers. I think they overreacted
+to a security issue from many years ago and have never gotten over it, but it is what it is.&lt;/p&gt;
+
+&lt;p&gt;This article is about extracting &lt;em&gt;CSV&lt;/em&gt; flat files, &lt;em&gt;CLOB&lt;/em&gt;’s and &lt;em&gt;BLOB&lt;/em&gt;’s from Oracle using &lt;em&gt;Perl&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;do-you-have-perl-dbdoracle&quot;&gt;Do You Have Perl DBD::Oracle?&lt;/h1&gt;
+
+&lt;p&gt;You may not. It does not ship with any OS I know of other than Oracle’s own version of RHL. Neither
+is it available in any &lt;em&gt;YUM&lt;/em&gt; repository I could find, so your Unix Admin is not going to be able to
+install it easily. They may balk at doing it at all depending on how strict the rules are under which
+they work.&lt;/p&gt;
+
+&lt;p&gt;That said, it has gotten easier as I demonstrated 
+in &lt;a href=&quot;https://lee-lindley.github.io/oracle/perl/linux/2022/04/28/Perl-DBD-Oracle-RHL.html&quot;&gt;Installing Perl DBD::Oracle on RHL&lt;/a&gt;.
+There is a good chance your Unix Admin isn’t allowed to alter the vendor &lt;em&gt;Perl&lt;/em&gt;. If that is the case you may
+may need to install your own &lt;em&gt;Perl&lt;/em&gt; and add &lt;em&gt;DBD::Oracle&lt;/em&gt; to that. Perhaps the Unix admin can do that for you.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;I don’t mean to make light of this, but if you are going to have a useful scripting environment, whether it be
+&lt;em&gt;Perl&lt;/em&gt;, &lt;em&gt;Python&lt;/em&gt;, or something else, at some point the security mavens and corporate rule makers need to give
+you one and it needs to have the database connect libraries linked in. “Of course that’s true” you are thinking.
+Surprise! You may find the security mavens and IT infrastructure folk are not sympathetic to your need
+for a decent scripting environment with a built-in Oracle connection library on the ETL server.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h1 id=&quot;running-data-through-perl&quot;&gt;Running Data Through Perl&lt;/h1&gt;
+
+&lt;p&gt;&lt;em&gt;Perl&lt;/em&gt; is fantastic as a scripting language. But like all scripting languages it has some overhead costs.
+It isn’t the bytecode, which is pretty efficient. The overhead is in the data structures which are fat pigs.
+If you look at the underlying structure of a &lt;em&gt;Perl&lt;/em&gt; &lt;em&gt;scalar&lt;/em&gt; variable, you will find multiple pointer and length
+members. For example it has a place to store an integer, a floating point number and a string among others.
+There is a lot of wasted space for any given scalar object.&lt;/p&gt;
+
+&lt;p&gt;Under normal
+circumstances that hardly matters. If you are running a &lt;em&gt;fetchrow_array&lt;/em&gt; operation over a large number of rows
+on a big &lt;em&gt;SQL&lt;/em&gt; query, you are creating and tearing down a scalar for every column on every row. It can really
+add up.&lt;/p&gt;
+
+&lt;p&gt;Yeah, don’t do that. You would be better off spooling it out from &lt;em&gt;sqlplus&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;using-dbdoracle-to-read-clobblob-data&quot;&gt;Using DBD::Oracle to Read CLOB/BLOB Data&lt;/h1&gt;
+
+&lt;p&gt;In the article &lt;a href=&quot;https://lee-lindley.github.io/oracle/sql/plsql/2021/09/10/Ubiquitous-CSV_file.html&quot;&gt;The Ubiquitous CSV File&lt;/a&gt;
+I described multiple ways for generating CSV data and getting it out of the database.
+One of those ways was for the use case that you were doing it for a business user who
+just turns around and loads it to a spreadsheet. You can up your game by producing an &lt;em&gt;XLSX&lt;/em&gt; 
+file directly from the database using &lt;a href=&quot;https://github.com/mbleron/ExcelGen&quot;&gt;ExcelGen&lt;/a&gt;. The output
+of that is a &lt;em&gt;BLOB&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;I also have a CSV file generator in package named &lt;em&gt;app_csv_pkg&lt;/em&gt; available in &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities#app_csv_pkg&quot;&gt;plsql_utilities&lt;/a&gt;. I described how it it works in
+&lt;a href=&quot;https://lee-lindley.github.io/oracle/sql/plsql/2021/12/31/Polymorphic-Table-Functions-3.html&quot;&gt;Polymorphic Table Function (PTF) for CSV (take 3)&lt;/a&gt; The output of that is a &lt;em&gt;CLOB&lt;/em&gt;. Well, you can take the output as single column rows in a fetch, but
+you still have to stream the data out somehow.&lt;/p&gt;
+
+&lt;p&gt;Given that you have a procedure that can produce a &lt;em&gt;BLOB&lt;/em&gt; or &lt;em&gt;CLOB&lt;/em&gt; with everything you need to put in the file
+on the client, how can we get it from the database? Let’s walk through an example.&lt;/p&gt;
+
+&lt;p&gt;This first part is boilerplate you will have in all of your scripts unless you have 
+refactored it into a connection object, perhpas one that handles the password management.
+We need the Oracle Type definitions, thus the extra argument to use DBD::Oracle.&lt;/p&gt;
+
+&lt;div class=&quot;language-perl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/env perl&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;DBI&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;DBD::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Oracle&lt;/span&gt; &lt;span class=&quot;sx&quot;&gt;qw(:ora_types)&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;strict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;warnings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$dbh&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;DBI&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;connect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;('&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;dbi:Oracle:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;lee@rhl1pdb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;my secret password&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;
+                        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;RaiseError&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;AutoCommit&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;RowCacheSize&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;102400&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ora_module_name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Perl&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                      &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;die&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;Database connection not made: DBI::errstr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$dbh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;do&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;alter session set nls_date_format = 'mm/dd/yyyy'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Next we prepare our &lt;em&gt;PL/SQL&lt;/em&gt; anonymous block. This could have been a call to ExcelGen or your own procedure
+that produces a &lt;em&gt;BLOB&lt;/em&gt; or &lt;em&gt;CLOB&lt;/em&gt;. In this case I’m demonstrating with &lt;em&gt;app_csv_pkg&lt;/em&gt; where we pass it a query
+to run as a string. It executes the query, fetches the data and converts it into &lt;em&gt;CSV&lt;/em&gt; rows and concatenates
+them into a &lt;em&gt;CLOB&lt;/em&gt;. It then returns the &lt;em&gt;CLOB&lt;/em&gt; as an OUT parameter.&lt;/p&gt;
+
+&lt;p&gt;The local hash with &lt;em&gt;ora_auto_lob&lt;/em&gt; setting to false is so that we get back a &lt;em&gt;LOB&lt;/em&gt; locator rather than
+letting the driver convert the &lt;em&gt;CLOB&lt;/em&gt; into one giant string. We might not want to put that much data into 
+memory, plus we have to know in advance how big it could be and set some variables to allow for it.
+Search the DBD::Oracle perldoc for CLOB and read all about it. Unfortunately, it is a pretty big topic.&lt;/p&gt;
+
+&lt;div class=&quot;language-perl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$sth&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$dbh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;prepare&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;q!
+    BEGIN
+        app_csv_pkg.get_clob(
+            p_sql           =&amp;gt; :sql
+            ,p_clob         =&amp;gt; :clob
+            ,p_rec_count    =&amp;gt; :rec_count
+        ); 
+    END;
+!&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ora_auto_lob&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# this says pass LOB locator, not entire lob&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Next we create a variable with our query and 2 variables we will bind as OUT parameters.
+The bind options are important. The &lt;em&gt;SQLT_CHR&lt;/em&gt; type will convert
+a perl string to the proper type for the &lt;em&gt;CLOB&lt;/em&gt; input parameter up to about 2MB in size.
+If your query is bigger than that, you are doing something wrong. If you really need to
+input a CLOB, read the DBD::Oracle perldoc.&lt;/p&gt;
+
+&lt;p&gt;The output parameter type &lt;em&gt;ORA_CLOB&lt;/em&gt; in this case means we will get back a &lt;em&gt;LOB&lt;/em&gt; locator.
+If in the &lt;em&gt;prepare&lt;/em&gt; statement above we had allowed &lt;em&gt;ora_auto_lob&lt;/em&gt; to be the default TRUE,
+we would get back a string (as long as it wasn’t too big).&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;rec_count&lt;/em&gt; is just a number output parameter. After it runs we can find out how
+many records the query returned and were placed in our &lt;em&gt;CLOB&lt;/em&gt;. Useful for logging.&lt;/p&gt;
+
+&lt;div class=&quot;language-perl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;SELECT * FROM v$reserved_words&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;';&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$rec_count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$clob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$sth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;bind_param&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;:sql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$sql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;ora_type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;SQLT_CHR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# This type converts to CLOB on input up to 2MB which is plenty&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$sth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;bind_param_inout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;:clob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$clob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;ora_type&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;ORA_CLOB&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# will be a CLOB locator&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$sth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;bind_param_inout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;:rec_count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$rec_count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$sth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Now we write out the data. We are writing to STDOUT here, but you could have opened
+a named file and be writing to that.&lt;/p&gt;
+
+&lt;p&gt;Rather than bring back the entire clob into one huge chunk of memory, we will read and 
+write it in pieces. Each of these is a round trip to the database so do not make them
+too small, but neither do we want to use so much memory on both sides of the connection
+that it is an issue. Just like where Oracle has a rule of thumb that 100 rows is a good
+bulk fetch size, the right answer is probably below 1MB and more than 10K. I don’t really know
+where the sweet spot is without some experimentation. Here I picked 256K bytes.&lt;/p&gt;
+
+&lt;div class=&quot;language-perl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;STDERR&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$rec_count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; rows returned in clob&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# 256K chunks are not that much memory, but still big enough perl scalar creation/destruction not an issue&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$chunk_size&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;256&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1024&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$offset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# starts at 1, not 0&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$dbh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ora_lob_read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$clob&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$offset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$chunk_size&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;last&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;unless&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;$offset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$chunk_size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$dbh&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;rollback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# to end the transaction concerning temp lob locator and freeing it so perl destructor doesn't complain&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;I’m not going to print out the results, but this works just fine. My sample query output is not bigger than
+the chunk size, so it didn’t loop, but it will work.&lt;/p&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;I’ve waved my hands around a lot and said you can get &lt;em&gt;CLOB&lt;/em&gt; and &lt;em&gt;BLOB&lt;/em&gt; data out on the client. I showed it
+with &lt;em&gt;sqlplus&lt;/em&gt; and &lt;em&gt;sqlCL&lt;/em&gt;. I have used Tom Kyte’s &lt;em&gt;flat&lt;/em&gt; utility for years (though the security mavens
+don’t want me near a C compiler and Devops won’t give me a deploy method for it). It was time to put up
+some proof that we can do it all with a scripting language efficiently too. Here ya’ go.&lt;/p&gt;
+
+&lt;p&gt;Hope this helps.&lt;/p&gt;
+</description>
+        <pubDate>Sat, 30 Apr 2022 10:30:00 -0400</pubDate>
+        <link>https://lee-lindley.github.io/oracle/perl/2022/04/30/perl_dbd_oracle_clob.html</link>
+        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/perl/2022/04/30/perl_dbd_oracle_clob.html</guid>
+        
+        <category>oracle</category>
+        
+        <category>perl</category>
+        
+        <category>DBI</category>
+        
+        <category>DBD</category>
+        
+        <category>CLOB</category>
+        
+        <category>BLOB</category>
+        
+        
+        <category>oracle</category>
+        
+        <category>perl</category>
+        
+      </item>
     
       <item>
         <title>Syntax Highlighting for PL/SQL in vim</title>
@@ -95,7 +291,7 @@ I’m apparently a really slow learner on that lesson.&lt;/p&gt;
       </item>
     
       <item>
-        <title>Intalling Perl DBD::Oracle on RHL</title>
+        <title>Installing Perl DBD::Oracle on RHL</title>
         <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
 
 &lt;p&gt;Over the years I’ve had many opportunities to struggle with compiling &lt;em&gt;Perl&lt;/em&gt; and &lt;em&gt;DBD::Oracle&lt;/em&gt; on many different
