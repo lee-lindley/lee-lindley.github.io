@@ -158,7 +158,7 @@ My App,debug_level,0</span><span class="o">'</span>
 
         <span class="n">v_col_names</span> <span class="o">:=</span> <span class="k">split</span><span class="p">(</span><span class="nf">UPPER</span><span class="p">(</span><span class="n">p_columns</span><span class="p">));</span>
         <span class="c1">-- we need a hash to get from the column name to the index for both input csv order and output field order</span>
-        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_names</span><span class="p">.</span><span class="nf">COUNT</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_names</span><span class="p">.</span><span class="nf">COUNT</span>
         <span class="kr">LOOP</span>
             <span class="n">v_col_order</span><span class="p">(</span><span class="n">v_col_names</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="o">:=</span> <span class="n">i</span><span class="p">;</span>
         <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
@@ -237,7 +237,7 @@ My App,debug_level,0</span><span class="o">'</span>
         <span class="n">v_row_cnt</span> <span class="o">:=</span> <span class="nf">REGEXP_COUNT</span><span class="p">(</span><span class="n">p_clob</span><span class="p">,</span> <span class="n">g_rows_regexp</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="c1">-- one extra matches on $</span>
 <span class="c1">--dbms_output.put_line('got '||v_row_cnt||' rows from clob');</span>
         <span class="c1">-- loop over the rows split from the input string</span>
-        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_row_cnt</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_row_cnt</span>
         <span class="kr">LOOP</span>
             <span class="n">g_row_num</span> <span class="o">:=</span> <span class="n">g_row_num</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
             <span class="c1">-- pull a line out of the text input (sans newline)</span>
@@ -256,7 +256,7 @@ ROW: </span><span class="o">'||</span><span class="n">v_row</span><span class="p
 <span class="c1">--dbms_output.put_line('row '||g_row_num||' had '||v_col_strings.COUNT||' csv columns');</span>
             <span class="c1">-- populate the output rowset column tables for this row</span>
             <span class="n">v_rows_out</span> <span class="o">:=</span> <span class="n">v_rows_out</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-            <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_out_cnt</span>
+            <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_out_cnt</span>
             <span class="kr">LOOP</span>
                 <span class="n">v_output_col_type</span> <span class="o">:=</span> <span class="n">v_env</span><span class="p">.</span><span class="n">put_columns</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">TYPE</span><span class="p">;</span>
                 <span class="k">IF</span> <span class="n">v_output_col_type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_timestamp</span> <span class="kr">THEN</span>
@@ -478,7 +478,7 @@ SOFTWARE.
             <span class="n">v_cnt</span> <span class="o">:=</span> <span class="n">v_cnt</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
         <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
 
-        <span class="kr">FOR</span> <span class="n">v_occurence</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_cnt</span>
+        <span class="kr">FOR</span> <span class="n">v_occurence</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_cnt</span>
         <span class="kr">LOOP</span>
             <span class="n">v_str</span> <span class="o">:=</span> <span class="nf">REGEXP_SUBSTR</span><span class="p">(</span>
                     <span class="n">p_s</span>                 <span class="c1">-- the string we are parsing</span>

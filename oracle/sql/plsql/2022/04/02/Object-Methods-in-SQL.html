@@ -198,11 +198,11 @@
         <span class="kr">LOOP</span>
             <span class="k">FETCH</span> <span class="n">c_read_rows</span> <span class="k">BULK</span> <span class="nf">COLLECT</span> <span class="kr">INTO</span> <span class="n">v_rows</span> <span class="k">LIMIT</span> <span class="mi">100</span><span class="p">;</span>
             <span class="kr">EXIT</span> <span class="k">WHEN</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-            <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span>
+            <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span>
             <span class="kr">LOOP</span>
                 <span class="n">v_vals_1_row</span> <span class="o">:=</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_csv</span><span class="p">(</span><span class="n">v_rows</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">p_separator</span> <span class="o">=&gt;</span> <span class="n">p_separator</span><span class="p">,</span> <span class="n">p_strip_dquote</span> <span class="o">=&gt;</span> <span class="n">p_strip_dquote</span><span class="p">,</span> <span class="n">p_keep_nulls</span> <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Y</span><span class="o">'</span><span class="p">);</span>
                 <span class="c1">-- j is column number</span>
-                <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_cnt</span>
+                <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_cnt</span>
                 <span class="kr">LOOP</span>
                     <span class="n">v_vals</span><span class="p">(</span><span class="n">j</span><span class="p">)(</span><span class="n">i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_vals_1_row</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
                 <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
@@ -211,7 +211,7 @@
             <span class="k">IF</span> <span class="n">v_last_row_cnt</span> <span class="o">!=</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span> <span class="kr">THEN</span> <span class="c1">-- will be true on first loop iteration and maybe last</span>
                 <span class="n">v_last_row_cnt</span> <span class="o">:=</span> <span class="n">v_rows</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">;</span>
                 <span class="c1">-- bind each column array. v_vals has an array for every column</span>
-                <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_cnt</span>
+                <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_cnt</span>
                 <span class="kr">LOOP</span>
                     <span class="n">DBMS_SQL</span><span class="p">.</span><span class="n">bind_array</span><span class="p">(</span><span class="n">v_ins_curs</span><span class="p">,</span> <span class="o">'</span><span class="s1">:</span><span class="o">'||</span><span class="nf">TO_CHAR</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="n">v_vals</span><span class="p">(</span><span class="n">j</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">v_last_row_cnt</span><span class="p">);</span>
                 <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>

@@ -50,7 +50,7 @@
         <span class="n">v_new_cols</span>  <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">columns_new_t</span><span class="p">;</span>
     <span class="k">BEGIN</span>
         <span class="c1">-- stop all input columns from being in the output </span>
-        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">p_tab</span><span class="p">.</span><span class="n">column</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">()</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">p_tab</span><span class="p">.</span><span class="n">column</span><span class="p">.</span><span class="nf">COUNT</span><span class="p">()</span>
         <span class="kr">LOOP</span>
             <span class="n">p_tab</span><span class="p">.</span><span class="n">column</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">pass_through</span> <span class="o">:=</span> <span class="k">FALSE</span><span class="p">;</span>
             <span class="n">p_tab</span><span class="p">.</span><span class="n">column</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">for_read</span> <span class="o">:=</span> <span class="k">TRUE</span><span class="p">;</span>
@@ -134,7 +134,7 @@
         <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">get_row_set</span><span class="p">(</span><span class="n">v_rowset</span><span class="p">,</span> <span class="n">v_row_cnt</span><span class="p">,</span> <span class="n">v_col_cnt</span><span class="p">);</span>
 
         <span class="c1">-- set up for custom TO_CHAR conversions if requested for date and/or interval types</span>
-        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_col_cnt</span>
+        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_col_cnt</span>
         <span class="kr">LOOP</span>
             <span class="k">IF</span> <span class="p">(</span><span class="n">p_date_format</span> <span class="ow">IS</span> <span class="ow">NOT</span> <span class="ow">NULL</span> <span class="ow">AND</span> <span class="n">v_env</span><span class="p">.</span><span class="n">get_columns</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="n">type</span> <span class="o">=</span> <span class="n">DBMS_TF</span><span class="p">.</span><span class="n">type_date</span><span class="p">)</span>
             <span class="kr">THEN</span>
@@ -149,13 +149,13 @@
             <span class="c1">-- the first row of our output will get a header row plus the data row</span>
             <span class="n">v_repfac</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">:=</span> <span class="mi">2</span><span class="p">;</span>
             <span class="c1">-- the rest of the rows will be 1 to 1 on the replication factor</span>
-            <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">2</span><span class="o">..</span><span class="n">v_row_cnt</span>
+            <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mf">2.</span><span class="p">.</span><span class="n">v_row_cnt</span>
             <span class="kr">LOOP</span>
                 <span class="n">v_repfac</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span>
             <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
             <span class="c1">-- these names are already double quoted and Oracle will not allow a doublequote inside a column alias</span>
             <span class="n">v_val_col</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_env</span><span class="p">.</span><span class="n">get_columns</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="n">name</span><span class="p">;</span>
-            <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">2</span><span class="o">..</span><span class="n">v_col_cnt</span>
+            <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mf">2.</span><span class="p">.</span><span class="n">v_col_cnt</span>
             <span class="kr">LOOP</span>
                 <span class="n">v_val_col</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_val_col</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="n">v_env</span><span class="p">.</span><span class="n">get_columns</span><span class="p">(</span><span class="n">j</span><span class="p">).</span><span class="n">name</span><span class="p">;</span> <span class="c1">--join the column names with ,</span>
             <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
@@ -163,7 +163,7 @@
 <span class="c1">--dbms_output.put_line('header row: '||v_val_col(1));</span>
         <span class="k">END</span> <span class="k">IF</span><span class="p">;</span>
         <span class="c1">-- otherwise v_out_row_i is 0</span>
-</code></pre></div></div><p>On the first fetch and only when we need to produce a header row, we set up our replication factor table. As stated above we want two output rows for the first input row, then one each for all the others.<p>We build the header row by joining the column names with the separator character (comma most likely).<p>Next we loop through the input rows building the corresponding output column (we only output a single column!).<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_row_cnt</span>
+</code></pre></div></div><p>On the first fetch and only when we need to produce a header row, we set up our replication factor table. As stated above we want two output rows for the first input row, then one each for all the others.<p>We build the header row by joining the column names with the separator character (comma most likely).<p>Next we loop through the input rows building the corresponding output column (we only output a single column!).<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>        <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_row_cnt</span>
         <span class="kr">LOOP</span>
             <span class="n">v_out_row_i</span> <span class="o">:=</span> <span class="n">v_out_row_i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
             <span class="c1">-- concatenate the string representations of columns with ',' separator</span>
@@ -172,7 +172,7 @@
             <span class="c1">-- of non-numeric fields with double quotes. If there is a double quote in</span>
             <span class="c1">-- that data it will backwack it. Newlines in the field are passed through unchanged.</span>
             <span class="n">v_val_col</span><span class="p">(</span><span class="n">v_out_row_i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">apply_cust_conv</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span> <span class="c1">--DBMS_TF.col_to_char(v_rowset(1), i);</span>
-            <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mi">2</span><span class="o">..</span><span class="n">v_col_cnt</span>
+            <span class="kr">FOR</span> <span class="n">j</span> <span class="ow">IN</span> <span class="mf">2.</span><span class="p">.</span><span class="n">v_col_cnt</span>
             <span class="kr">LOOP</span>
                 <span class="n">v_val_col</span><span class="p">(</span><span class="n">v_out_row_i</span><span class="p">)</span> <span class="o">:=</span> <span class="n">v_val_col</span><span class="p">(</span><span class="n">v_out_row_i</span><span class="p">)</span><span class="o">||</span><span class="n">p_separator</span><span class="o">||</span><span class="n">apply_cust_conv</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span> <span class="c1">--DBMS_TF.col_to_char(v_rowset(j), i);</span>
             <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>

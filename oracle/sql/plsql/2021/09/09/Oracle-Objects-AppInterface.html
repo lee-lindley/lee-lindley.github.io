@@ -118,7 +118,7 @@
             <span class="c1">-- pretending object is very large, thus small limit</span>
             <span class="k">FETCH</span> <span class="n">g_c</span> <span class="k">BULK</span> <span class="nf">COLLECT</span> <span class="kr">INTO</span> <span class="n">v_arr_department</span> <span class="k">LIMIT</span> <span class="mi">20</span><span class="p">;</span>
             <span class="kr">EXIT</span> <span class="k">WHEN</span> <span class="n">v_arr_department</span><span class="p">.</span><span class="nf">COUNT</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-            <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mi">1</span><span class="o">..</span><span class="n">v_arr_department</span><span class="p">.</span><span class="nf">COUNT</span>
+            <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mf">1.</span><span class="p">.</span><span class="n">v_arr_department</span><span class="p">.</span><span class="nf">COUNT</span>
             <span class="kr">LOOP</span>
                 <span class="kr">PIPE</span> <span class="k">ROW</span><span class="p">(</span><span class="n">v_arr_department</span><span class="p">(</span><span class="n">i</span><span class="p">));</span>
             <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
