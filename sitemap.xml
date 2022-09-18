@@ -5,9 +5,434 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 09 May 2022 08:21:27 -0400</pubDate>
-    <lastBuildDate>Mon, 09 May 2022 08:21:27 -0400</lastBuildDate>
+    <pubDate>Sun, 18 Sep 2022 17:00:48 -0400</pubDate>
+    <lastBuildDate>Sun, 18 Sep 2022 17:00:48 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Manipulating XLSX Spreadsheets in PL/SQL</title>
+        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;There are many common methods for inputting and outputting spreadsheet data from Oracle. Below are two limited lists 
+for talking purposes. You may well have others.&lt;/p&gt;
+
+&lt;p&gt;Our use case is to supplement the data in a user maintained spreadsheet using data from an Oracle database. We must
+as faithfully as possible maintain the existing data in the spreadsheet while adding new columns.&lt;/p&gt;
+
+&lt;table class=&quot;img-table-centered&quot;&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;em&gt;app_read_xlsx_udt Use Case Diagram&lt;/em&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;/images/spreadsheet_input_use_case.gif&quot; alt=&quot;&quot; /&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;One limitation shared by common XLSX/Oracle methods is the concept that a column may contain only one datatype. 
+A date column contains only dates or NULLs. A numeric column contains only numbers or NULLS. Yet, spreadsheet
+data cells may contain any kind of data and formatting can be specific to the cell. We traditionally
+think of columns in the spreadsheet of being a single datatype and formatting is typically accomplished at the
+column level, but our intrepid business user may place a string such as “Terminated” or “N/A” 
+in a column that otherwise has Date values.&lt;/p&gt;
+
+&lt;p&gt;If we were tasked with replacing their entire business process, we would of course normalize this data and separate
+the non-date content into a separate column; however, our short term task is to supplement the data the business
+uses in an existing process. We do not control their process or their data.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;How can we maintain the polymorphic cell content of the spreadsheet and replicate it on output?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;content&quot;&gt;Content&lt;/h1&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;#example-methods-for-manipulating-xlsx-with-oracle&quot;&gt;Example Methods for Manipulating XLSX with Oracle&lt;/a&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#input-spreadsheet-to-oracle&quot;&gt;Input Spreadsheet to Oracle&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#output-spreadsheet-from-oracle&quot;&gt;Output Spreadsheet from Oracle&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#option-elimination&quot;&gt;Option Elimination&lt;/a&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#a-microsoft-option&quot;&gt;A Microsoft Option&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#oracle-specific-options&quot;&gt;Oracle Specific Options&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#excelgen-and-anydata-columns&quot;&gt;ExcelGen and ANYDATA Columns&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#app_read_xlsx&quot;&gt;app_read_xlsx&lt;/a&gt;
+    &lt;ul&gt;
+      &lt;li&gt;&lt;a href=&quot;#overview&quot;&gt;Overview&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#considerations&quot;&gt;Considerations&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#technique&quot;&gt;Technique&lt;/a&gt;&lt;/li&gt;
+      &lt;li&gt;&lt;a href=&quot;#code-dive&quot;&gt;Code Dive&lt;/a&gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#conclusion&quot;&gt;Conclusion&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;example-methods-for-manipulating-xlsx-with-oracle&quot;&gt;Example Methods for Manipulating XLSX with Oracle&lt;/h1&gt;
+
+&lt;h2 id=&quot;input-spreadsheet-to-oracle&quot;&gt;Input Spreadsheet to Oracle&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;An ODBC connection from Excel to insert spreadsheet content into Oracle table - perhaps using a VB Macro&lt;/li&gt;
+  &lt;li&gt;Save as CSV and load with external table or sqlldr&lt;/li&gt;
+  &lt;li&gt;Toad, SQL Developer or other client tool to read xlsx and extract into an Oracle table&lt;/li&gt;
+  &lt;li&gt;An ETL tool like Informatica which can read XLSX&lt;/li&gt;
+  &lt;li&gt;A PL/SQL tool that can parse XLSX such as &lt;a href=&quot;https://technology.amis.nl/languages/oracle-plsql/read-a-excel-xlsx-with-plsql/&quot;&gt;Anton Scheffer’s as_read_xlsx&lt;/a&gt; or &lt;a href=&quot;https://github.com/mbleron/ExcelTable&quot;&gt;Marc Bleron’s ExcelTable&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;output-spreadsheet-from-oracle&quot;&gt;Output Spreadsheet from Oracle&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;An ODBC connection from Excel to read a query resultset - perhaps using a VB Macro&lt;/li&gt;
+  &lt;li&gt;Output a CSV text file from Oracle and open with Excel&lt;/li&gt;
+  &lt;li&gt;Toad, SQL Developer or other client tool generate an XLSX file from a query resultset&lt;/li&gt;
+  &lt;li&gt;An ETL tool like Informatica which can generate XLSX&lt;/li&gt;
+  &lt;li&gt;A PL/SQL tool to generate XLSX directly in the database like &lt;a href=&quot;https://github.com/mbleron/ExcelGen&quot;&gt;Marc Bleron’s ExcelGen&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Python xlsxwriter&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h1 id=&quot;option-elimination&quot;&gt;Option Elimination&lt;/h1&gt;
+
+&lt;h2 id=&quot;a-microsoft-option&quot;&gt;A Microsoft Option&lt;/h2&gt;
+
+&lt;p&gt;The most full featured option for this use case is the Microsoft Excel library available from Visual Basic or C#.
+One can create a macro directly inside the spreadsheet using an ODBC connection to the database to perform the task. Limitations
+are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The user’s personal Oracle login must have access to all needed queries and functions. Since the user’s personal login is not tracked as an IT asset, care must be taken to encapsulate all necessary access via appropriate roles. Even so, maintenance of user accounts and associating the correct roles to include access needed by this spreadsheet becomes a burden.&lt;/li&gt;
+  &lt;li&gt;The code lives on a User’s desktop or maybe a shared drive. Perhaps the gold copy could be kept under source code control and made available to the users, but it doesn’t really fit well with common SDLC practices. The business could also change the spreadsheet parts that are not related to the data pull. At that point it is out of sync with the IT maintained copy.&lt;/li&gt;
+  &lt;li&gt;When the user experiences problems, the first thing IT must question is whether the user is employing the latest version of the code.&lt;/li&gt;
+  &lt;li&gt;The expertise to perform this task, though not uncommon, is not necessarily in the toolbox for a journeyman Oracle developer.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;An extension of this option may be to use a Sql Server database (or whatever it is called now) to host the operation on the 
+spreadsheet. I have not done this and do not know limitations, 
+but my understanding is these Excel libraries should be available to code that is run from the database. DBLink accounts
+that can connect to the Oracle database can be maintained for this server and the code can be put under source code control.
+This added complexity does not appeal to me, but a shop who already run Sql Server databases, especially those supporting
+batch operations and/or existing user interaction screens that include file transfer may favor this option.&lt;/p&gt;
+
+&lt;h2 id=&quot;oracle-specific-options&quot;&gt;Oracle Specific Options&lt;/h2&gt;
+
+&lt;p&gt;As mentioned, most of the listed options stumble when faced with a column that can contain cells with different data types.
+We can reduce everything to text, but then when we output to a spreadsheet again, we’ve lost information and our
+business partner is not pleased. This eliminates using CSV or a client like Toad, SqlDeveloper or Informatica to deliver the data
+to the database.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;We are left with &lt;em&gt;as_read_xlsx&lt;/em&gt; or &lt;em&gt;ExcelTable&lt;/em&gt; for the input, both of which can deliver the raw
+spreadsheet data at the cell level with data type intact.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Assuming we can maintain the polymorphic content information about individual cells on input, we face the same
+limitation on output. A tool like Toad, SQL Developer or Informatica reads resultsets from queries. I do not believe
+any of them have been enhanced to support the Oracle &lt;em&gt;ANYDATA&lt;/em&gt; object type so we are restricted to cell data that is
+either character, date or number.&lt;/p&gt;
+
+&lt;p&gt;I mention Python xlsxwriter, but I really don’t know if it has such a capability. What I have seen of it in practice
+is that it takes a resultset from a query similarly to the others.&lt;/p&gt;
+
+&lt;p&gt;I set up this straw man with a non-exhaustive list of options, so there may well be another choice out there. I would love
+to hear about it if so. The choice I made is to &lt;strong&gt;use &lt;em&gt;ExcelGen&lt;/em&gt; to create the output spreadsheet.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Of the two possible input tools, &lt;em&gt;ExcelTable&lt;/em&gt; is more sophisticated and already supports providing the raw
+cell data as &lt;em&gt;ANYDATA&lt;/em&gt; values. It has other functions that return &lt;em&gt;ANYDATASET&lt;/em&gt; results which is fantastic, but
+these require you to provide the column type and header information in your code. I badly wanted to use the first row of
+the spreadsheet for the column headers and do not want to specify the data type. 
+I considered adding functionality to do so, but was not encouraged. Perhaps I did not
+sell it well enough.&lt;/p&gt;
+
+&lt;p&gt;Although I wanted to use &lt;em&gt;ExcelTable&lt;/em&gt;, the more I looked into it the bigger the sinking feeling I had that
+it was beyond a level of complexity I felt I could leave with my employer. Without community support it was not an option.&lt;/p&gt;
+
+&lt;p&gt;By process of elimination we are left with &lt;em&gt;as_read_xlsx&lt;/em&gt; which is a perfectly serviceable tool that is
+in widespread use.&lt;/p&gt;
+
+&lt;h1 id=&quot;excelgen-and-anydata-columns&quot;&gt;ExcelGen and ANYDATA Columns&lt;/h1&gt;
+
+&lt;p&gt;The currently published version of &lt;em&gt;ExcelGen&lt;/em&gt; does not support &lt;em&gt;ANYDATA&lt;/em&gt; data type input columns. I created
+a fork and Pull Request adding this functionality, but was not aware that Marc was in the midst of a refactor/redesign
+of &lt;em&gt;ExcelGen&lt;/em&gt; and he politely declined the PR. He agreed that allowing &lt;em&gt;ANYDATA&lt;/em&gt; input columns was useful and
+he liked the idea of supporting it. I’ll call that a soft commitment. If the next version of &lt;em&gt;ExcelGen&lt;/em&gt; does not
+support &lt;em&gt;ANYDATA&lt;/em&gt; input, I’ll create another pull request to add it. I’m fairly confident it will be included
+in a future release one way or another.&lt;/p&gt;
+
+&lt;p&gt;Meanwhile, to implement the solution discussed here you will need to use &lt;a href=&quot;https://github.com/lee-lindley/ExcelGen/tree/anydata&quot;&gt;my forked version of ExcelGen&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;app_read_xlsx&quot;&gt;app_read_xlsx&lt;/h1&gt;
+
+&lt;p&gt;Although it uses &lt;em&gt;as_read_xlsx&lt;/em&gt; as the underlying workhorse, &lt;a href=&quot;https://github.com/lee-lindley/app_read_xlsx&quot;&gt;app_read_xlsx&lt;/a&gt; 
+takes care of many of the details needed
+to treat a spreadsheet as a row source, using the first row data values as the column names and output column headers.&lt;/p&gt;
+
+&lt;p&gt;The documentation found in the README.md at the above link discusses some of what is covered in this article. It
+also contains what I think is a decent example showing the problem and the solution. I am not going to repeat those
+here but am going to borrow the &lt;em&gt;How it Works&lt;/em&gt; section from that document.&lt;/p&gt;
+
+&lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The input datastream from &lt;em&gt;as_read_xlsx&lt;/em&gt; is a table of cell data. The ordinal row and column numbers of the spreadsheet are columns/attributes in this data stream.&lt;/li&gt;
+  &lt;li&gt;Empty cells are not present in the data.&lt;/li&gt;
+  &lt;li&gt;The concept of column headers and database identifiers for the columns is not present in this structure.&lt;/li&gt;
+  &lt;li&gt;Each cell is represented with a polymorphic structure containing a &lt;em&gt;cell_type&lt;/em&gt; attribute and a value in one of the attributes &lt;em&gt;string_val&lt;/em&gt;, &lt;em&gt;number_val&lt;/em&gt;, &lt;em&gt;date_val&lt;/em&gt;, &lt;em&gt;formula&lt;/em&gt;. &lt;em&gt;formula&lt;/em&gt; is out of scope for this implementation. Our design pattern converts this polymorphic structure into an Oracle &lt;em&gt;ANYDATA&lt;/em&gt; object type.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Presenting the cell data in a two dimensional standard database pattern requires&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;extract column identifiers and number of columns from the first row of the input data&lt;/li&gt;
+  &lt;li&gt;pivot spreadsheet columns into rows&lt;/li&gt;
+  &lt;li&gt;densify the missing/empty cells&lt;/li&gt;
+  &lt;li&gt;convert multi-attribute polymorphic cell representation into &lt;em&gt;ANYDATA&lt;/em&gt; objects&lt;/li&gt;
+  &lt;li&gt;present the &lt;em&gt;ANYDATA&lt;/em&gt; cell objects in standard database TABLE structure with rows and columns named from the spreadsheet column headers&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Doing this requires a runtime determination of the resultset type. It is not difficult to do this for a PL/SQL cursor
+as we can use a weakly typed SYS_REFCURSOR. It is much harder to present the results to the SQL engine in a way
+that the resultset may be joined and extended.&lt;/p&gt;
+
+&lt;h2 id=&quot;considerations&quot;&gt;Considerations&lt;/h2&gt;
+
+&lt;p&gt;When one hears the term &lt;strong&gt;polymorphic resultset&lt;/strong&gt;, we instantly turn to the cool new Oracle toy (well, new as of Oracle 18c)
+of &lt;strong&gt;Polymorphic Table Functions&lt;/strong&gt;. Unfortunately, this design pattern only supports standard Oracle datatypes. Object
+types such as &lt;em&gt;ANYDATA&lt;/em&gt; are not supported, at least as of Oracle 19c.&lt;/p&gt;
+
+&lt;p&gt;Another method for achieving this is the &lt;strong&gt;ANYDATASET&lt;/strong&gt; technique which is built with &lt;strong&gt;ANYTYPE&lt;/strong&gt;. Building these requires
+producing ODCI level code, whether in PL/SQL or another compiled language such as Java or C. Although this pattern
+can be followed reasonably well at a cookbook level for standard data types with a moderate level of study, 
+extending it to handle piece-wise construction of complex object types such as the &lt;em&gt;ANYDATA&lt;/em&gt; objects is non-trivial.
+(see &lt;em&gt;ExcelTable.getRows&lt;/em&gt; in &lt;a href=&quot;https://github.com/mbleron/ExcelTable&quot;&gt;ExcelTable&lt;/a&gt; for an example of using &lt;strong&gt;ANYDATASET&lt;/strong&gt;
+with standard datatypes.)
+This is a level of complexity the author has seldom observed within most corporate IT departments. If there were
+community support of this I would be willing, but for this project it exceeds the complexity level with which I’m comfortable
+encumbering my current employer.&lt;/p&gt;
+
+&lt;p&gt;The level of complexity I settled on was using a compile time known object type representing a row,
+and standard pipelined table function returning a collection of that row object type. This is a well known
+and documented technique that should be in the wheelhouse of most journeyman level Oracle practitioners.
+The only slightly tricky part I added was the use of a nested table collection inside this object
+and an object method named &lt;strong&gt;get&lt;/strong&gt; for extracting members of that nested table in a SQL statement.&lt;/p&gt;
+
+&lt;h2 id=&quot;technique&quot;&gt;Technique&lt;/h2&gt;
+
+&lt;p&gt;We start with a collection object type of &lt;em&gt;ANYDATA&lt;/em&gt; objects.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;CREATE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OR&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;REPLACE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arr_anydata_udt&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FORCE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;anydata&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Next we build an object type that can be piped from our table function:&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;CREATE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OR&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;REPLACE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app_read_xlsx_row_udt&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FORCE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;OBJECT&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;data_row_nr&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NUMBER&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;aa&lt;/span&gt;         &lt;span class=&quot;n&quot;&gt;arr_anydata_udt&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;MEMBER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FUNCTION&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_i&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NUMBER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SYS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;anydata&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;CREATE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OR&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;REPLACE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;BODY&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app_read_xlsx_row_udt&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;MEMBER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FUNCTION&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_i&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NUMBER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SYS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;anydata&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;aa&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;em&gt;get&lt;/em&gt; method is necessary to access a member
+of the nested table collection from within SQL (inside PL/SQL you could just use aa(i)).&lt;/p&gt;
+
+&lt;p&gt;Then to be able to define our pipelined table function we need a nested table type of these elements:&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;CREATE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OR&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;REPLACE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arr_app_read_xlsx_row_udt&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FORCE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app_read_xlsx_row_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Our pipelined table function (which is a static method of our main object type &lt;em&gt;app_read_xlsx_udt&lt;/em&gt;) 
+can then be declared as:&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;STATIC&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FUNCTION&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;get_data_rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+         &lt;span class=&quot;n&quot;&gt;p_ctx&lt;/span&gt;      &lt;span class=&quot;kt&quot;&gt;NUMBER&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_col_cnt&lt;/span&gt;  &lt;span class=&quot;kt&quot;&gt;NUMBER&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arr_app_read_xlsx_row_udt&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;PIPELINED&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This still leaves the task of generating a SQL select list that turns the collection elements &lt;em&gt;aa.get(i)&lt;/em&gt;
+into columns with an identifier based on the first row of the spreadsheet. That is done by calling the &lt;em&gt;get_sql&lt;/em&gt;
+method of &lt;em&gt;app_read_xlsx_udt&lt;/em&gt;. It builds a dynamic SQL statement for you that you can then use as part
+of a larger application level SQL statement as shown in the examples section and reproduced here.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data_row_nr&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data_row_nr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ddata&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
+  &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;VALUE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;R&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- full object, not the object members * would provide&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;LEE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;app_read_xlsx_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_data_rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;code-dive&quot;&gt;Code Dive&lt;/h2&gt;
+
+&lt;p&gt;The manual page for &lt;em&gt;app_read_xlsx_udt&lt;/em&gt; constructor describes how the output from &lt;em&gt;as_read_xlsx&lt;/em&gt;
+is read into a global temporary table (GTT). Subsequent reads of this data for the first row
+determine the number of columns and column headers to populate the object attributes during
+the constructor call. 
+After that we read the row data from the GTT using the static pipelined table function &lt;em&gt;app_read_xlsx_udt.get_data_rows&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;This code is a little interesting in how it uses a restricted package ( ACCESSIBLE BY (app_read_xlsx_udt) )
+to maintain a set of session specific context numbers allowing for multiple spreadsheets to be read simultaneously
+in a single session. The package also implements the call to &lt;em&gt;as_read_xlsx&lt;/em&gt; when it populates the GTT. You
+can look at your leisure.&lt;/p&gt;
+
+&lt;p&gt;In &lt;a href=&quot;@overview&quot;&gt;Overview&lt;/a&gt; we listed the tasks the function needed to perform in a bullet list. Most
+of these tasks are handled in the static pipelined table function &lt;em&gt;app_read_xlsx_udt.get_data_rows&lt;/em&gt; via a cursor
+that uses a bind variable for the number of columns we have in our input (gathered during object
+constructor call).&lt;/p&gt;
+
+&lt;p&gt;These two bullet items are covered by the first code section:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;densify the missing/empty cells&lt;/li&gt;
+  &lt;li&gt;convert multi-attribute polymorphic cell representation into ANYDATA objects&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;First, generate a Common Table Expression (CTE or WITH Clause view) consisting of an integer for each column.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;k&quot;&gt;CURSOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c_filled_gaps&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;WITH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cols&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;level&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;col_nr&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dual&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;CONNECT&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;BY&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;level&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_col_cnt&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Next, grab our data from the GTT, but only the rows and columns of interest.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;this_ctx_cols&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;row_nr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;col_nr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cell_type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;string_val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;date_val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;number_val&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;as_read_xlsx_gtt&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ctx&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_ctx&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;row_nr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;col_nr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p_col_cnt&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The &lt;em&gt;CASE&lt;/em&gt; statement below examines the data type of the cell and calls the appropriate static
+constructor for an &lt;em&gt;ANYDATA&lt;/em&gt; object. Notice the funky method for creating a NULL &lt;em&gt;ANYDATA&lt;/em&gt; object.
+If you find a less kludgey method, let me know.&lt;/p&gt;
+
+&lt;p&gt;The PARTITION BY and RIGHT OUTER JOIN are an Oracle technique I do not know the name of for
+densifying data. Heck, that could be the official name of the technique. It makes sure that
+on any given &lt;em&gt;row_nr&lt;/em&gt; we selected from the GTT, there &lt;strong&gt;will&lt;/strong&gt; be a row in the output for every
+column.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ad_cols&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;row_nr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;col_nr&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;CASE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cell_type&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;S&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SYS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ANYDATA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;convertVarchar2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;string_val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;D&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SYS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ANYDATA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;convertDate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;date_val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;N&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SYS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ANYDATA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;convertNumber&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;number_val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;ELSE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SYS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ANYDATA&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;convertVarchar2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- must have a placeholder for collect&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ad&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;this_ctx_cols&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;PARTITION&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;BY&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;row_nr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- fill gaps for empty cells&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;RIGHT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;OUTER&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;JOIN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cols&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;ON&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cols&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;col_nr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;col_nr&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now that we are promised a row for every cell, we can use a &lt;em&gt;COLLECT&lt;/em&gt; aggregation function
+to build a nested table collection object in SQL. That takes care of pivoting the column
+data into a single row per spreadsheet row, if not exactly pivoting into columns yet.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;pivot spreadsheet columns into rows&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;To complete the cursor query
+we plug these values into the default constructor for our &lt;em&gt;app_read_xlsx_row_udt&lt;/em&gt; object described
+earlier. That is what our function must PIPE ROW out.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ad_arr&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;row_nr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data_row_nr&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;CAST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;COLLECT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ad&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;ORDER&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;BY&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;col_nr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arr_anydata_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;vaa&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ad_cols&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;GROUP&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;BY&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;row_nr&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app_read_xlsx_row_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data_row_nr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;vaa&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ad_arr&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The rest of the function is simple boilerplate for a pipelined table function:&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;k&quot;&gt;OPEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c_filled_gaps&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;FETCH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c_filled_gaps&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;BULK&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;COLLECT&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;INTO&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_arr&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;LIMIT&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;EXIT&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
+                &lt;span class=&quot;kr&quot;&gt;PIPE&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;ROW&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_arr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;CLOSE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c_filled_gaps&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;RETURN&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;No matter how many columns we have or what our column names are, we have a single compile-time representation
+of our resultset coming from this pipelined table function. With a little help from member function &lt;em&gt;app_read_xlsx_udt.get_sql&lt;/em&gt;
+we can get our columns out with proper names using regular SQL and use it as if it had come from a table.&lt;/p&gt;
+
+&lt;p&gt;You can look at the code for &lt;em&gt;get_sql&lt;/em&gt; at your leisure, but the example shown in the &lt;a href=&quot;#technique&quot;&gt;Technique&lt;/a&gt; section
+and repeated next is the best way to understand it:&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;data_row_nr&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data_row_nr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ddata&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
+  &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;VALUE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;R&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- full object, not the object members * would provide&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;LEE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;app_read_xlsx_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_data_rows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;X&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I’ll mention something that confounds those who have not used Oracle objects often. In order to
+access a member method or element of an object you must use a table alias as part of the name. One cannot
+rely on an actual table name or an implied (no) table name; it must be a table alias. In this
+case the table alias is ‘X’.&lt;/p&gt;
+
+&lt;p&gt;The other thing to mention is the use of the &lt;em&gt;VALUE&lt;/em&gt; function. The most common way we extract data
+from a pipelined table function is via &lt;em&gt;SELECT *&lt;/em&gt;. If we do that here, we will get the elements of the &lt;em&gt;app_read_xlsx_row_udt&lt;/em&gt;
+object rather than the object itself. We need the &lt;em&gt;get&lt;/em&gt; member method of the object, so it is important
+that we retrieve the object intact rather than the object elements. &lt;em&gt;VALUE&lt;/em&gt; gives us the actual object
+returned from the pipelined table function rather than the object elements. It’s relatively obscure.&lt;/p&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;This turned out to be a much harder problem than I thought it would be when I started. Limitations
+of &lt;em&gt;Polymorphic Table Functions&lt;/em&gt; and the complexity of &lt;em&gt;ANYTYPE/ANYDATASET&lt;/em&gt; took me off guard. It would
+have been easiest to craft one-off solutions for each spreadsheet by writing a custom cursor, but it
+felt like the wrong answer. Creating &lt;em&gt;app_read_xlsx&lt;/em&gt; was the result. It is a bit messier than I would like
+in the way it gives you a SQL statement for your program to incorporate, but I feel it is an appropriate
+level of abstraction given the requirements and limitations.&lt;/p&gt;
+
+&lt;p&gt;Hope you find both the tool and the journey to get here helpful.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 18 Sep 2022 07:30:00 -0400</pubDate>
+        <link>https://lee-lindley.github.io/oracle/plsql/2022/09/18/spreadsheets_with_plsql.html</link>
+        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/plsql/2022/09/18/spreadsheets_with_plsql.html</guid>
+        
+        <category>oracle</category>
+        
+        <category>plsql</category>
+        
+        
+        <category>oracle</category>
+        
+        <category>plsql</category>
+        
+      </item>
     
       <item>
         <title>Using Perl DBD::Oracle to write LOB content</title>
