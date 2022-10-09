@@ -5,9 +5,189 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 23 Sep 2022 16:27:09 -0400</pubDate>
-    <lastBuildDate>Fri, 23 Sep 2022 16:27:09 -0400</lastBuildDate>
+    <pubDate>Sun, 09 Oct 2022 11:03:16 -0400</pubDate>
+    <lastBuildDate>Sun, 09 Oct 2022 11:03:16 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Tuning Query with OR Conditions in a NOT EXISTS</title>
+        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;While tuning an Oracle query provided by a business user I ran into a roadblock that confounded me. The query contained
+a &lt;em&gt;NOT EXISTS&lt;/em&gt; clause against a large row set, one that was a Common Table Expression (CTE or WITH clause)
+that was relatively complex. The CTE plan was fine, but it resulted in about a million rows. An ideal plan
+to satisfy the &lt;em&gt;NOT EXISTS&lt;/em&gt; from my perspective
+would use a &lt;em&gt;HASH ANTIJOIN&lt;/em&gt; against that row set. That was not happening. It was doing a &lt;em&gt;FILTER&lt;/em&gt; operation.
+I’m not 100% sure what Oracle is doing under the covers on the &lt;em&gt;FILTER&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;problem&quot;&gt;Problem&lt;/h1&gt;
+
+&lt;p&gt;The problem SQL is too complex and intertwined with my client’s business to reproduce here, but pseudo code is
+good enough for the discussion.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;WITH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; 
+        &lt;span class=&quot;n&quot;&gt;lookup_value&lt;/span&gt; 
+    &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;large_result_set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;L&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some_fancy_condition&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;TRUE&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;--+ cardinality(a 1000000)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;my_key_value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;my_lookup_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;column_list&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;another_large_result_set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; 
+    &lt;span class=&quot;c1&quot;&gt;-- this is done using an index one by one which is ok&lt;/span&gt;
+    &lt;span class=&quot;ow&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;EXISTS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some_other_table&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key_value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;my_key_value&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;-- below is the problem antijoin&lt;/span&gt;
+    &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;EXISTS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lookup_name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;my_lookup_name&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;-- this DECODE represents an OR condition&lt;/span&gt;
+            &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;DECODE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lookup_value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;my_key_value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+            &lt;span class=&quot;cm&quot;&gt;/* --I would prefer this syntax
+                AND (ne.lookup_value = '*' OR ne.lookup_value = a.my_key_value)
+            */&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;The explain plan shows the operation &lt;em&gt;FILTER&lt;/em&gt; between the triplet of &lt;em&gt;another_large_result_set&lt;/em&gt;,
+&lt;em&gt;some_other_table&lt;/em&gt;, and &lt;em&gt;ne&lt;/em&gt;. The filter against &lt;em&gt;some_other_table&lt;/em&gt; using the index is presumably
+really a nested loop antijoin, but the one for &lt;em&gt;ne&lt;/em&gt;
+must be a one by one probe of the million rows in memory for each row of &lt;em&gt;another_large_result_set&lt;/em&gt;
+(unless Oracle is doing something under the covers to optimizer it).&lt;/p&gt;
+
+&lt;p&gt;The picture below (Toad tree view) from the actual plan shows a &lt;em&gt;FILTER&lt;/em&gt; operation with 3 components - &lt;em&gt;another_large_result_set&lt;/em&gt;,
+&lt;em&gt;some_other_table&lt;/em&gt;, and &lt;em&gt;ne&lt;/em&gt;. We can tell from the fact that it shows the index lookup, that it is doing a 
+one by one index probe of &lt;em&gt;some_other_table&lt;/em&gt;. Less obvious what it is doing with &lt;em&gt;ne&lt;/em&gt;, but in the absence of other
+evidence we must assume it is walking through the heap in memory looking for a match. Maybe it has sorted it and is 
+doing something smarter than that, but it is not a hash.&lt;/p&gt;
+
+&lt;table class=&quot;img-table-centered&quot;&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;em&gt;Figure 1 - Explain Plan of Filter Operation for Antijoin with OR&lt;/em&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;/images/hash_aj_or_1.png&quot; alt=&quot;&quot; /&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;Why could it not hash the &lt;em&gt;ne&lt;/em&gt; row set and probe it with a &lt;em&gt;HASH ANTIJOIN&lt;/em&gt;? Because you cannot hash an &lt;em&gt;OR&lt;/em&gt; condition.&lt;/p&gt;
+
+&lt;p&gt;If it is a regular join instead of an anti-join that has this &lt;em&gt;OR&lt;/em&gt; condition, the optimizer can
+break the problem into multiple &lt;em&gt;HASH JOIN&lt;/em&gt;’s and do
+a &lt;em&gt;CONCATENATION&lt;/em&gt; operation of the results for each of the &lt;em&gt;OR&lt;/em&gt; conditions.&lt;/p&gt;
+
+&lt;p&gt;I do not recall seeing a plan where the optimizer chooses two separate &lt;em&gt;ANTIJOIN&lt;/em&gt; operations in series. 
+It would not be a &lt;em&gt;CONCATENATION&lt;/em&gt;
+operation between them, but the opposite of that because they are anti-joins. 
+I don’t think the Oracle optimizer has an operation for splitting an &lt;em&gt;ANTIJOIN&lt;/em&gt; into two &lt;em&gt;ANTIJOIN&lt;/em&gt;’s in sequence.&lt;/p&gt;
+
+&lt;h1 id=&quot;solution&quot;&gt;Solution&lt;/h1&gt;
+
+&lt;p&gt;I first thought maybe the &lt;em&gt;DECODE&lt;/em&gt; function on the value, being a function, was confusing the optimizer.
+Rewriting that in my preferred syntax with an &lt;em&gt;OR&lt;/em&gt; condition rather than the implied &lt;em&gt;OR&lt;/em&gt; of the &lt;em&gt;DECODE&lt;/em&gt;
+did not solve the issue. It was a long shot given my understanding of the optimizer, but I don’t know everything,
+the optimizer is constantly evolving, and I wanted to give it the best chance to solve the issue.&lt;/p&gt;
+
+&lt;p&gt;I’ve seen this before on regular joins with a similar construct of a lookup table having wild cards. In that
+case it was multiple conditions in the join with wild cards optional on all of them. The optimizer
+was overwhelmed and just did a giant filter as we saw with this anti-join. One would think it might
+be able to break the problem into multiple joins with concatenation, but the multiple join conditions
+seems to have exceeded the optimizer’s breadth of options.&lt;/p&gt;
+
+&lt;p&gt;I recall having to break the problem down into two
+separate joins manually, one for the wild card and one for the direct match of the key, at least for
+the first of multiple wild-carded join conditions. That at least was able to reduce the join set
+to one that could be filtered for the remaining conditions.&lt;/p&gt;
+
+&lt;p&gt;I tried a similar trick here rewriting the query as two separate &lt;em&gt;NOT EXISTS&lt;/em&gt; with an &lt;em&gt;AND&lt;/em&gt; 
+condition between them.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;WITH&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; 
+        &lt;span class=&quot;n&quot;&gt;lookup_value&lt;/span&gt; 
+    &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;large_result_set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;L&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some_fancy_condition&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;TRUE&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;--+ cardinality(a 1000000)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;my_key_value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;my_lookup_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;column_list&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;another_large_result_set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; 
+    &lt;span class=&quot;c1&quot;&gt;-- this is done using an index one by one which is ok&lt;/span&gt;
+    &lt;span class=&quot;ow&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;EXISTS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- not exists 0&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some_other_table&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key_value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;my_key_value&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;EXISTS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- not exists 1&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lookup_name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;my_lookup_name&lt;/span&gt;
+            &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lookup_value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; 
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;EXISTS&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;-- not exists 2&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;WHERE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lookup_name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;my_lookup_name&lt;/span&gt;
+            &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lookup_value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt; 
+            &lt;span class=&quot;ow&quot;&gt;AND&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ne&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lookup_value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;my_key_value&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;table class=&quot;img-table-centered&quot;&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;em&gt;Figure 2 - Explain Plan of Filter Operation for Antijoin no OR&lt;/em&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;/images/hash_aj_or_2.png&quot; alt=&quot;&quot; /&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;That worked swimmingly. The optimizer hashed all of the rows from &lt;em&gt;ne&lt;/em&gt; with a lookup value of ‘*’,
+also hashed all of the rows from &lt;em&gt;ne&lt;/em&gt; with at lookup value that was not ‘*’, and did a &lt;em&gt;HASH ANTIJOIN&lt;/em&gt;
+against each in pipelined series. This was a much more efficient plan that will also scale well as
+the number of rows increases over time. The actual run time was about a third what it was before the re-write.
+Honestly I expected better than that, so maybe Oracle is doing some form of optimization on that filter
+operation under the covers.&lt;/p&gt;
+
+&lt;p&gt;It is still showing the antijoin of &lt;em&gt;some_other_table&lt;/em&gt; as a &lt;em&gt;FILTER&lt;/em&gt;. I do not know why this presents as
+a filter rather than a &lt;em&gt;NESTED LOOP ANTIJOIN&lt;/em&gt;. I’ve seen nested loop antijoin be shown by the optimizer 
+rather than filter in other situations and am unsure what the difference is. I went trolling through
+Jonathan Lewis’s fine book &lt;em&gt;Cost-Based Oracle Fundamentals&lt;/em&gt;, but did not find an example of a plan
+using &lt;em&gt;FILTER&lt;/em&gt;. It may be something that Oracle added after 10g which is the release the book covered.&lt;/p&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;When dealing with &lt;em&gt;OR&lt;/em&gt; join conditions, there is only so much the optimizer can do. When you are
+getting an unacceptable plan for a query with &lt;em&gt;OR&lt;/em&gt;s in the join conditions, consider how you
+might be able to rewrite the query with two joins, one for each of the &lt;em&gt;OR&lt;/em&gt;s.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 09 Oct 2022 02:00:00 -0400</pubDate>
+        <link>https://lee-lindley.github.io/oracle/sql/2022/10/09/antijoins_with_or.html</link>
+        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/sql/2022/10/09/antijoins_with_or.html</guid>
+        
+        <category>oracle</category>
+        
+        <category>sql</category>
+        
+        <category>antijoin</category>
+        
+        
+        <category>oracle</category>
+        
+        <category>sql</category>
+        
+      </item>
     
       <item>
         <title>Manipulating XLSX Spreadsheets in PL/SQL</title>
