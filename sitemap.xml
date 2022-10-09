@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 09 Oct 2022 11:03:16 -0400</pubDate>
-    <lastBuildDate>Sun, 09 Oct 2022 11:03:16 -0400</lastBuildDate>
+    <pubDate>Sun, 09 Oct 2022 11:25:59 -0400</pubDate>
+    <lastBuildDate>Sun, 09 Oct 2022 11:25:59 -0400</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -53,16 +53,11 @@ good enough for the discussion.&lt;/p&gt;
             */&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;The explain plan shows the operation &lt;em&gt;FILTER&lt;/em&gt; between the triplet of &lt;em&gt;another_large_result_set&lt;/em&gt;,
-&lt;em&gt;some_other_table&lt;/em&gt;, and &lt;em&gt;ne&lt;/em&gt;. The filter against &lt;em&gt;some_other_table&lt;/em&gt; using the index is presumably
-really a nested loop antijoin, but the one for &lt;em&gt;ne&lt;/em&gt;
-must be a one by one probe of the million rows in memory for each row of &lt;em&gt;another_large_result_set&lt;/em&gt;
-(unless Oracle is doing something under the covers to optimizer it).&lt;/p&gt;
 
 &lt;p&gt;The picture below (Toad tree view) from the actual plan shows a &lt;em&gt;FILTER&lt;/em&gt; operation with 3 components - &lt;em&gt;another_large_result_set&lt;/em&gt;,
 &lt;em&gt;some_other_table&lt;/em&gt;, and &lt;em&gt;ne&lt;/em&gt;. We can tell from the fact that it shows the index lookup, that it is doing a 
 one by one index probe of &lt;em&gt;some_other_table&lt;/em&gt;. Less obvious what it is doing with &lt;em&gt;ne&lt;/em&gt;, but in the absence of other
-evidence we must assume it is walking through the heap in memory looking for a match. Maybe it has sorted it and is 
+evidence, we must assume it is walking through the heap in memory looking for a match. Maybe it has sorted it and is 
 doing something smarter than that, but it is not a hash.&lt;/p&gt;
 
 &lt;table class=&quot;img-table-centered&quot;&gt;
@@ -168,9 +163,10 @@ using &lt;em&gt;FILTER&lt;/em&gt;. It may be something that Oracle added after 1
 
 &lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
 
-&lt;p&gt;When dealing with &lt;em&gt;OR&lt;/em&gt; join conditions, there is only so much the optimizer can do. When you are
-getting an unacceptable plan for a query with &lt;em&gt;OR&lt;/em&gt;s in the join conditions, consider how you
-might be able to rewrite the query with two joins, one for each of the &lt;em&gt;OR&lt;/em&gt;s.&lt;/p&gt;
+&lt;p&gt;When dealing with &lt;em&gt;OR&lt;/em&gt; join conditions (&lt;em&gt;IN&lt;/em&gt; lists are &lt;em&gt;OR&lt;/em&gt; conditions too), 
+there is only so much the optimizer can do. When you are
+getting an unacceptable plan for a query with &lt;em&gt;OR&lt;/em&gt;s in the join conditions, or especially anti-join conditions,
+consider how you might be able to rewrite the query with two joins, one for each of the &lt;em&gt;OR&lt;/em&gt;s.&lt;/p&gt;
 </description>
         <pubDate>Sun, 09 Oct 2022 02:00:00 -0400</pubDate>
         <link>https://lee-lindley.github.io/oracle/sql/2022/10/09/antijoins_with_or.html</link>
