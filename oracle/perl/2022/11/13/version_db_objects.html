@@ -1,0 +1,196 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="shortcut icon" href="/static/img/favicon.ico" /><title>Versioning Oracle Code from Open Source - Lee Lindley Scratchpad</title><meta name="author" content="Lee Lindley" /><meta name="description" content="Versioning Oracle Code from Open Source" /><meta name="keywords" content="Versioning Oracle Code from Open Source, Lee Lindley Scratchpad, oracle, perl" /><link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml"><meta content="" property="fb:app_id"><meta content="Lee Lindley Scratchpad" property="og:site_name"><meta content="Versioning Oracle Code from Open Source" property="og:title"><meta content="article" property="og:type"><meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description"><meta content="https://lee-lindley.github.io/oracle/perl/2022/11/13/version_db_objects.html" property="og:url"><meta content="2022-11-13T10:00:00-05:00" property="article:published_time"><meta content="https://lee-lindley.github.io/about/" property="article:author"><meta content="oracle" property="article:section"><meta content="oracle" property="article:tag"><meta content="perl" property="article:tag"><meta name="twitter:card" content="summary"><meta name="twitter:site" content="@"><meta name="twitter:creator" content="@"><meta name="twitter:title" content="Versioning Oracle Code from Open Source"><meta name="twitter:url" content="https://lee-lindley.github.io/oracle/perl/2022/11/13/version_db_objects.html"><meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux"><link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous"><link rel="stylesheet" href="/static/css/syntax.css"><link href="/static/css/bootstrap.min.css" rel="stylesheet"><link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css"><link rel="stylesheet" href="/static/css/super-search.css"><link rel="stylesheet" href="/static/css/thickbox.css"><link rel="stylesheet" href="/static/css/projects.css"><link rel="stylesheet" href="/static/css/main.css"><body><div class="container"><div class="col-sm-3"><div class="fixed-condition"><h1 class="author-name"><a href="/">Lee Lindley</a></h1><div class="profile-about"> I'm Just Another Perl Hacker who wound up in a big Oracle Database playground</div><div class="social"><ul><li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a><li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></ul></div><div class="search" id="js-search"> <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input"><ul class="search__results" id="js-search__results"></ul></div><hr /><ul class="sidebar-nav"> <strong>Navigation</strong><li><a href="/">Home</a><li><a class="about" href="/about/">About Me</a><li><a class="about" href="/projects/">My Projects</a><li><a class="about" href="/feed.xml">XML Feed</a></ul></div></div><div class="col-sm-8 col-offset-1 main-layout"><header class="post-header"><h1 class="post-title">Versioning Oracle Code from Open Source</h1></header><span class="time">13 Nov 2022</span> <span class="categories"> &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/perl">perl</a> </span><div class="content"><div class="post"><h1 id="introduction">Introduction</h1><p>My team have a moderately large installed base of Oracle packages that use <a href="https://github.com/mbleron/ExcelGen">Marc Bleron’s ExcelGen</a> package. Version 3 of the package was released recently and we have use cases that can benefit from the new features. Regression testing the installed base of code as is required under corporate SDLC policy is not an attractive proposition.<p>The strategy we chose is to name the newly changed Oracle objects differently than the existing ones so that we can have multiple versions installed in production. For example <em>ExcelGen</em> package will be named <em>ExcelGen_v3</em>. This isn’t ideal, but all future uses, including any time a job is changed and must be regression tested anyway, will use the new version. Eventually, the existing version will be retired.<p>This article describes a technique and a Perl script to facilitate versioning of the changed objects. Full disclosure - initially I did much of this manually. For this article I cleaned up the Perl script to address oddities I found during the exercise and to keep my Perl skills from fading away.<h1 id="scenario">Scenario</h1><p><em>ExcelGen</em> is open-source software hosted on <em>GitHub</em>. Instructions for cloning the repository point out you should use <em>–recurse-submodules</em> or else you must copy the two submodules down separately. The use of submodules is good technique, but complicates our task.<p>The repository follows a model with a separate file (or files) for every Oracle object. The files are also named the same as the Oracle objects except for the file suffix. This is best practice for source code control of Oracle artifacts in my opinion, and fortunate for the pattern I followed here.<p>We need to identify all files that changed since our production deployment, the objects defined in those files, and any dependent objects that would be impacted by the compile.<h1 id="identifying-changed-files-in-git">Identifying Changed Files in Git</h1><p>We could simply run diff commands to identify files that changed, but we have a nice tool in <em>git</em> that keeps track of all this. In order to use it we must know the commit point of the files we already deployed. In my case I know that tag “v2.5.1” represents the files I deployed from the main <em>ExcelGen</em> repository. The <em>MSUtilities</em> repository has no changes in the last two years, and <em>ExcelCommons</em> change I last deployed was commit <em>383ff141bffd3bd31ed3054106346a948575469a</em>. In git a tag, a branch and a commit are all simply pointers that are interchangeable for identifying the state of code at a particular point in the history.<p>To identify changed files from the top level directory we run the command:<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#git diff --name-only prior_version_tag_or_commit</span>
+git diff <span class="nt">--name-only</span> v2.5.1
+</code></pre></div></div><p>Discounting the test_cases, samples and resources files, it turns out the only ones impacted in the main repository are<ul><li>plsql/ExcelGen.pkb<li>plsql/ExcelGen.pks</ul><p>Changing directory to <em>ExcelCommons</em> we run the command for this submodule:<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git diff <span class="nt">--name-only</span> 383ff141bffd3bd31ed3054106346a948575469a
+</code></pre></div></div><p>This yields:<ul><li>plsql/ExcelTableCell.tps<li>plsql/ExcelTypes.pkb<li>plsql/ExcelTypes.pks<li>plsql/xutl_xlsb.pkb<li>plsql/xutl_xlsb.pks</ul><p>From this we have a list of changed Oracle objects:<ul><li>ExcelGen<li>ExcelTableCell<li>ExcelTypes<li>xutl_xlsb</ul><p>We could simply look at each one with Toad or SqlDeveloper for dependencies, but I felt like playing, so we’ll let Perl find the dependencies for us while we prepare to change all occurrences of these four identifiers by adding “_v3” to the end. Note it is not as simple as a global search and replace with your text editor because these could be sub-parts of larger names that don’t change. For example the string <em>ExcelTableCell</em> appears in <em>ExcelTableCellList</em>.<h1 id="perl-script-overkill">Perl Script Overkill</h1><p>At a whopping 125 lines this monster outgrew my immediate need, but it does some things you may find interesting. The start of the script gathers the arguments. The first argument is the name of the install script from which it will read the names of the files we would install if this were a fresh install. After that we provide a version string to add to the object names. In this case I provided “_v3”. Finally follow the names of the objects that we know need to be versioned as a seed. The script may add more.<div class="language-perl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/env perl</span>
+<span class="k">use</span> <span class="nv">strict</span><span class="p">;</span>
+<span class="k">use</span> <span class="nv">warnings</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$usage</span> <span class="o">=</span> <span class="p">"</span><span class="s2">USAGE: $0 install_script version_string identifier1 [identifier2..]</span><span class="se">\n</span><span class="s2">where 'identifier' is oracle object that you know has changed in the release.</span><span class="se">\n</span><span class="p">";</span>
+<span class="c1">#</span>
+<span class="c1"># In each git module and submodule, </span>
+<span class="c1"># "git diff --name-only prior_version_tag_or_commit"</span>
+<span class="c1"># That gives us list of files from which we should be able to name objects </span>
+<span class="c1"># we need to version and install that are different than</span>
+<span class="c1"># what we already deployed. </span>
+<span class="c1"># This script assumes the files are named after the objects they build.</span>
+<span class="c1"># object_name_version.pl will also check recursively for objects in the</span>
+<span class="c1"># install script that use changed objects as those need to be versioned too.</span>
+<span class="c1">#</span>
+<span class="nb">die</span> <span class="p">"</span><span class="s2">$0: must provide at least 3 args.</span><span class="se">\n</span><span class="si">$usage</span><span class="se">\n</span><span class="p">"</span> <span class="k">unless</span> <span class="nv">@ARGV</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$install_script</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+<span class="k">my</span> <span class="nv">$version_string</span> <span class="o">=</span> <span class="nb">shift</span><span class="p">;</span>
+<span class="c1"># now only idendifiters are left in @ARGV</span>
+
+<span class="k">my</span> <span class="p">(</span><span class="nv">@on_re_list</span><span class="p">,</span> <span class="nv">%on_list</span><span class="p">);</span>
+<span class="k">for</span> <span class="k">my</span> <span class="nv">$on</span> <span class="p">(</span><span class="nv">@ARGV</span><span class="p">)</span> <span class="p">{</span> <span class="c1"># we want unique list of lower case object names</span>
+    <span class="nv">@on_list</span> <span class="p">{</span> <span class="nb">lc</span> <span class="nv">$on</span> <span class="p">}</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div><p>Next we create subroutines that we can call multiple times as we identify dependencies. The first creates regular expressions for each versioned object that we can use both for searching and also for modifying the code. The parsing of an identifier is something I’ve done before for the <em>vim</em> plsql syntax file and also for the <em>Ruby Rouge</em> plsql lexer.<div class="language-perl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">sub </span><span class="nf">build_on_re_list</span> <span class="p">{</span>
+  <span class="c1"># we know the objects that changed. </span>
+  <span class="c1"># Find those and any files that contain them.</span>
+  <span class="c1"># Let us construct an array of regular expressions to match on. Then</span>
+  <span class="c1"># we can use those same regexp's to substiture the new names.</span>
+  <span class="k">print</span> <span class="bp">STDERR</span> <span class="p">"</span><span class="s2">calling build_on_re_list</span><span class="se">\n</span><span class="p">";</span>
+  <span class="nv">@on_re_list</span> <span class="o">=</span> <span class="p">();</span>
+  <span class="k">for</span> <span class="k">my</span> <span class="nv">$identifier</span> <span class="p">(</span><span class="nb">keys</span> <span class="nv">%on_list</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">print</span> <span class="bp">STDERR</span> <span class="p">"</span><span class="s2">adding re for </span><span class="si">$identifier</span><span class="se">\n</span><span class="p">";</span>
+        <span class="nb">push</span> <span class="nv">@on_re_list</span><span class="p">,</span> <span class="sx">qr/
+    (                                       # Capture before identifier string if any
+            ^                               # could be matching at start of line
+        |
+            [^a-z0-9_#\$]                   # any character that is not an identifier
+    )
+    (                                       # capture our object word
+        $identifier
+    )
+    (                                       # capture character after our object word
+            [^a-z0-9_#\$]                   # any character that is not an identifier
+        |
+            $                               # could be end of line
+    )
+/</span><span class="nv">imx</span><span class="p">;</span>
+    <span class="c1"># ignore case, ignore whitespace in RE, match ^$ at newline</span>
+  <span class="p">}</span>
+
+  <span class="c1"># the replacement string will be "${1}${2}${version_string}$3"</span>
+<span class="p">}</span>
+</code></pre></div></div><p>This subroutine can be called two ways. The first to identify impacted files and the second option creates new files named with the version string that we can deploy.<div class="language-perl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># sub find_files uses these so set before defining</span>
+<span class="k">my</span> <span class="p">(</span><span class="nv">$install_script_out</span><span class="p">);</span>
+<span class="p">(</span><span class="nv">$install_script_out</span> <span class="o">=</span> <span class="nv">$install_script</span><span class="p">)</span> <span class="o">=~</span> <span class="sr">s/\.sql/${version_string}.sql/</span><span class="p">;</span>
+<span class="nb">open</span><span class="p">(</span><span class="nv">OFL</span><span class="p">,</span> <span class="p">"</span><span class="s2">&gt;</span><span class="p">",</span> <span class="p">"</span><span class="si">$install_script_out</span><span class="p">")</span> <span class="ow">or</span> <span class="nb">die</span> <span class="p">"</span><span class="s2">failed open </span><span class="si">$install_script_out</span><span class="s2"> for write: $!</span><span class="p">";</span>
+
+<span class="k">sub </span><span class="nf">find_files</span> <span class="p">{</span>
+    <span class="c1"># look through files for references to the objects that changed</span>
+    <span class="k">my</span> <span class="p">(</span><span class="nv">$look_only</span><span class="p">)</span> <span class="o">=</span> <span class="err">@</span><span class="nv">_</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">?</span> <span class="vg">$_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">:</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">print</span> <span class="bp">STDERR</span> <span class="p">"</span><span class="s2">calling find_files with look_only=</span><span class="si">$look_only</span><span class="se">\n</span><span class="p">";</span>
+    <span class="k">my</span> <span class="nv">@file_names</span><span class="p">;</span>
+    <span class="nb">open</span><span class="p">(</span><span class="nv">FL</span><span class="p">,</span> <span class="p">"</span><span class="s2">&lt;</span><span class="p">",</span> <span class="nv">$install_script</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">die</span> <span class="p">"</span><span class="s2">failed to open install script $!</span><span class="p">";</span>
+    <span class="k">while</span> <span class="p">(</span><span class="o">&lt;</span><span class="nv">FL</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">next</span> <span class="k">unless</span> <span class="sr">/^@/</span><span class="p">;</span>
+        <span class="nb">chomp</span><span class="p">;</span>
+        <span class="k">my</span> <span class="p">(</span><span class="nv">$fn</span><span class="p">)</span> <span class="o">=</span> <span class="vg">$_</span> <span class="o">=~</span> <span class="sr">/@@?(.+)/</span><span class="p">;</span>
+        <span class="k">print</span> <span class="bp">STDERR</span> <span class="p">"</span><span class="s2">checking </span><span class="si">$fn</span><span class="se">\n</span><span class="p">";</span>
+        <span class="k">my</span> <span class="nv">$data</span><span class="p">;</span>
+        <span class="p">{</span>
+            <span class="nb">open</span> <span class="k">my</span> <span class="nv">$f</span><span class="p">,</span> <span class="p">'</span><span class="s1">&lt;</span><span class="p">',</span> <span class="nv">$fn</span> <span class="ow">or</span> <span class="nb">die</span><span class="p">;</span>
+            <span class="nb">local</span> <span class="vg">$/</span> <span class="o">=</span> <span class="nb">undef</span><span class="p">;</span> <span class="c1"># slurp mode</span>
+            <span class="nv">$data</span> <span class="o">=</span> <span class="o">&lt;</span><span class="nv">$f</span><span class="o">&gt;</span><span class="p">;</span>
+            <span class="nb">close</span> <span class="nv">$f</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">my</span> <span class="nv">$match_file</span><span class="p">;</span>
+        <span class="k">for</span> <span class="k">my</span> <span class="nv">$re</span> <span class="p">(</span><span class="nv">@on_re_list</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nv">$data</span> <span class="o">=~</span> <span class="nv">$re</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nv">$match_file</span> <span class="o">=</span> <span class="nv">$fn</span><span class="p">;</span>
+                <span class="k">last</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="k">next</span> <span class="k">unless</span> <span class="nv">$match_file</span><span class="p">;</span> <span class="c1"># we did not find any interesting identifiers</span>
+
+        <span class="c1"># reduce file name to oracle identifier. no slash or dot, followed</span>
+        <span class="c1"># by last dot and non-dots to end of string.</span>
+        <span class="k">my</span> <span class="p">(</span><span class="nv">$id</span><span class="p">)</span> <span class="o">=</span> <span class="nv">$match_file</span> <span class="o">=~</span> <span class="sr">m!([^./]+)\.[^.]+$!i</span><span class="p">;</span> 
+        <span class="nv">$on_list</span><span class="p">{</span> <span class="nb">lc</span> <span class="nv">$id</span> <span class="p">}</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+        
+        <span class="k">next</span> <span class="k">if</span> <span class="nv">$look_only</span><span class="p">;</span>     
+        <span class="c1"># if we are done recursively looking for all objects we need to change</span>
+        <span class="c1"># continue on to making a new version of the files needed.</span>
+
+        <span class="c1"># need to change all occurences of versioned objects inside this file</span>
+        <span class="k">for</span> <span class="k">my</span> <span class="nv">$re</span> <span class="p">(</span><span class="nv">@on_re_list</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nv">$data</span> <span class="o">=~</span> <span class="sr">s/$re/${1}${2}${version_string}$3/g</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="c1"># write the versioned file out with new name</span>
+        <span class="k">my</span> <span class="nv">$ofname</span><span class="p">;</span>
+        <span class="c1"># new output file name has version string before dot</span>
+        <span class="p">(</span><span class="nv">$ofname</span> <span class="o">=</span> <span class="nv">$match_file</span><span class="p">)</span> <span class="o">=~</span> <span class="sr">s/\.(.*)/${version_string}.$1/</span><span class="p">;</span> 
+        <span class="k">print</span> <span class="bp">STDERR</span> <span class="p">"</span><span class="s2">found changed object names in </span><span class="si">${fn}</span><span class="s2">. Creating </span><span class="si">$ofname</span><span class="se">\n</span><span class="p">";</span>
+        <span class="nb">open</span> <span class="nv">OF</span><span class="p">,</span> <span class="p">'</span><span class="s1">&gt;</span><span class="p">',</span> <span class="nv">$ofname</span><span class="p">;</span>
+        <span class="k">print</span> <span class="nv">OF</span> <span class="nv">$data</span><span class="p">;</span>
+        <span class="nb">close</span> <span class="nv">OF</span><span class="p">;</span>
+        <span class="c1"># add it to the new install script</span>
+        <span class="k">print</span> <span class="nv">OFL</span> <span class="p">'</span><span class="s1">@@</span><span class="p">',</span> <span class="nv">$ofname</span><span class="p">,</span> <span class="p">"</span><span class="se">\n</span><span class="p">";</span>
+    <span class="p">}</span>
+<span class="p">}</span> <span class="c1"># find_files</span>
+</code></pre></div></div><p>We call the subroutines repeatedly to add to the object lists as dependencies are found. When we find no new ones we exit the loop and call the version that creates our new files. We also write out a new install script with only the objects that we change.<div class="language-perl highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># keep looking recursively for more objects we may need to version because</span>
+<span class="c1"># of dependencies until we don't find any new ones</span>
+<span class="k">do</span> <span class="p">{</span>
+    <span class="nv">build_on_re_list</span><span class="p">();</span>
+    <span class="nv">find_files</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span> <span class="c1"># could add some to on_list</span>
+<span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="nv">@on_re_list</span> <span class="o">&lt;</span> <span class="nb">keys</span> <span class="nv">%on_list</span><span class="p">)</span> 
+<span class="p">;</span>
+
+<span class="c1"># Now call it so that it creates the versioned files</span>
+<span class="nv">find_files</span><span class="p">();</span> 
+
+<span class="k">print</span> <span class="bp">STDERR</span> <span class="p">"</span><span class="s2">writing </span><span class="si">$install_script_out</span><span class="se">\n</span><span class="p">";</span>
+<span class="nb">close</span> <span class="nv">OFL</span><span class="p">;</span>
+</code></pre></div></div><h1 id="execute">Execute</h1><div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">[</span>C:/Users/Leeli/Documents/ExcelGen] <span class="o">(</span>master<span class="o">)</span>
+<span class="nv">$ </span>perl <span class="nt">-w</span> object_name_version.pl install.sql _v3 excelgen exceltablecell exceltypes xutl_xlsb
+</code></pre></div></div><p>Output:<pre><code class="language-log">calling build_on_re_list
+adding re for exceltypes
+adding re for exceltablecell
+adding re for excelgen
+adding re for xutl_xlsb
+calling find_files with look_only=1
+checking MSUtilities/CDFManager/xutl_cdf.pks
+checking MSUtilities/CDFManager/xutl_cdf.pkb
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pks
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pkb
+checking ExcelCommons/plsql/ExcelTableCell.tps
+checking ExcelCommons/plsql/ExcelTableCellList.tps
+checking ExcelCommons/plsql/ExcelTypes.pks
+checking ExcelCommons/plsql/ExcelTypes.pkb
+checking ExcelCommons/plsql/xutl_xlsb.pks
+checking ExcelCommons/plsql/xutl_xlsb.pkb
+checking plsql/ExcelGen.pks
+checking plsql/ExcelGen.pkb
+calling build_on_re_list
+adding re for exceltablecelllist
+adding re for excelgen
+adding re for xutl_xlsb
+adding re for exceltypes
+adding re for exceltablecell
+calling find_files with look_only=1
+checking MSUtilities/CDFManager/xutl_cdf.pks
+checking MSUtilities/CDFManager/xutl_cdf.pkb
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pks
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pkb
+checking ExcelCommons/plsql/ExcelTableCell.tps
+checking ExcelCommons/plsql/ExcelTableCellList.tps
+checking ExcelCommons/plsql/ExcelTypes.pks
+checking ExcelCommons/plsql/ExcelTypes.pkb
+checking ExcelCommons/plsql/xutl_xlsb.pks
+checking ExcelCommons/plsql/xutl_xlsb.pkb
+checking plsql/ExcelGen.pks
+checking plsql/ExcelGen.pkb
+calling find_files with look_only=0
+checking MSUtilities/CDFManager/xutl_cdf.pks
+checking MSUtilities/CDFManager/xutl_cdf.pkb
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pks
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pkb
+checking ExcelCommons/plsql/ExcelTableCell.tps
+found changed object names in ExcelCommons/plsql/ExcelTableCell.tps. Creating ExcelCommons/plsql/ExcelTableCell_v3.tps
+checking ExcelCommons/plsql/ExcelTableCellList.tps
+found changed object names in ExcelCommons/plsql/ExcelTableCellList.tps. Creating ExcelCommons/plsql/ExcelTableCellList_v3.tps
+checking ExcelCommons/plsql/ExcelTypes.pks
+found changed object names in ExcelCommons/plsql/ExcelTypes.pks. Creating ExcelCommons/plsql/ExcelTypes_v3.pks
+checking ExcelCommons/plsql/ExcelTypes.pkb
+found changed object names in ExcelCommons/plsql/ExcelTypes.pkb. Creating ExcelCommons/plsql/ExcelTypes_v3.pkb
+checking ExcelCommons/plsql/xutl_xlsb.pks
+found changed object names in ExcelCommons/plsql/xutl_xlsb.pks. Creating ExcelCommons/plsql/xutl_xlsb_v3.pks
+checking ExcelCommons/plsql/xutl_xlsb.pkb
+found changed object names in ExcelCommons/plsql/xutl_xlsb.pkb. Creating ExcelCommons/plsql/xutl_xlsb_v3.pkb
+checking plsql/ExcelGen.pks
+found changed object names in plsql/ExcelGen.pks. Creating plsql/ExcelGen_v3.pks
+checking plsql/ExcelGen.pkb
+found changed object names in plsql/ExcelGen.pkb. Creating plsql/ExcelGen_v3.pkb
+writing install_v3.sql
+</code></pre><p>The resulting install script “install_v3.sql” is<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">@@</span><span class="n">ExcelCommons</span><span class="o">/</span><span class="n">plsql</span><span class="o">/</span><span class="n">ExcelTableCell_v3</span><span class="p">.</span><span class="n">tps</span>
+<span class="o">@@</span><span class="n">ExcelCommons</span><span class="o">/</span><span class="n">plsql</span><span class="o">/</span><span class="n">ExcelTableCellList_v3</span><span class="p">.</span><span class="n">tps</span>
+<span class="o">@@</span><span class="n">ExcelCommons</span><span class="o">/</span><span class="n">plsql</span><span class="o">/</span><span class="n">ExcelTypes_v3</span><span class="p">.</span><span class="n">pks</span>
+<span class="o">@@</span><span class="n">ExcelCommons</span><span class="o">/</span><span class="n">plsql</span><span class="o">/</span><span class="n">ExcelTypes_v3</span><span class="p">.</span><span class="n">pkb</span>
+<span class="o">@@</span><span class="n">ExcelCommons</span><span class="o">/</span><span class="n">plsql</span><span class="o">/</span><span class="n">xutl_xlsb_v3</span><span class="p">.</span><span class="n">pks</span>
+<span class="o">@@</span><span class="n">ExcelCommons</span><span class="o">/</span><span class="n">plsql</span><span class="o">/</span><span class="n">xutl_xlsb_v3</span><span class="p">.</span><span class="n">pkb</span>
+<span class="o">@@</span><span class="n">plsql</span><span class="o">/</span><span class="n">ExcelGen_v3</span><span class="p">.</span><span class="n">pks</span>
+<span class="o">@@</span><span class="n">plsql</span><span class="o">/</span><span class="n">ExcelGen_v3</span><span class="p">.</span><span class="n">pkb</span>
+</code></pre></div></div><p>This install assumes other base objects were already installed and are neither changed nor impacted.<h1 id="conclusion">Conclusion</h1><p>This is overkill for the task. The regular expression for replacing object names is super useful, but much of the rest of this task could have been (and was) completed manually this time. I can see a day when it would be a much bigger effort though, and the exercise was useful to maintain my skills. Maybe you will see something useful to you.</div></div><div class="panel-body"><h4>Related Posts</h4><ul><li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/sql/2022/10/09/antijoins_with_or.html">Tuning Query with OR Conditions in a NOT EXISTS</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/plsql/2022/09/18/spreadsheets_with_plsql.html">Manipulating XLSX Spreadsheets in PL/SQL</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/perl/2022/04/30/perl_dbd_oracle_clob.html">Using Perl DBD::Oracle to write LOB content</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/perl">perl</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/plsql/sql/vim/2022/04/29/vim-plsql-syntax.html">Syntax Highlighting for PL/SQL in vim</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>, <a href="/category/vim">vim</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/perl/linux/2022/04/28/Perl-DBD-Oracle-RHL.html">Installing Perl DBD::Oracle on RHL</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/perl">perl</a>, <a href="/category/linux">linux</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/04/10/hierarchical-profiler-context-switch.html">Profiling PL/SQL to Examine Context Switch Penalty</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)</ul></div><div class="PageNavigation"> <a class="prev" href="/oracle/sql/2022/10/09/antijoins_with_or.html">&laquo; Tuning Query with OR Conditions in a NOT EXISTS</a></div><div class="disqus-comments"><div id="disqus_thread"></div><script type="text/javascript"> /* <![CDATA[ */ var disqus_shortname = "leelindleyscratchpad"; var disqus_identifier = "https://lee-lindley.github.io_Versioning Oracle Code from Open Source"; var disqus_title = "Versioning Oracle Code from Open Source"; /* * * DON'T EDIT BELOW THIS LINE * * */ (function() { var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true; dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js'; (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq); })(); /* ]]> */ </script></div><footer> &copy; Lee Lindley - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.<div class="btn-github" style="float:right;"> <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe> <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe></div></footer></div></div><script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script> <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script> <script src="/static/js/bootstrap.min.js"></script> <script src="/static/js/super-search.js"></script> <script src="/static/js/thickbox-compressed.js"></script> <script src="/static/js/projects.js"></script>

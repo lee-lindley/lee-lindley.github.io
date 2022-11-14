@@ -5,9 +5,344 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 10 Oct 2022 06:47:04 -0400</pubDate>
-    <lastBuildDate>Mon, 10 Oct 2022 06:47:04 -0400</lastBuildDate>
+    <pubDate>Sun, 13 Nov 2022 19:51:51 -0500</pubDate>
+    <lastBuildDate>Sun, 13 Nov 2022 19:51:51 -0500</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Versioning Oracle Code from Open Source</title>
+        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;My team have a moderately large installed base of Oracle packages that 
+use &lt;a href=&quot;https://github.com/mbleron/ExcelGen&quot;&gt;Marc Bleron’s ExcelGen&lt;/a&gt; package.
+Version 3 of the package was released recently and we have use cases that can benefit from the new features.
+Regression testing the installed base of code as is required under corporate
+SDLC policy is not an attractive proposition.&lt;/p&gt;
+
+&lt;p&gt;The strategy we chose is to name the newly changed Oracle objects differently than the existing ones so
+that we can have multiple versions installed in production. For example &lt;em&gt;ExcelGen&lt;/em&gt; package will be named &lt;em&gt;ExcelGen_v3&lt;/em&gt;.
+This isn’t ideal, but all future uses,
+including any time a job is changed and must be regression tested anyway, will use the new version. Eventually,
+the existing version will be retired.&lt;/p&gt;
+
+&lt;p&gt;This article describes a technique and a Perl script to facilitate versioning of the changed objects. Full disclosure -
+initially I did much of this manually. For this article I cleaned up the Perl script to address oddities I found
+during the exercise and to keep my Perl skills from fading away.&lt;/p&gt;
+
+&lt;h1 id=&quot;scenario&quot;&gt;Scenario&lt;/h1&gt;
+
+&lt;p&gt;&lt;em&gt;ExcelGen&lt;/em&gt; is open-source software hosted on &lt;em&gt;GitHub&lt;/em&gt;. Instructions for cloning the repository point out you
+should use &lt;em&gt;–recurse-submodules&lt;/em&gt; or else you must copy the two submodules down separately. The use of submodules
+is good technique, but complicates our task.&lt;/p&gt;
+
+&lt;p&gt;The repository follows a model with a separate file (or files) for every Oracle object.
+The files are also named the same as the Oracle objects except for the file suffix. 
+This is best practice for source code control of Oracle artifacts in my opinion, and fortunate for the pattern I followed here.&lt;/p&gt;
+
+&lt;p&gt;We need to identify all files that changed since our production deployment, the objects defined
+in those files, and any dependent objects that would be impacted by the compile.&lt;/p&gt;
+
+&lt;h1 id=&quot;identifying-changed-files-in-git&quot;&gt;Identifying Changed Files in Git&lt;/h1&gt;
+
+&lt;p&gt;We could simply run diff commands to identify files that changed, but we have a nice tool in &lt;em&gt;git&lt;/em&gt; that
+keeps track of all this. In order to use it
+we must know the commit point of the files we already deployed. In my case I know that tag “v2.5.1” represents
+the files I deployed from the main &lt;em&gt;ExcelGen&lt;/em&gt; repository. The &lt;em&gt;MSUtilities&lt;/em&gt; repository has no changes in the
+last two years, and &lt;em&gt;ExcelCommons&lt;/em&gt; change I last deployed was commit &lt;em&gt;383ff141bffd3bd31ed3054106346a948575469a&lt;/em&gt;.
+In git a tag, a branch and a commit are all simply pointers that are interchangeable for identifying 
+the state of code at a particular point in the history.&lt;/p&gt;
+
+&lt;p&gt;To identify changed files from the top level directory we run the command:&lt;/p&gt;
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#git diff --name-only prior_version_tag_or_commit&lt;/span&gt;
+git diff &lt;span class=&quot;nt&quot;&gt;--name-only&lt;/span&gt; v2.5.1
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Discounting the test_cases, samples and resources files, it turns out the only ones impacted in the main repository are&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;plsql/ExcelGen.pkb&lt;/li&gt;
+  &lt;li&gt;plsql/ExcelGen.pks&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Changing directory to &lt;em&gt;ExcelCommons&lt;/em&gt; we run the command for this submodule:&lt;/p&gt;
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;git diff &lt;span class=&quot;nt&quot;&gt;--name-only&lt;/span&gt; 383ff141bffd3bd31ed3054106346a948575469a
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This yields:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;plsql/ExcelTableCell.tps&lt;/li&gt;
+  &lt;li&gt;plsql/ExcelTypes.pkb&lt;/li&gt;
+  &lt;li&gt;plsql/ExcelTypes.pks&lt;/li&gt;
+  &lt;li&gt;plsql/xutl_xlsb.pkb&lt;/li&gt;
+  &lt;li&gt;plsql/xutl_xlsb.pks&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;From this we have a list of changed Oracle objects:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;ExcelGen&lt;/li&gt;
+  &lt;li&gt;ExcelTableCell&lt;/li&gt;
+  &lt;li&gt;ExcelTypes&lt;/li&gt;
+  &lt;li&gt;xutl_xlsb&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;We could simply look at each one with Toad or SqlDeveloper for dependencies, but I felt like playing, so
+we’ll let Perl find the dependencies for us while we prepare to change all occurrences of these
+four identifiers by adding “_v3” to the end. Note it is not as simple as a global search and replace
+with your text editor because these could be sub-parts of larger names that don’t change. For example
+the string &lt;em&gt;ExcelTableCell&lt;/em&gt; appears in &lt;em&gt;ExcelTableCellList&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;perl-script-overkill&quot;&gt;Perl Script Overkill&lt;/h1&gt;
+
+&lt;p&gt;At a whopping 125 lines this monster outgrew my immediate need, but it does some things you may find
+interesting. The start of the script gathers the arguments. The first argument is the name of the install
+script from which it will read the names of the files we would install if this were a fresh install.
+After that we provide a version string to add to the object names. In this case I provided “_v3”.
+Finally follow the names of the objects that we know need to be versioned as a seed. The script may add more.&lt;/p&gt;
+
+&lt;div class=&quot;language-perl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/env perl&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;strict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;warnings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$usage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;USAGE: $0 install_script version_string identifier1 [identifier2..]&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;where 'identifier' is oracle object that you know has changed in the release.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;#&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# In each git module and submodule, &lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# &quot;git diff --name-only prior_version_tag_or_commit&quot;&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# That gives us list of files from which we should be able to name objects &lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# we need to version and install that are different than&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# what we already deployed. &lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# This script assumes the files are named after the objects they build.&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# object_name_version.pl will also check recursively for objects in the&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# install script that use changed objects as those need to be versioned too.&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;#&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;die&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;$0: must provide at least 3 args.&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$usage&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;unless&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;@ARGV&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$install_script&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;shift&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$version_string&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;shift&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# now only idendifiters are left in @ARGV&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;@on_re_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;%on_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$on&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;@ARGV&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# we want unique list of lower case object names&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;@on_list&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;lc&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$on&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Next we create subroutines that we can call multiple times as we identify dependencies. The first creates
+regular expressions for each versioned object that we can use both for searching and also
+for modifying the code. The parsing of an identifier is something I’ve done before for
+the &lt;em&gt;vim&lt;/em&gt; plsql syntax file and also for the &lt;em&gt;Ruby Rouge&lt;/em&gt; plsql lexer.&lt;/p&gt;
+
+&lt;div class=&quot;language-perl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;sub &lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;build_on_re_list&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# we know the objects that changed. &lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# Find those and any files that contain them.&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# Let us construct an array of regular expressions to match on. Then&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# we can use those same regexp's to substiture the new names.&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;STDERR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;calling build_on_re_list&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+  &lt;span class=&quot;nv&quot;&gt;@on_re_list&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$identifier&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;keys&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;%on_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;STDERR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;adding re for &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$identifier&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;push&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;@on_re_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;sx&quot;&gt;qr/
+    (                                       # Capture before identifier string if any
+            ^                               # could be matching at start of line
+        |
+            [^a-z0-9_#\$]                   # any character that is not an identifier
+    )
+    (                                       # capture our object word
+        $identifier
+    )
+    (                                       # capture character after our object word
+            [^a-z0-9_#\$]                   # any character that is not an identifier
+        |
+            $                               # could be end of line
+    )
+/&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;imx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;# ignore case, ignore whitespace in RE, match ^$ at newline&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;c1&quot;&gt;# the replacement string will be &quot;${1}${2}${version_string}$3&quot;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This subroutine can be called two ways. The first to identify impacted files
+and the second option creates new files named with the version string that
+we can deploy.&lt;/p&gt;
+
+&lt;div class=&quot;language-perl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# sub find_files uses these so set before defining&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$install_script_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$install_script_out&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$install_script&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=~&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;s/\.sql/${version_string}.sql/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;OFL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$install_script_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;)&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;die&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;failed open &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$install_script_out&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; for write: $!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;sub &lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;find_files&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;# look through files for references to the objects that changed&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$look_only&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;vg&quot;&gt;$_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;STDERR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;calling find_files with look_only=&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$look_only&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;@file_names&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;FL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$install_script&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;die&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;failed to open install script $!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;FL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;next&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;unless&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/^@/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;chomp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$fn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;vg&quot;&gt;$_&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=~&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/@@?(.+)/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;STDERR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;checking &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$fn&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$fn&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;die&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;local&lt;/span&gt; &lt;span class=&quot;vg&quot;&gt;$/&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;undef&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# slurp mode&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;$data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;close&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$match_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$re&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;@on_re_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=~&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$re&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nv&quot;&gt;$match_file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$fn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;last&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;next&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;unless&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$match_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# we did not find any interesting identifiers&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;# reduce file name to oracle identifier. no slash or dot, followed&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;# by last dot and non-dots to end of string.&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$match_file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=~&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;m!([^./]+)\.[^.]+$!i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+        &lt;span class=&quot;nv&quot;&gt;$on_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;lc&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$id&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;next&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$look_only&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;     
+        &lt;span class=&quot;c1&quot;&gt;# if we are done recursively looking for all objects we need to change&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;# continue on to making a new version of the files needed.&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;# need to change all occurences of versioned objects inside this file&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$re&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;@on_re_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;$data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=~&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;s/$re/${1}${2}${version_string}$3/g&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;# write the versioned file out with new name&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$ofname&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;# new output file name has version string before dot&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$ofname&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$match_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=~&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;s/\.(.*)/${version_string}.$1/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; 
+        &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;STDERR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;found changed object names in &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;${fn}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;. Creating &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$ofname&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;OF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$ofname&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;OF&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;close&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;OF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;# add it to the new install script&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;OFL&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;@@&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;',&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$ofname&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# find_files&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;We call the subroutines repeatedly to add to the object lists as dependencies are found. When
+we find no new ones we exit the loop and call the version that creates our new files.
+We also write out a new install script with only the objects that we change.&lt;/p&gt;
+
+&lt;div class=&quot;language-perl highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# keep looking recursively for more objects we may need to version because&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# of dependencies until we don't find any new ones&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;build_on_re_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;find_files&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# could add some to on_list&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;@on_re_list&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;keys&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;%on_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; 
+&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Now call it so that it creates the versioned files&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;find_files&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt; 
+
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;STDERR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;writing &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;$install_script_out&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;&quot;;&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;close&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;OFL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;h1 id=&quot;execute&quot;&gt;Execute&lt;/h1&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;C:/Users/Leeli/Documents/ExcelGen] &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;master&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;perl &lt;span class=&quot;nt&quot;&gt;-w&lt;/span&gt; object_name_version.pl install.sql _v3 excelgen exceltablecell exceltypes xutl_xlsb
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Output:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-log&quot;&gt;calling build_on_re_list
+adding re for exceltypes
+adding re for exceltablecell
+adding re for excelgen
+adding re for xutl_xlsb
+calling find_files with look_only=1
+checking MSUtilities/CDFManager/xutl_cdf.pks
+checking MSUtilities/CDFManager/xutl_cdf.pkb
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pks
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pkb
+checking ExcelCommons/plsql/ExcelTableCell.tps
+checking ExcelCommons/plsql/ExcelTableCellList.tps
+checking ExcelCommons/plsql/ExcelTypes.pks
+checking ExcelCommons/plsql/ExcelTypes.pkb
+checking ExcelCommons/plsql/xutl_xlsb.pks
+checking ExcelCommons/plsql/xutl_xlsb.pkb
+checking plsql/ExcelGen.pks
+checking plsql/ExcelGen.pkb
+calling build_on_re_list
+adding re for exceltablecelllist
+adding re for excelgen
+adding re for xutl_xlsb
+adding re for exceltypes
+adding re for exceltablecell
+calling find_files with look_only=1
+checking MSUtilities/CDFManager/xutl_cdf.pks
+checking MSUtilities/CDFManager/xutl_cdf.pkb
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pks
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pkb
+checking ExcelCommons/plsql/ExcelTableCell.tps
+checking ExcelCommons/plsql/ExcelTableCellList.tps
+checking ExcelCommons/plsql/ExcelTypes.pks
+checking ExcelCommons/plsql/ExcelTypes.pkb
+checking ExcelCommons/plsql/xutl_xlsb.pks
+checking ExcelCommons/plsql/xutl_xlsb.pkb
+checking plsql/ExcelGen.pks
+checking plsql/ExcelGen.pkb
+calling find_files with look_only=0
+checking MSUtilities/CDFManager/xutl_cdf.pks
+checking MSUtilities/CDFManager/xutl_cdf.pkb
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pks
+checking MSUtilities/OfficeCrypto/xutl_offcrypto.pkb
+checking ExcelCommons/plsql/ExcelTableCell.tps
+found changed object names in ExcelCommons/plsql/ExcelTableCell.tps. Creating ExcelCommons/plsql/ExcelTableCell_v3.tps
+checking ExcelCommons/plsql/ExcelTableCellList.tps
+found changed object names in ExcelCommons/plsql/ExcelTableCellList.tps. Creating ExcelCommons/plsql/ExcelTableCellList_v3.tps
+checking ExcelCommons/plsql/ExcelTypes.pks
+found changed object names in ExcelCommons/plsql/ExcelTypes.pks. Creating ExcelCommons/plsql/ExcelTypes_v3.pks
+checking ExcelCommons/plsql/ExcelTypes.pkb
+found changed object names in ExcelCommons/plsql/ExcelTypes.pkb. Creating ExcelCommons/plsql/ExcelTypes_v3.pkb
+checking ExcelCommons/plsql/xutl_xlsb.pks
+found changed object names in ExcelCommons/plsql/xutl_xlsb.pks. Creating ExcelCommons/plsql/xutl_xlsb_v3.pks
+checking ExcelCommons/plsql/xutl_xlsb.pkb
+found changed object names in ExcelCommons/plsql/xutl_xlsb.pkb. Creating ExcelCommons/plsql/xutl_xlsb_v3.pkb
+checking plsql/ExcelGen.pks
+found changed object names in plsql/ExcelGen.pks. Creating plsql/ExcelGen_v3.pks
+checking plsql/ExcelGen.pkb
+found changed object names in plsql/ExcelGen.pkb. Creating plsql/ExcelGen_v3.pkb
+writing install_v3.sql
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The resulting install script “install_v3.sql” is&lt;/p&gt;
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;@@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelCommons&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plsql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelTableCell_v3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tps&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;@@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelCommons&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plsql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelTableCellList_v3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tps&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;@@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelCommons&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plsql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelTypes_v3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pks&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;@@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelCommons&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plsql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelTypes_v3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pkb&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;@@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelCommons&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plsql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xutl_xlsb_v3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pks&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;@@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelCommons&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plsql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xutl_xlsb_v3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pkb&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;@@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plsql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelGen_v3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pks&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;@@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plsql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExcelGen_v3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pkb&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;This install assumes other base objects were already installed and are neither changed nor impacted.&lt;/p&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;This is overkill for the task. The regular expression for replacing object names is super useful, but
+much of the rest of this task could have been (and was) completed manually this time. I can see a day when
+it would be a much bigger effort though, and the exercise was useful to maintain my skills. Maybe you will
+see something useful to you.&lt;/p&gt;
+
+</description>
+        <pubDate>Sun, 13 Nov 2022 10:00:00 -0500</pubDate>
+        <link>https://lee-lindley.github.io/oracle/perl/2022/11/13/version_db_objects.html</link>
+        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/perl/2022/11/13/version_db_objects.html</guid>
+        
+        <category>oracle</category>
+        
+        <category>perl</category>
+        
+        
+        <category>oracle</category>
+        
+        <category>perl</category>
+        
+      </item>
     
       <item>
         <title>Tuning Query with OR Conditions in a NOT EXISTS</title>
