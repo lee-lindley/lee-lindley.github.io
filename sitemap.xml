@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 25 Nov 2022 07:56:20 -0500</pubDate>
-    <lastBuildDate>Fri, 25 Nov 2022 07:56:20 -0500</lastBuildDate>
+    <pubDate>Fri, 25 Nov 2022 08:16:29 -0500</pubDate>
+    <lastBuildDate>Fri, 25 Nov 2022 08:16:29 -0500</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -39,7 +39,7 @@ a similar structure to hold multiple rows of column header information for a spr
   &lt;/tbody&gt;
 &lt;/table&gt;
 
-&lt;p&gt;Rows 3, 4 and 5 are out column header rows. The columns are from the &lt;em&gt;hr.employees&lt;/em&gt; and &lt;em&gt;hr.departments&lt;/em&gt; tables.
+&lt;p&gt;Rows 3, 4 and 5 are our column header rows. The columns are from the &lt;em&gt;hr.employees&lt;/em&gt; and &lt;em&gt;hr.departments&lt;/em&gt; tables.
 The tool we use to generate the spreadsheet requires that we provide a SYS_REFCURSOR or a SQL query string
 as an input parameter. We’ll work with a SYS_REFCURSOR here to include bind variables.&lt;/p&gt;
 
@@ -354,7 +354,7 @@ SQL&amp;gt;
 &lt;p&gt;This seemed like a problem that should not be so hard in PL/SQL, but it wasn’t as easy as one would like.
 I like where this wound up with some utility methods to make it easier.&lt;/p&gt;
 </description>
-        <pubDate>Thu, 24 Nov 2022 21:00:00 -0500</pubDate>
+        <pubDate>Thu, 24 Nov 2022 22:00:00 -0500</pubDate>
         <link>https://lee-lindley.github.io/oracle/sql/plsql/2022/11/24/Cursor_from_Collections.html</link>
         <guid isPermaLink="true">https://lee-lindley.github.io/oracle/sql/plsql/2022/11/24/Cursor_from_Collections.html</guid>
         
