@@ -5,9 +5,373 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 13 Nov 2022 19:51:51 -0500</pubDate>
-    <lastBuildDate>Sun, 13 Nov 2022 19:51:51 -0500</lastBuildDate>
+    <pubDate>Fri, 25 Nov 2022 07:56:20 -0500</pubDate>
+    <lastBuildDate>Fri, 25 Nov 2022 07:56:20 -0500</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Create a PL/SQL Cursor from a Nested Table of Nested Tables</title>
+        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
+
+&lt;p&gt;How can we store a generic two dimensional table in PL/SQL, bind it to SQL as a data source and generate
+a cursor from it? We have a variable number of columns, so a Record Type is not practical. We’ll explore
+some options.&lt;/p&gt;
+
+&lt;h1 id=&quot;a-well-defined-problem&quot;&gt;A Well Defined Problem&lt;/h1&gt;
+
+&lt;p&gt;We have a table with known number of columns and column names. We want to create a structure
+that represents spreadsheet column headers for a report that reads from this table. I better
+repeat that. We are not discussing a structure for holding the data from the table. We want
+a similar structure to hold multiple rows of column header information for a spreadsheet.&lt;/p&gt;
+
+&lt;p&gt;Here is an image of the spreadsheet we will produce.&lt;/p&gt;
+
+&lt;table class=&quot;img-table-centered&quot;&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th style=&quot;text-align: center&quot;&gt;&lt;em&gt;Figure 1 - Multi-Row Spreadsheet Headers Try 1&lt;/em&gt;&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td style=&quot;text-align: center&quot;&gt;&lt;img src=&quot;/images/multirowHeaders1.gif&quot; alt=&quot;&quot; /&gt;&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;Rows 3, 4 and 5 are out column header rows. The columns are from the &lt;em&gt;hr.employees&lt;/em&gt; and &lt;em&gt;hr.departments&lt;/em&gt; tables.
+The tool we use to generate the spreadsheet requires that we provide a SYS_REFCURSOR or a SQL query string
+as an input parameter. We’ll work with a SYS_REFCURSOR here to include bind variables.&lt;/p&gt;
+
+&lt;p&gt;We could generate a SQL query string as:&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;OPEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sys_refcursor&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;SELECT '+', NULL, '+', NULL FROM dual
+UNION ALL
+SELECT 'First', 'Last', 'Department', 'Yearly' FROM dual
+UNION ALL
+SELECT 'Name', 'Name', 'Name', 'Salary' FROM dual&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;I’m less than impressed. We could create a pair of public types in our package (declared in the package
+specification so that the SQL engine can see it):&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_header_rec&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;RECORD&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;first_name&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;last_name&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;department_name&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;yearly_salary&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_arr_header_rec&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;IS&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_header_rec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Then we can assign the data to it like so in our procedure declaration:&lt;/p&gt;
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;t_arr_header_rec&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t_arr_header_rec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;t_header_rec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t_header_rec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;First&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Last&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Department&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Yearly&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t_header_rec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Salary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;And open a cursor that reads from it:&lt;/p&gt;
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;OPEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sysrefcursor&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;SELECT
+        first_name, last_name, department_name, yearly_salary
+FROM TABLE(:header_table)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt; 
+        &lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Note that there is no &lt;em&gt;ORDER BY&lt;/em&gt; here. We are depending on the implementation to provide the rows
+in the same order as the collection. It seems a pretty safe bet, but I have searched long and
+hard for documentation that makes a promise on this. Oracle pulled the rug out from under us once
+before when we were dependent on the implementation of &lt;em&gt;GROUP BY&lt;/em&gt; via a sort. Tom Kyte wrote
+adamantly that the only way you can guarantee the order of records is to use an &lt;em&gt;ORDER BY&lt;/em&gt; clause.
+Yet I cannot think of a reason why the current implementation providing the records in the same
+order as the collection would change.&lt;/p&gt;
+
+&lt;h1 id=&quot;a-generic-solution&quot;&gt;A Generic Solution&lt;/h1&gt;
+
+&lt;p&gt;I want to refactor my larger problem of providing a data structure containing the header row
+content for any spreadsheet, not just this one report. We will not have a Record Type with
+a fixed number of columns. For each row we need a nested table of strings. We’ll define
+a schema level collection Object:&lt;/p&gt;
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;CREATE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OR&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;REPLACE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OF&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;You probably already have one of those available to you in your own schema or perhaps a
+common schema. Oracle ships with several of them.&lt;/p&gt;
+
+&lt;p&gt;We also need a nested table of those puppies to build our two dimensional structure in our
+PL/SQL program:&lt;/p&gt;
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;CREATE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OR&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;REPLACE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TYPE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arr_arr_varchar2_udt&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;AS&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;TABLE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;OF&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Now our procedure declaration becomes:&lt;/p&gt;
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;arr_arr_varchar2_udt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arr_arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;First&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Last&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Department&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Yearly&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Salary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;There is a glitch in the matrix though. How do we extract the individual elements of each row in the SQL
+statement for the cursor? Here is one way. Note the careful use of table aliases. Object access in SQL has a quirk
+where an alias for the table or Common Table Expression (CTE) name is required:&lt;/p&gt;
+
+&lt;p&gt;One triksie part here is the join in the CTE named &lt;em&gt;b&lt;/em&gt;. We are joining to a column in our
+rowset from CTE named &lt;em&gt;a&lt;/em&gt;. Think that through. For each row from &lt;em&gt;a&lt;/em&gt;, we treat the column
+in that row like it is a table. When we join to it we are essentially unpivoting that column
+into multiple rows, one for each value in the array named &lt;em&gt;col&lt;/em&gt;. CTE &lt;em&gt;c&lt;/em&gt; has a separate
+record for every column on every line of our headers. We rank them in the order they
+came out of the collection so we can pivot them in the final select.&lt;/p&gt;
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;c1&quot;&gt;-- v_sql declared as a CLOB&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;WITH a AS (
+        SELECT rownum AS rn, t.COLUMN_VALUE AS rec -- rec is a nested table arr_varchar2_udt
+        FROM TABLE(:header_table) t
+    )
+    , b AS (
+        SELECT rn, rownum AS crn, c.COLUMN_VALUE AS col
+        FROM a t
+        INNER JOIN TABLE(t.rec) c
+            ON 1=1
+    )
+    , c AS ( -- could I have done math with rn and crn instead? not easily.
+        SELECT rn, ROW_NUMBER() OVER (PARTITION BY rn ORDER BY crn) AS cn, col
+        FROM b
+    ) SELECT &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;-- create a pivot aggregate for each column&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;DECLARE&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;l_comma&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;l_comma&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;
+                MAX(CASE WHEN cn = &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'||&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt; THEN col END) AS c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'||&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;l_comma&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;
+        FROM c
+        GROUP BY rn
+        ORDER BY rn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;OPEN&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sysrefcursor&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Once again we are depending on Oracle to provide the rows in the same order as the collection.
+I’m hoping I’m retired before that changes. Yeah, yeah, you think I’m worried about a boogeyman
+that will never pop out from under the bed. Told ya, I’ve seen it before.&lt;/p&gt;
+
+&lt;p&gt;With some formatting to make it easier to see the output, here is what I ran
+in &lt;em&gt;sqlplus&lt;/em&gt; for a test:&lt;/p&gt;
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pagesize&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;trimspool&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;on&lt;/span&gt;
+&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;linesize&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c1&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c2&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c3&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c4&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curs&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;REFCURSOR&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;DECLARE&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;arr_arr_varchar2_udt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arr_arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;First&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Last&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Department&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Yearly&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Salary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLOB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;--v_sysrefcursor SYS_REFCURSOR;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;WITH a AS (
+        SELECT rownum AS rn, t.COLUMN_VALUE AS rec -- rec is a nested table arr_varchar2_udt
+        FROM TABLE(:header_table) t
+    )
+    , b AS (
+        SELECT rn, rownum AS crn, c.COLUMN_VALUE AS col
+        FROM a t
+        INNER JOIN TABLE(t.rec) c
+            ON 1=1
+    )
+    , c AS ( -- could I have done math with rn and crn instead? not easily.
+        SELECT rn, ROW_NUMBER() OVER (PARTITION BY rn ORDER BY crn) AS cn, col
+        FROM b
+    ) SELECT &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;-- create a pivot aggregate for each column&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;DECLARE&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;l_comma&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;VARCHAR2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;l_comma&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;
+                MAX(CASE WHEN cn = &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'||&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt; THEN col END) AS c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'||&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;l_comma&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;
+        FROM c
+        GROUP BY rn
+        ORDER BY rn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;OPEN&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;curs&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curs&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;And the output:&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;SQL&amp;gt; @x.sql
+PL/SQL procedure successfully completed.
+
++                                                 +
+First                    Last                     Department               Yearly
+Name                     Name                     Name                     Salary
+
+SQL&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;It works. It’s ugly. Can we make it better?&lt;/p&gt;
+
+&lt;h1 id=&quot;refactor-using-a-with-clause-plsql-function&quot;&gt;Refactor Using a WITH Clause PL/SQL Function&lt;/h1&gt;
+
+&lt;p&gt;In PL/SQL we can get the value of a collection element
+with the syntax &lt;em&gt;v_arr(i)&lt;/em&gt; where &lt;em&gt;i&lt;/em&gt; is the index value. There is no equivalent syntax
+in SQL. That is why we had to do the self-join in the example above.&lt;/p&gt;
+
+&lt;p&gt;Rather than self-joining to our collection of columns to break them into separate rows, 
+then pivoting them back into columns afterwards, let’s give ourselves a Function
+that we can call in SQL to do it. We could define the function in a package or standalone,
+but as of Oracle 12.1 we can do it in-line with our SQL.&lt;/p&gt;
+
+&lt;p&gt;I like this much better than the convolutions above:&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pagesize&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;trimspool&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;on&lt;/span&gt;
+&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;linesize&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c1&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c2&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c3&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c4&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curs&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;REFCURSOR&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;DECLARE&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;arr_arr_varchar2_udt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arr_arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;First&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Last&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Department&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Yearly&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arr_varchar2_udt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;Salary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLOB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;--v_sysrefcursor SYS_REFCURSOR;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;WITH 
+FUNCTION wget(
+    p_arr   ARR_VARCHAR2_UDT
+    ,p_i    NUMBER
+) RETURN VARCHAR2
+AS
+BEGIN
+    RETURN p_arr(p_i);
+END;
+a AS (
+    SELECT rownum AS rn, t.COLUMN_VALUE AS arr 
+    FROM TABLE(:header_table) t
+)
+SELECT wget(a.arr,1) AS c1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;IN&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;2.&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;COUNT&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, wget(a.arr,&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'||&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;) AS c&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'||&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CHAR&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;END&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;LOOP&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;||q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;
+FROM a
+ORDER BY rn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;OPEN&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;curs&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;FOR&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_sql&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curs&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;And the output:&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;SQL&amp;gt; @y.sql
+
+PL/SQL procedure successfully completed.
+
++                                                 +
+First                    Last                     Department               Yearly
+Name                     Name                     Name                     Salary
+
+SQL&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;That looks pretty good. We could use it as-is for any project and be pretty pleased.&lt;/p&gt;
+
+&lt;h1 id=&quot;refactoring-the-refactoring&quot;&gt;Refactoring the Refactoring&lt;/h1&gt;
+
+&lt;p&gt;I like this concept of opening a cursor from a two dimensional collection object enough that I added a
+function named &lt;em&gt;get_cursor_from_colletions&lt;/em&gt; to my PL/SQL utility package named &lt;em&gt;app_csv_pkg&lt;/em&gt;. You can
+find this at on github at &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities&quot;&gt;plsql_utilities&lt;/a&gt;. There is
+also a version of &lt;em&gt;get_cursor_from_collections&lt;/em&gt; in the package &lt;em&gt;perlish_util_pkg&lt;/em&gt; if you are bent that way.&lt;/p&gt;
+
+&lt;p&gt;Also in &lt;em&gt;app_csv_pkg&lt;/em&gt; is a function that will parse a CLOB containing CSV data (like our column headers)
+and return an &lt;em&gt;arr_arr_varchar2_udt&lt;/em&gt; object. How handy is that? Let’s see.&lt;/p&gt;
+
+&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pagesize&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;trimspool&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;on&lt;/span&gt;
+&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;linesize&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c1&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c2&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c3&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;column&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c4&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;format&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a24&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curs&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;REFCURSOR&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;DECLARE&lt;/span&gt;
+&lt;span class=&quot;cm&quot;&gt;/*
+    v_arr_headers   arr_arr_varchar2_udt := arr_arr_varchar2_udt(
+        arr_varchar2_udt('+',NULL,'+',NULL)
+        ,arr_varchar2_udt('First','Last','Department','Yearly')
+        ,arr_varchar2_udt('Name','Name','Name','Salary')
+    );
+*/&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;arr_arr_varchar2_udt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app_csv_pkg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;split_clob_to_fields&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;+,,+,
+First,Last,Department,Yearly
+Name,Name,Name,Salary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;--v_src   SYS_REFCURSOR;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;--v_src := app_csv_pkg.get_cursor_from_collections(v_arr_headers);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;curs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app_csv_pkg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_cursor_from_collections&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curs&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;And the output:&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;PL/SQL procedure successfully completed.
++                                                 +
+First                    Last                     Department               Yearly
+Name                     Name                     Name                     Salary
+
+SQL&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now we’re cooking with gas!&lt;/p&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;This seemed like a problem that should not be so hard in PL/SQL, but it wasn’t as easy as one would like.
+I like where this wound up with some utility methods to make it easier.&lt;/p&gt;
+</description>
+        <pubDate>Thu, 24 Nov 2022 21:00:00 -0500</pubDate>
+        <link>https://lee-lindley.github.io/oracle/sql/plsql/2022/11/24/Cursor_from_Collections.html</link>
+        <guid isPermaLink="true">https://lee-lindley.github.io/oracle/sql/plsql/2022/11/24/Cursor_from_Collections.html</guid>
+        
+        <category>oracle</category>
+        
+        <category>sql</category>
+        
+        <category>plsql</category>
+        
+        
+        <category>oracle</category>
+        
+        <category>sql</category>
+        
+        <category>plsql</category>
+        
+      </item>
     
       <item>
         <title>Versioning Oracle Code from Open Source</title>
@@ -2448,180 +2812,6 @@ executes a DBMS_SQL INSERT cursor bound to those arrays. Pretty slick, if a litt
         <category>sql</category>
         
         <category>plsql</category>
-        
-      </item>
-    
-      <item>
-        <title>Devops Data Deployment for Oracle</title>
-        <description>&lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
-
-&lt;p&gt;Most large corporations have adopted some form of &lt;strong&gt;Continuous Improvement&lt;/strong&gt; (CI)
-strategy with a &lt;strong&gt;Devops&lt;/strong&gt; build and deploy component. 
-The people who manage and direct these operations tend to
-be Web guys and the tools tend to focus on deploying Web applications (this includes
-middleware component on Java and .NET servers). If I am
-guilty of stereotyping incorrectly, please tell me about organizations with 
-a broader focus. I could be wrong, but that is what I have observed so far.&lt;/p&gt;
-
-&lt;p&gt;Other application types are supported, just not as first class citizens.
-Specifically, database application deployment is a red-headed step-child
-of Devops. I’m not blaming the Devops guys either. We database practioners
-are likely guilty of obstruction. Any tool other than what we know works
-will be looked upon with suspicion.&lt;/p&gt;
-
-&lt;h1 id=&quot;how-can-we-deploy&quot;&gt;How Can We Deploy?&lt;/h1&gt;
-
-&lt;p&gt;We need to deploy database application code (packages, table definitions, etc..)
-and we need to deploy data (configuration table entries for example).&lt;/p&gt;
-
-&lt;p&gt;We have a suite of client tools we can use as Oracle clients for deploying
-code and data manually, all of which require providing or storing a password:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;SQL*PLUS&lt;/li&gt;
-  &lt;li&gt;imp&lt;/li&gt;
-  &lt;li&gt;sqlldr&lt;/li&gt;
-  &lt;li&gt;external tables (assuming you can deliver files to a database directory)&lt;/li&gt;
-  &lt;li&gt;sqlCL&lt;/li&gt;
-  &lt;li&gt;sqlDeveloper&lt;/li&gt;
-  &lt;li&gt;Toad&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;We can rule out the gui tools &lt;em&gt;SqlDeveloper&lt;/em&gt; and &lt;em&gt;Toad&lt;/em&gt;. These are not suitable for automated
-deployment.&lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;SQL*PLUS&lt;/em&gt; is perfectly adequate for deploying our code to the database. Oracle uses it to 
-deploy database code and patches. We have
-all been using &lt;em&gt;SQL*PLUS&lt;/em&gt; for as long as we have used Oracle. It is clunky, limiting and antiquated,
-but it works and we know how to make it do the needful.&lt;/p&gt;
-
-&lt;p&gt;Strangely, &lt;em&gt;sqlCL&lt;/em&gt; does not seem well supported. I know some reasons for that including
-security concerns with having Java client software on servers, but the
-primary reason is likely inertia. This is a shame because &lt;em&gt;sqlCl&lt;/em&gt; supports CSV file 
-loading, which would address one of our two deployment needs.&lt;/p&gt;
-
-&lt;p&gt;I have not seen a Devops deployment configuration that uses anything other than &lt;em&gt;SQL*PLUS&lt;/em&gt;
-to deploy code. If there are some, my guess is the database application guys are less
-than thrilled. I could be wrong.&lt;/p&gt;
-
-&lt;h1 id=&quot;deploying-data&quot;&gt;Deploying Data&lt;/h1&gt;
-
-&lt;p&gt;For batch operations we have mechanisms for transfering files between production
-systems and/or with outside vendors. We have custom processes using
-&lt;em&gt;sqlldr&lt;/em&gt;, External tables and perhaps an ETL tool to import the data from those files. 
-Yet the mechanisms
-we have for slinging files around in a production environment are probably not supported
-through Devops.&lt;/p&gt;
-
-&lt;p&gt;We have files in our build that are on the deployment server and we have a &lt;em&gt;SQL*PLUS&lt;/em&gt; client.&lt;/p&gt;
-
-&lt;p&gt;Traditionally when faced with this we resort to what I call “stupid data load.” We
-create a series of Insert or Merge statements with hard coded data and run those
-in &lt;em&gt;SQL*PLUS&lt;/em&gt;. Maybe we get a little more ambitious and create a single INSERT
-or MERGE statement with a series of SELECT FROM DUAL UNION ALL … statements
-providing the input. It is still “stupid data load.” Works fine for a small number of
-records. Not so fine when you need to create several thousand records.&lt;/p&gt;
-
-&lt;p&gt;If Devops configured a capability to use &lt;em&gt;sqlldr&lt;/em&gt;, we could do what we must. The use case
-for it is limited though and the firm may not choose to invest the resources necessary
-to configure and manage that capability.&lt;/p&gt;
-
-&lt;h1 id=&quot;an-alternative-for-loading-data-with-sqlplus&quot;&gt;An Alternative for Loading Data with SQL*PLUS&lt;/h1&gt;
-
-&lt;p&gt;Using tools provided in &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities&quot;&gt;plsql_utilities&lt;/a&gt; we can
-build deployment scripts that run in &lt;em&gt;SQL*PLUS&lt;/em&gt; handling relatively large amounts of
-data as Comma Separated Value (CSV) records efficiently. 
-Not as efficiently as using &lt;em&gt;sqlldr&lt;/em&gt;, but good enough.&lt;/p&gt;
-
-&lt;p&gt;From the documentation at &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities/tree/main/app_csv_pkg&quot;&gt;plsql_utilities/app_csv_pkg&lt;/a&gt;…&lt;/p&gt;
-
-&lt;p&gt;Read the data from a table (with an optional WHERE clause) and convert it
-into a CSV CLOB with a header row. Break the CLOB into a set of quoted
-string literals. Generate a script that&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Creates a Private Temporary Table from the CLOB (input as contactenated string literals).&lt;/li&gt;
-  &lt;li&gt;Inserts or Merges records from the PTT into the target Table&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;We call the deployment generator:&lt;/p&gt;
-
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;APP_CSV_PKG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;gen_deploy_merge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;p_table_name&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;MY_TABLE_NAME&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_key_cols&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;ID&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p_where_clause&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;id &amp;lt;= 10&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;'&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DUAL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;That provides the following script as a CLOB in your query result. Note that
-if the size of the CSV CLOB holding the records was greater than 32767, 
-it would be represented by a concatenated set of quoted literals instead
-of just one as shown here.&lt;/p&gt;
-
-&lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;BEGIN&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;APP_CSV_PKG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;create_ptt_csv&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;TO_CLOB&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;q'{&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;&quot;ID&quot;,&quot;MSG&quot;,&quot;DT&quot;
-1,&quot;testing...&quot;,&quot;03/26/2022&quot;
-2,&quot;testing...&quot;,&quot;03/27/2022&quot;
-3,&quot;testing...&quot;,&quot;03/28/2022&quot;
-4,&quot;testing...&quot;,&quot;03/29/2022&quot;
-5,&quot;testing...&quot;,&quot;03/30/2022&quot;
-6,&quot;testing...&quot;,&quot;03/31/2022&quot;
-7,&quot;testing...&quot;,&quot;04/01/2022&quot;
-8,&quot;testing...&quot;,&quot;04/02/2022&quot;
-9,&quot;testing...&quot;,&quot;04/03/2022&quot;
-10,&quot;testing...&quot;,&quot;04/04/2022&quot;
-&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;END&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;MERGE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;INTO&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MY_TABLE_NAME&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;kr&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;
-    &lt;span class=&quot;kr&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ora$ptt_csv&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;
-&lt;span class=&quot;kr&quot;&gt;ON&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ID&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ID&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;kr&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;MATCHED&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;UPDATE&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;SET&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;MSG&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;MSG&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;t&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
-&lt;span class=&quot;kr&quot;&gt;WHEN&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;NOT&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;MATCHED&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;THEN&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;INSERT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ID&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;MSG&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kr&quot;&gt;VALUES&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ID&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;MSG&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;q&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&quot;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;COMMIT&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
-
-&lt;p&gt;I explored multiple mechanisms to avoid “stupid data load.” The obvious best choice would be if the right
-tools for the job like &lt;em&gt;sqlldr&lt;/em&gt;, &lt;em&gt;imp&lt;/em&gt;, or &lt;em&gt;sqlCL&lt;/em&gt; were available, but we play the hand we are dealt. If you
-are stuck with &lt;em&gt;SQL*PLUS&lt;/em&gt;, this package can be a solution.&lt;/p&gt;
-
-</description>
-        <pubDate>Mon, 28 Mar 2022 10:00:00 -0400</pubDate>
-        <link>https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html</link>
-        <guid isPermaLink="true">https://lee-lindley.github.io/plsql/sql/oracle/2022/03/28/Devops-Oracle-Deploy.html</guid>
-        
-        <category>oracle</category>
-        
-        <category>sql</category>
-        
-        <category>plsql</category>
-        
-        <category>devops</category>
-        
-        <category>deploy</category>
-        
-        <category>CLOB</category>
-        
-        
-        <category>plsql</category>
-        
-        <category>sql</category>
-        
-        <category>oracle</category>
         
       </item>
     
