@@ -1,0 +1,271 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="shortcut icon" href="/static/img/favicon.ico" /><title>Creating Multiple Row Headers with ExcelGen PL/SQL Spreadsheet Generator - Lee Lindley Scratchpad</title><meta name="author" content="Lee Lindley" /><meta name="description" content="Creating Multiple Row Headers with ExcelGen PL/SQL Spreadsheet Generator" /><meta name="keywords" content="Creating Multiple Row Headers with ExcelGen PL/SQL Spreadsheet Generator, Lee Lindley Scratchpad, oracle, plsql" /><link rel="alternate" type="application/rss+xml" title="RSS" href="/feed.xml"><meta content="" property="fb:app_id"><meta content="Lee Lindley Scratchpad" property="og:site_name"><meta content="Creating Multiple Row Headers with ExcelGen PL/SQL Spreadsheet Generator" property="og:title"><meta content="article" property="og:type"><meta content="Posts on Technical Subjects, mostly Oracle and Linux" property="og:description"><meta content="https://lee-lindley.github.io/oracle/plsql/2022/11/27/ExcelGen_multirow_headers.html" property="og:url"><meta content="2022-11-27T00:00:00-05:00" property="article:published_time"><meta content="https://lee-lindley.github.io/about/" property="article:author"><meta content="oracle" property="article:section"><meta content="oracle" property="article:tag"><meta content="plsql" property="article:tag"><meta content="Excel" property="article:tag"><meta name="twitter:card" content="summary"><meta name="twitter:site" content="@"><meta name="twitter:creator" content="@"><meta name="twitter:title" content="Creating Multiple Row Headers with ExcelGen PL/SQL Spreadsheet Generator"><meta name="twitter:url" content="https://lee-lindley.github.io/oracle/plsql/2022/11/27/ExcelGen_multirow_headers.html"><meta name="twitter:description" content="Posts on Technical Subjects, mostly Oracle and Linux"><link href="/static/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous"><link rel="stylesheet" href="/static/css/syntax.css"><link href="/static/css/bootstrap.min.css" rel="stylesheet"><link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300italic,300,400italic,700&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css"><link rel="stylesheet" href="/static/css/super-search.css"><link rel="stylesheet" href="/static/css/thickbox.css"><link rel="stylesheet" href="/static/css/projects.css"><link rel="stylesheet" href="/static/css/main.css"><body><div class="container"><div class="col-sm-3"><div class="fixed-condition"><h1 class="author-name"><a href="/">Lee Lindley</a></h1><div class="profile-about"> I'm Just Another Perl Hacker who wound up in a big Oracle Database playground</div><div class="social"><ul><li><a href="https://linkedin.com/in/lee-lindley" target="_blank"><i class="fa fa-linkedin"></i></a><li><a href="https://github.com/lee-lindley" target="_blank"><i class="fa fa-github"></i></a></ul></div><div class="search" id="js-search"> <input type="text" placeholder="(sitemap)~$ type to search" class="search__input form-control" id="js-search__input"><ul class="search__results" id="js-search__results"></ul></div><hr /><ul class="sidebar-nav"> <strong>Navigation</strong><li><a href="/">Home</a><li><a class="about" href="/about/">About Me</a><li><a class="about" href="/projects/">My Projects</a><li><a class="about" href="/feed.xml">XML Feed</a></ul></div></div><div class="col-sm-8 col-offset-1 main-layout"><header class="post-header"><h1 class="post-title">Creating Multiple Row Headers with ExcelGen PL/SQL Spreadsheet Generator</h1></header><span class="time">27 Nov 2022</span> <span class="categories"> &raquo; <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a> </span><div class="content"><div class="post"><h1 id="introduction">Introduction</h1><p><a href="https://github.com/mbleron/ExcelGen">Marc Bleron’s ExcelGen</a> package version 3 has added multi-table sheets, merged cells, and writing to individual cells. This allows us to construct workbooks with sheets that have multiple-row column headers. The business users I support are happy about that!<p>This article walks through an example of constructing a spreadsheet with a banner title, multiple-row column headers, automatic filtering, plus frozen rows and columns. We also set font and background colors in a fairly tame way, but it demonstrates the tools we have to make an attractive end product.<p>See the manual page at the above link to ExcelGen on github to get an idea of how this all works. Refer back to it as we walk through the example if you have questions.<h1 id="walking-through-an-example">Walking Through an Example</h1><p>Here is an image of the spreadsheet we will produce.<table class="img-table-centered"><thead><tr><th style="text-align: center"><em>Figure 1 - Multi-Row Spreadsheet Headers</em><tbody><tr><td style="text-align: center"><img src="/images/multirowHeaders1.gif" alt="" /></table><blockquote><p>The ‘+’ characters and NULLs in the first header row are to demonstrate a peculiarity of ExcelGen. You will notice in the image above that even though we told the tool to make the columns in our mini-table have a light gray background, the cells that did not have any content, did not get the background style applied. Interesting.</blockquote><p>The declared variables can be thought of as object handles to various parts of our logical spreadsheet. The values are returned by functions we call to create/declare those parts. In practice they are indexes into package global collections, but we do not need to know that.<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DECLARE</span>
+    <span class="n">v_ctxId</span>             <span class="n">ExcelGen</span><span class="p">.</span><span class="n">ctxHandle</span><span class="p">;</span>
+    <span class="n">v_sheetId</span>           <span class="n">ExcelGen</span><span class="p">.</span><span class="n">sheetHandle</span><span class="p">;</span>
+    <span class="n">v_tableId</span>           <span class="n">ExcelGen</span><span class="p">.</span><span class="n">tableHandle</span><span class="p">;</span>
+    <span class="n">v_headerTableId</span>     <span class="n">ExcelGen</span><span class="p">.</span><span class="n">tableHandle</span><span class="p">;</span>
+    <span class="n">v_headerCellStyle</span>   <span class="n">ExcelGen</span><span class="p">.</span><span class="n">cellStyleHandle</span><span class="p">;</span>
+    <span class="n">v_cellStyle</span>         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">cellStyleHandle</span><span class="p">;</span>
+    <span class="c1">-- discussed below. There are other ways to accomplish this</span>
+    <span class="n">v_arr_headers</span>       <span class="n">arr_arr_varchar2_udt</span> <span class="o">:=</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_clob_to_fields</span><span class="p">(</span>
+<span class="o">q'{</span><span class="sx">+,,+,
+First,Last,Department,Yearly
+Name,Name,Name,Salary</span><span class="o">}'</span>
+                                                <span class="p">);</span>
+</code></pre></div></div><p>We want to use a small font for the report and for the report header to have bold text on a light gray background. To get started we create our workbook and two style handles we can assign as needed. You can use CSS syntax for styles, but I’m sticking with the familiar style construction from ExcelGen version 2 for now.<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">BEGIN</span>
+    <span class="c1">-- create a workbook and some initial styles to use in assignments</span>
+    <span class="n">v_ctxId</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">createContext</span><span class="p">;</span>
+
+    <span class="c1">-- style to use for header cells</span>
+    <span class="n">v_headerCellStyle</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeCellStyle</span><span class="p">(</span>
+        <span class="n">p_ctxId</span> <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_font</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeFont</span><span class="p">(</span><span class="o">'</span><span class="s1">Arial</span><span class="o">'</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="n">p_b</span> <span class="o">=&gt;</span> <span class="k">TRUE</span><span class="p">)</span>
+        <span class="p">,</span><span class="n">p_fill</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makePatternFill</span><span class="p">(</span><span class="o">'</span><span class="s1">solid</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">lightgray</span><span class="o">'</span><span class="p">)</span>
+    <span class="p">);</span>
+    <span class="c1">-- style to use inside the report proper</span>
+    <span class="n">v_cellStyle</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeCellStyle</span><span class="p">(</span>
+        <span class="n">p_ctxId</span> <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_font</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeFont</span><span class="p">(</span><span class="o">'</span><span class="s1">Arial</span><span class="o">'</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span>
+    <span class="p">);</span>
+</code></pre></div></div><p>Next we will create our first (and only) workbook sheet with the sheet name of ‘Employees’. We’ll give the tab a color just because we can (I don’t normally). Then we put a text value into the <em>A1</em> cell of the sheet. This will be our report title banner at the top of the sheet.<p>We create another style for this cell on the fly that will automatically apply to the cells we merge together with <em>A1</em> in a moment.<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">-- add a sheet to the workbook</span>
+    <span class="n">v_sheetId</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addSheet</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetName</span>        <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Employees</span><span class="o">'</span>
+        <span class="p">,</span><span class="n">p_tabColor</span>         <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">lime</span><span class="o">'</span> 
+    <span class="p">);</span>
+
+   <span class="c1">-- place banner text in top left corner cell</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">putStringCell</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_rowIdx</span>           <span class="o">=&gt;</span> <span class="mi">1</span>
+        <span class="p">,</span><span class="n">p_colIdx</span>           <span class="o">=&gt;</span> <span class="mi">1</span>
+        <span class="p">,</span><span class="n">p_value</span>            <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Employee Salary Report</span><span class="o">'</span>
+        <span class="p">,</span><span class="n">p_style</span>            <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeCellStyle</span><span class="p">(</span>
+                                    <span class="n">p_ctxId</span> <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+                                    <span class="p">,</span><span class="n">p_font</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeFont</span><span class="p">(</span><span class="o">'</span><span class="s1">Calibri</span><span class="o">'</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="n">p_b</span> <span class="o">=&gt;</span> <span class="k">TRUE</span><span class="p">)</span>
+                                    <span class="p">,</span><span class="n">p_fill</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makePatternFill</span><span class="p">(</span><span class="o">'</span><span class="s1">solid</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">lime</span><span class="o">'</span><span class="p">)</span>
+                                    <span class="p">,</span><span class="n">p_alignment</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeAlignment</span><span class="p">(</span>
+                                        <span class="n">p_horizontal</span>    <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">center</span><span class="o">'</span>
+                                        <span class="p">,</span><span class="n">p_vertical</span>     <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">center</span><span class="o">'</span>
+                                    <span class="p">)</span>
+                                <span class="p">)</span>
+    <span class="p">);</span>
+</code></pre></div></div><p>So far that is just in a single cell. We want to make it span across the top two rows of the report, centered. We could span a single row of cells and set the height of that row, but will merge across two rows here instead. We could get fancy and figure out the range from a number of rows and perhaps the number of columns in our header collection, but the water is muddy enough for now.<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">mergeCells</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_range</span>            <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">A1:D2</span><span class="o">'</span>
+    <span class="p">);</span>
+</code></pre></div></div><p>Next, we want to create the first two rows of our column headers. We do not put our last row of the column headers here as they must be handled separately. We could use <em>putStringCell</em> again to do this, but I have a plan for extending the functionality of multi-row column header handling we’ll get to when we refactor. Therefor, we will create a cursor that returns our column headers as data (but only the first 2 rows of header, not the last), and add that as a table to our worksheet.<p>The task of generating a cursor from generic two dimensional collection object turned out to be harder than I expected. I covered it in <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/11/24/Cursor_from_Collections.html">Create a PL/SQL Cursor from a Nested Table of Nested Tables</a>. If you are not ready to install package <em>app_csv_pkg</em> from my github repository, that article shows other ways you can do it.<p>You will notice that our anchor is one based. It can be confusing that absolute anchors are one based while relative anchors are zero based. I do not think I will be the last person to stumble and make mistakes with this.<p>We assign a style to the columns of our little 2 row table as well. Notice that we are using a style we call a <em>header</em> style for the data of this table. The table contains data we want to appear as column headers.<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="n">v_headerTableId</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addTable</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_rc</span>               <span class="o">=&gt;</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">get_cursor_from_collections</span><span class="p">(</span>
+                                    <span class="n">p_arr_arr</span>       <span class="o">=&gt;</span> <span class="n">v_arr_headers</span>
+                                    <span class="p">,</span><span class="n">p_trim_rows</span>    <span class="o">=&gt;</span> <span class="mi">1</span> <span class="c1">-- do not include last row of headers</span>
+                               <span class="p">)</span>
+        <span class="p">,</span><span class="n">p_anchorColOffset</span> <span class="o">=&gt;</span> <span class="mi">1</span>  <span class="c1">-- we start in column 1</span>
+        <span class="p">,</span><span class="n">p_anchorRowOffset</span> <span class="o">=&gt;</span> <span class="mi">3</span>  <span class="c1">-- leave 2 rows of room for our banner. we start in row 3</span>
+    <span class="p">);</span>
+    <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mf">1..4</span>
+    <span class="kr">LOOP</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableColumnProperties</span><span class="p">(</span>
+            <span class="n">p_ctxId</span>         <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+            <span class="p">,</span> <span class="n">p_sheetId</span>     <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+            <span class="p">,</span> <span class="n">p_tableId</span>     <span class="o">=&gt;</span> <span class="n">v_headerTableId</span>
+            <span class="p">,</span> <span class="n">p_columnId</span>    <span class="o">=&gt;</span> <span class="n">i</span>
+            <span class="p">,</span> <span class="n">p_style</span>       <span class="o">=&gt;</span> <span class="n">v_headerCellStyle</span>
+        <span class="p">);</span>
+    <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+</code></pre></div></div><p>Next, we add our real query to the sheet as a second table beneath the two row header table. <strong>We use relative positioning for the location of this table.</strong> The concepts of the anchor and relative positioning are covered well in the documentation. There is a nice picture with examples. I have gone back to it frequently when building this and other multi-table sheets and/or positioning of <em>putCell</em> calls. The zero based vs one based anchors and thinking in terms of whether you are operating at the sheet level or the table level can be a challenge.<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="n">v_tableId</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addTable</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span> 
+        <span class="p">,</span><span class="n">p_query</span>            <span class="o">=&gt;</span>
+<span class="o">q'{</span><span class="sx">SELECT first_name, last_name, department_name , salary
+FROM hr.employees e
+INNER JOIN hr.departments d
+    ON d.department_id = e.department_id
+        AND department_name IN ('Finance', 'Executive')
+ORDER BY salary DESC</span><span class="o">}'</span>
+        <span class="p">,</span><span class="n">p_anchorTableId</span>    <span class="o">=&gt;</span> <span class="n">v_headerTableId</span>
+        <span class="p">,</span><span class="n">p_anchorPosition</span>   <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">BOTTOM_LEFT</span>
+        <span class="p">,</span><span class="n">p_anchorColOffset</span>  <span class="o">=&gt;</span> <span class="mi">0</span>
+        <span class="p">,</span><span class="n">p_anchorRowOffset</span>  <span class="o">=&gt;</span> <span class="mi">1</span>
+    <span class="p">);</span>
+</code></pre></div></div><p>For our data table we want to set the header that goes with the data. We could have simply put the third header row in the table we constructed above, but if we did that we could not turn on <em>autoFilter</em>. It seems best to tell Excel that this is a header even if you do not need <em>autoFilter</em>.<p>We then override the column header values from what was in the query. You could have made the query column aliases do what you needed here and only had to set the column style properties, but this demonstrates how the query column aliases can be ignored.<p>Let me point out that <em>setTableColumnProperties</em> allows us to set the value of the column header, but the style we are applying is to this column in the data rows, not the header. The header style is determined in the call to <em>setTableHeader</em>.<blockquote><p>The mixing of concepts between column header and column data in this function is unfortunate, but probably not worth making separate methods. Technically, it all applies to a table column and the distinction in styles between header and data is a subdivision of table column properties.</blockquote><div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableHeader</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_tableId</span>          <span class="o">=&gt;</span> <span class="n">v_tableId</span>
+        <span class="p">,</span><span class="n">p_style</span>            <span class="o">=&gt;</span> <span class="n">v_headerCellStyle</span>
+        <span class="p">,</span><span class="n">p_autoFilter</span>       <span class="o">=&gt;</span> <span class="k">TRUE</span>
+    <span class="p">);</span>
+    <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">in</span> <span class="mf">1..4</span>
+    <span class="kr">LOOP</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableColumnProperties</span><span class="p">(</span>
+            <span class="n">p_ctxId</span>         <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+            <span class="p">,</span><span class="n">p_sheetId</span>      <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+            <span class="p">,</span><span class="n">p_tableId</span>      <span class="o">=&gt;</span> <span class="n">v_tableId</span>
+            <span class="p">,</span><span class="n">p_columnId</span>     <span class="o">=&gt;</span> <span class="n">i</span>
+            <span class="p">,</span><span class="n">p_style</span>        <span class="o">=&gt;</span> <span class="n">v_cellStyle</span>
+            <span class="c1">-- override the column header from query column aliases</span>
+            <span class="p">,</span><span class="n">p_columnName</span>   <span class="o">=&gt;</span> <span class="n">v_arr_headers</span><span class="p">(</span><span class="mi">3</span><span class="p">)(</span><span class="n">i</span><span class="p">)</span>
+        <span class="p">);</span>
+    <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+</code></pre></div></div><p>We need to set the number format for the fourth data column, Salary. We could have created a style that included the number format and selectively used it with <em>setTableColumnProperties</em> above.<p>So far I’ve been choosing to set the date, timestamp and number formats separately from the the styles.<p>Since <em>setColumnFormat</em> operates at the sheet level it applies to the header rows too, but since those values are strings and not numbers, it doesn’t matter.<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">-- This is at the sheet level</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setColumnFormat</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_columnId</span>         <span class="o">=&gt;</span> <span class="mi">4</span>
+        <span class="p">,</span><span class="n">p_format</span>           <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">#,##0.00_);(#,##0.00)</span><span class="o">'</span> <span class="c1">-- an accounting number style</span>
+    <span class="p">);</span>
+
+</code></pre></div></div><p>Next we want to freeze our column headers and the first two columns of data (the first and last name values). In this example freezing the first two columns is not very useful since the total number of columns is so small, but it is instructive to see how it is done.<p>Specifying the top left corner of the region that is allowed to scroll is what Excel does too, but we typically think in terms of which columns and rows are frozen. Too bad. We need to specify where the scrollable active pane starts.<p>The row we make top of the scrollable region is the first one with data – two rows for the banner, three rows of header, so row six is first row of data. Column 3 is the first one we want in the scrollable pane.<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">-- freeze row headers and first two columns (aka setting active pane)</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setSheetProperties</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_activePaneAnchorRef</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeCellRef</span><span class="p">(</span>
+            <span class="n">p_colIdx</span>            <span class="o">=&gt;</span> <span class="mi">3</span>
+            <span class="p">,</span><span class="n">p_rowIdx</span>           <span class="o">=&gt;</span> <span class="mi">6</span>
+        <span class="p">)</span>
+    <span class="p">);</span>
+</code></pre></div></div><p>We are done declaring the content of the sheet. We finish by executing everything to create the workbook file and clean up after ourselves with the <em>closeContext</em>.<div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="c1">--  ExcelGen.createFile(ctx, 'TEST_DIR', 'multi-row-header.xlsx');</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">createFile</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="o">'</span><span class="s1">TMP_DIR</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">multi-row-header.xlsx</span><span class="o">'</span><span class="p">);</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">closeContext</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
+  
+<span class="k">END</span><span class="p">;</span>
+<span class="o">/</span>
+</code></pre></div></div><p>You saw the output spreadsheet at the top of the article.<h1 id="conclusion">Conclusion</h1><p>This journey through creating a spreadsheet touches on both the nuts and bolts of general spreadsheet creation with <em>ExcelGen</em> and also now some bells and whistles with a banner and multi-row column headers.<p>It is a lot of code though. I intend to refactor into a reusable utility procedure for multi-row column headers. I’ll cover that in another article once I refine it.<h1 id="appendix---full-code-listing">Appendix - Full Code Listing</h1><div class="language-plsql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DECLARE</span>
+    <span class="n">v_ctxId</span>             <span class="n">ExcelGen</span><span class="p">.</span><span class="n">ctxHandle</span><span class="p">;</span>
+    <span class="n">v_sheetId</span>           <span class="n">ExcelGen</span><span class="p">.</span><span class="n">sheetHandle</span><span class="p">;</span>
+    <span class="n">v_tableId</span>           <span class="n">ExcelGen</span><span class="p">.</span><span class="n">tableHandle</span><span class="p">;</span>
+    <span class="n">v_headerTableId</span>     <span class="n">ExcelGen</span><span class="p">.</span><span class="n">tableHandle</span><span class="p">;</span>
+    <span class="n">v_headerCellStyle</span>   <span class="n">ExcelGen</span><span class="p">.</span><span class="n">cellStyleHandle</span><span class="p">;</span>
+    <span class="n">v_cellStyle</span>         <span class="n">ExcelGen</span><span class="p">.</span><span class="n">cellStyleHandle</span><span class="p">;</span>
+    <span class="n">v_arr_headers</span>       <span class="n">arr_arr_varchar2_udt</span> <span class="o">:=</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">split_clob_to_fields</span><span class="p">(</span>
+<span class="o">q'{</span><span class="sx">+,,+,
+First,Last,Department,Yearly
+Name,Name,Name,Salary</span><span class="o">}'</span>
+                                                <span class="p">);</span>
+<span class="k">BEGIN</span>
+    <span class="c1">-- create a workbook and some initial styles to use in assignments</span>
+    <span class="n">v_ctxId</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">createContext</span><span class="p">;</span>
+    <span class="n">v_headerCellStyle</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeCellStyle</span><span class="p">(</span>
+        <span class="n">p_ctxId</span> <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_font</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeFont</span><span class="p">(</span><span class="o">'</span><span class="s1">Arial</span><span class="o">'</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="n">p_b</span> <span class="o">=&gt;</span> <span class="k">TRUE</span><span class="p">)</span>
+        <span class="p">,</span><span class="n">p_fill</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makePatternFill</span><span class="p">(</span><span class="o">'</span><span class="s1">solid</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">lightgray</span><span class="o">'</span><span class="p">)</span>
+    <span class="p">);</span>
+    <span class="n">v_cellStyle</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeCellStyle</span><span class="p">(</span>
+        <span class="n">p_ctxId</span> <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_font</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeFont</span><span class="p">(</span><span class="o">'</span><span class="s1">Arial</span><span class="o">'</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span>
+    <span class="p">);</span>
+
+    <span class="c1">-- add a sheet to the workbook</span>
+    <span class="n">v_sheetId</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addSheet</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetName</span>        <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Employees</span><span class="o">'</span>
+        <span class="p">,</span><span class="n">p_tabColor</span>         <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">lime</span><span class="o">'</span> 
+    <span class="p">);</span>
+    <span class="c1">-- place banner text in top left corner cell</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">putStringCell</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_rowIdx</span>           <span class="o">=&gt;</span> <span class="mi">1</span>
+        <span class="p">,</span><span class="n">p_colIdx</span>           <span class="o">=&gt;</span> <span class="mi">1</span>
+        <span class="p">,</span><span class="n">p_value</span>            <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">Employee Salary Report</span><span class="o">'</span>
+        <span class="p">,</span><span class="n">p_style</span>            <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeCellStyle</span><span class="p">(</span>
+                                    <span class="n">p_ctxId</span> <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+                                    <span class="p">,</span><span class="n">p_font</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeFont</span><span class="p">(</span><span class="o">'</span><span class="s1">Calibri</span><span class="o">'</span><span class="p">,</span><span class="mi">15</span><span class="p">,</span><span class="n">p_b</span> <span class="o">=&gt;</span> <span class="k">TRUE</span><span class="p">)</span>
+                                    <span class="p">,</span><span class="n">p_fill</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makePatternFill</span><span class="p">(</span><span class="o">'</span><span class="s1">solid</span><span class="o">'</span><span class="p">,</span><span class="o">'</span><span class="s1">lime</span><span class="o">'</span><span class="p">)</span>
+                                    <span class="p">,</span><span class="n">p_alignment</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeAlignment</span><span class="p">(</span>
+                                        <span class="n">p_horizontal</span>    <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">center</span><span class="o">'</span>
+                                        <span class="p">,</span><span class="n">p_vertical</span>     <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">center</span><span class="o">'</span>
+                                    <span class="p">)</span>
+                                <span class="p">)</span>
+    <span class="p">);</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">mergeCells</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_range</span>            <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">A1:D2</span><span class="o">'</span>
+    <span class="p">);</span>
+
+
+    <span class="n">v_headerTableId</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addTable</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span>  <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_rc</span>               <span class="o">=&gt;</span> <span class="n">app_csv_pkg</span><span class="p">.</span><span class="n">get_cursor_from_collections</span><span class="p">(</span>
+                                    <span class="n">p_arr_arr</span>       <span class="o">=&gt;</span> <span class="n">v_arr_headers</span>
+                                    <span class="p">,</span><span class="n">p_trim_rows</span>    <span class="o">=&gt;</span> <span class="mi">1</span> <span class="c1">-- do not include last row of headers</span>
+                               <span class="p">)</span>
+        <span class="p">,</span><span class="n">p_anchorColOffset</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+        <span class="p">,</span><span class="n">p_anchorRowOffset</span> <span class="o">=&gt;</span> <span class="mi">3</span>  <span class="c1">-- leave room for our banner</span>
+    <span class="p">);</span>
+    <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">IN</span> <span class="mf">1..4</span>
+    <span class="kr">LOOP</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableColumnProperties</span><span class="p">(</span>
+            <span class="n">p_ctxId</span>         <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+            <span class="p">,</span> <span class="n">p_sheetId</span>     <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+            <span class="p">,</span> <span class="n">p_tableId</span>     <span class="o">=&gt;</span> <span class="n">v_headerTableId</span>
+            <span class="p">,</span> <span class="n">p_columnId</span>    <span class="o">=&gt;</span> <span class="n">i</span>
+            <span class="p">,</span> <span class="n">p_style</span>       <span class="o">=&gt;</span> <span class="n">v_headerCellStyle</span>
+        <span class="p">);</span>
+    <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+
+    <span class="n">v_tableId</span> <span class="o">:=</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">addTable</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span> 
+        <span class="p">,</span><span class="n">p_query</span>            <span class="o">=&gt;</span>
+<span class="o">q'{</span><span class="sx">SELECT first_name, last_name, department_name , salary
+FROM hr.employees e
+INNER JOIN hr.departments d
+    ON d.department_id = e.department_id
+        AND department_name IN ('Finance', 'Executive')
+ORDER BY salary DESC</span><span class="o">}'</span>
+        <span class="p">,</span><span class="n">p_anchorTableId</span>    <span class="o">=&gt;</span> <span class="n">v_headerTableId</span>
+        <span class="p">,</span><span class="n">p_anchorPosition</span>   <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">BOTTOM_LEFT</span>
+        <span class="p">,</span><span class="n">p_anchorColOffset</span>  <span class="o">=&gt;</span> <span class="mi">0</span>
+        <span class="p">,</span><span class="n">p_anchorRowOffset</span>  <span class="o">=&gt;</span> <span class="mi">1</span>
+    <span class="p">);</span>
+
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableHeader</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_tableId</span>          <span class="o">=&gt;</span> <span class="n">v_tableId</span>
+        <span class="p">,</span><span class="n">p_style</span>            <span class="o">=&gt;</span> <span class="n">v_headerCellStyle</span>
+        <span class="p">,</span><span class="n">p_autoFilter</span>       <span class="o">=&gt;</span> <span class="k">TRUE</span>
+    <span class="p">);</span>
+    <span class="kr">FOR</span> <span class="n">i</span> <span class="ow">in</span> <span class="mf">1..4</span>
+    <span class="kr">LOOP</span>
+        <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setTableColumnProperties</span><span class="p">(</span>
+            <span class="n">p_ctxId</span>         <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+            <span class="p">,</span><span class="n">p_sheetId</span>      <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+            <span class="p">,</span><span class="n">p_tableId</span>      <span class="o">=&gt;</span> <span class="n">v_tableId</span>
+            <span class="p">,</span><span class="n">p_columnId</span>     <span class="o">=&gt;</span> <span class="n">i</span>
+            <span class="p">,</span><span class="n">p_style</span>        <span class="o">=&gt;</span> <span class="n">v_cellStyle</span>
+            <span class="c1">-- override the column header from query column aliases</span>
+            <span class="p">,</span><span class="n">p_columnName</span>   <span class="o">=&gt;</span> <span class="n">v_arr_headers</span><span class="p">(</span><span class="mi">3</span><span class="p">)(</span><span class="n">i</span><span class="p">)</span>
+        <span class="p">);</span>
+    <span class="k">END</span> <span class="kr">LOOP</span><span class="p">;</span>
+
+    <span class="c1">-- This is at the sheet level</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setColumnFormat</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_columnId</span>         <span class="o">=&gt;</span> <span class="mi">4</span>
+        <span class="p">,</span><span class="n">p_format</span>           <span class="o">=&gt;</span> <span class="o">'</span><span class="s1">#,##0.00_);(#,##0.00)</span><span class="o">'</span> <span class="c1">-- an accounting number style</span>
+    <span class="p">);</span>
+
+    <span class="c1">-- freeze row headers and first two columns (aka setting active pane)</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">setSheetProperties</span><span class="p">(</span>
+        <span class="n">p_ctxId</span>             <span class="o">=&gt;</span> <span class="n">v_ctxId</span>
+        <span class="p">,</span><span class="n">p_sheetId</span>          <span class="o">=&gt;</span> <span class="n">v_sheetId</span>
+        <span class="p">,</span><span class="n">p_activePaneAnchorRef</span> <span class="o">=&gt;</span> <span class="n">ExcelGen</span><span class="p">.</span><span class="n">makeCellRef</span><span class="p">(</span>
+            <span class="n">p_colIdx</span>            <span class="o">=&gt;</span> <span class="mi">3</span>
+            <span class="p">,</span><span class="n">p_rowIdx</span>           <span class="o">=&gt;</span> <span class="mi">6</span>
+        <span class="p">)</span>
+    <span class="p">);</span>
+
+    <span class="c1">--  ExcelGen.createFile(ctx, 'TEST_DIR', 'multi-row-header.xlsx');</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">createFile</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">,</span> <span class="o">'</span><span class="s1">TMP_DIR</span><span class="o">'</span><span class="p">,</span> <span class="o">'</span><span class="s1">multi-row-header.xlsx</span><span class="o">'</span><span class="p">);</span>
+    <span class="n">ExcelGen</span><span class="p">.</span><span class="n">closeContext</span><span class="p">(</span><span class="n">v_ctxId</span><span class="p">);</span>
+  
+<span class="k">END</span><span class="p">;</span>
+<span class="o">/</span>
+</code></pre></div></div></div></div><div class="panel-body"><h4>Related Posts</h4><ul><li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/sql/plsql/2022/11/24/Cursor_from_Collections.html">Create a PL/SQL Cursor from a Nested Table of Nested Tables</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>, <a href="/category/plsql">plsql</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/perl/2022/11/13/version_db_objects.html">Versioning Oracle Code from Open Source</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/perl">perl</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/sql/2022/10/09/antijoins_with_or.html">Tuning Query with OR Conditions in a NOT EXISTS</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/sql">sql</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/plsql/2022/09/18/spreadsheets_with_plsql.html">Manipulating XLSX Spreadsheets in PL/SQL</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/perl/2022/04/30/perl_dbd_oracle_clob.html">Using Perl DBD::Oracle to write LOB content</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/perl">perl</a>)<li class="relatedPost"> <a href="https://lee-lindley.github.io/oracle/plsql/sql/vim/2022/04/29/vim-plsql-syntax.html">Syntax Highlighting for PL/SQL in vim</a> (Categories: <a href="/category/oracle">oracle</a>, <a href="/category/plsql">plsql</a>, <a href="/category/sql">sql</a>, <a href="/category/vim">vim</a>)</ul></div><div class="PageNavigation"> <a class="prev" href="/oracle/sql/plsql/2022/11/24/Cursor_from_Collections.html">&laquo; Create a PL/SQL Cursor from a Nested Table of Nested Tables</a></div><div class="disqus-comments"><div id="disqus_thread"></div><script type="text/javascript"> /* <![CDATA[ */ var disqus_shortname = "leelindleyscratchpad"; var disqus_identifier = "https://lee-lindley.github.io_Creating Multiple Row Headers with ExcelGen PL/SQL Spreadsheet Generator"; var disqus_title = "Creating Multiple Row Headers with ExcelGen PL/SQL Spreadsheet Generator"; /* * * DON'T EDIT BELOW THIS LINE * * */ (function() { var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true; dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js'; (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq); })(); /* ]]> */ </script></div><footer> &copy; Lee Lindley - <a href="https://github.com/lee-lindley">https://github.com/lee-lindley</a> - Powered by Jekyll.<div class="btn-github" style="float:right;"> <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe> <iframe src="https://ghbtns.com/github-btn.html?user=agusmakmun&repo=agusmakmun.github.io&type=fork&count=true" frameborder="0" scrolling="0" width="100" height="20px"></iframe></div></footer></div></div><script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script> <script src="//code.jquery.com/jquery-migrate-1.2.1.min.js"></script> <script src="/static/js/bootstrap.min.js"></script> <script src="/static/js/super-search.js"></script> <script src="/static/js/thickbox-compressed.js"></script> <script src="/static/js/projects.js"></script>
