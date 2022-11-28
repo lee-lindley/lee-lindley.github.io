@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 27 Nov 2022 08:37:39 -0500</pubDate>
-    <lastBuildDate>Sun, 27 Nov 2022 08:37:39 -0500</lastBuildDate>
+    <pubDate>Mon, 28 Nov 2022 08:08:18 -0500</pubDate>
+    <lastBuildDate>Mon, 28 Nov 2022 08:08:18 -0500</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
     
       <item>
@@ -526,13 +526,15 @@ FROM TABLE(:header_table)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;}'&lt;/spa
         &lt;span class=&quot;k&quot;&gt;USING&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;v_arr_headers&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;Note that there is no &lt;em&gt;ORDER BY&lt;/em&gt; here. We are depending on the implementation to provide the rows
+&lt;blockquote&gt;
+  &lt;p&gt;There is no &lt;em&gt;ORDER BY&lt;/em&gt; here. We are depending on the implementation to provide the rows
 in the same order as the collection. It seems a pretty safe bet, but I have searched long and
 hard for documentation that makes a promise on this. Oracle pulled the rug out from under us once
 before when we were dependent on the implementation of &lt;em&gt;GROUP BY&lt;/em&gt; via a sort. Tom Kyte wrote
 adamantly that the only way you can guarantee the order of records is to use an &lt;em&gt;ORDER BY&lt;/em&gt; clause.
 Yet I cannot think of a reason why the current implementation providing the records in the same
 order as the collection would change.&lt;/p&gt;
+&lt;/blockquote&gt;
 
 &lt;h1 id=&quot;a-generic-solution&quot;&gt;A Generic Solution&lt;/h1&gt;
 
@@ -559,8 +561,12 @@ PL/SQL program:&lt;/p&gt;
     &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;There is a glitch in the matrix though. How do we extract the individual elements of each row in the SQL
-statement for the cursor? Here is one way. Note the careful use of table aliases. Object access in SQL has a quirk
-where an alias for the table or Common Table Expression (CTE) name is required:&lt;/p&gt;
+statement for the cursor? Here is one way.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Note the careful use of table aliases. Object access in SQL has a quirk
+where an alias for the table or Common Table Expression (CTE) name is required.&lt;/p&gt;
+&lt;/blockquote&gt;
 
 &lt;p&gt;One triksie part here is the join in the CTE named &lt;em&gt;b&lt;/em&gt;. We are joining to a column in our
 rowset from CTE named &lt;em&gt;a&lt;/em&gt;. Think that through. For each row from &lt;em&gt;a&lt;/em&gt;, we treat the column
@@ -751,7 +757,7 @@ SQL&amp;gt;
 &lt;p&gt;I like this concept of opening a cursor from a two dimensional collection object enough that I added a
 function named &lt;em&gt;get_cursor_from_colletions&lt;/em&gt; to my PL/SQL utility package named &lt;em&gt;app_csv_pkg&lt;/em&gt;. You can
 find this at on github at &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities&quot;&gt;plsql_utilities&lt;/a&gt;. There is
-also a version of &lt;em&gt;get_cursor_from_collections&lt;/em&gt; in the package &lt;em&gt;perlish_util_pkg&lt;/em&gt; if you are bent that way.&lt;/p&gt;
+a version of &lt;em&gt;get_cursor_from_collections&lt;/em&gt; in the package &lt;em&gt;perlish_util_pkg&lt;/em&gt; too if you are bent that way.&lt;/p&gt;
 
 &lt;p&gt;Also in &lt;em&gt;app_csv_pkg&lt;/em&gt; is a function that will parse a CLOB containing CSV data (like our column headers)
 and return an &lt;em&gt;arr_arr_varchar2_udt&lt;/em&gt; object. How handy is that? Let’s see.&lt;/p&gt;
@@ -796,6 +802,12 @@ SQL&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;Now we’re cooking with gas!&lt;/p&gt;
+
+&lt;p&gt;You may already have the column headers in a spreadsheet. I often have them as part of a requirements
+document.
+Export them as CSV (&lt;em&gt;Save As CSV&lt;/em&gt; might give you an evil windows character at the start of the
+file - use Export instead). Now you can copy/paste that file content directly into your
+PL/SQL program. It will even handle commas embedded in the fields correctly.&lt;/p&gt;
 
 &lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
 
