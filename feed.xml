@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 04 Dec 2022 16:57:49 -0500</pubDate>
-    <lastBuildDate>Sun, 04 Dec 2022 16:57:49 -0500</lastBuildDate>
+    <pubDate>Sun, 04 Dec 2022 17:15:24 -0500</pubDate>
+    <lastBuildDate>Sun, 04 Dec 2022 17:15:24 -0500</lastBuildDate>
     <generator>Jekyll v4.3.1</generator>
     
       <item>
@@ -45,7 +45,7 @@ back to it as we walk through the example if you have questions.&lt;/p&gt;
   &lt;p&gt;The ‘+’ characters and NULLs in the first header row are to demonstrate a peculiarity of ExcelGen. You
 will notice in the image above that even though we told the tool to make the columns in our
 mini-table have a light gray background, the cells that did not have any content, did not
-get the background style applied. Interesting.&lt;/p&gt;
+get the background style applied. I opened an issue and expect it will be addressed in the next release.&lt;/p&gt;
 &lt;/blockquote&gt;
 
 &lt;p&gt;The declared variables can be thought of as object handles to various parts of our logical spreadsheet.
