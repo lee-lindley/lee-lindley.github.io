@@ -5,9 +5,9 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 28 Nov 2022 08:08:18 -0500</pubDate>
-    <lastBuildDate>Mon, 28 Nov 2022 08:08:18 -0500</lastBuildDate>
-    <generator>Jekyll v3.9.0</generator>
+    <pubDate>Sun, 04 Dec 2022 08:21:22 -0500</pubDate>
+    <lastBuildDate>Sun, 04 Dec 2022 08:21:22 -0500</lastBuildDate>
+    <generator>Jekyll v4.3.1</generator>
     
       <item>
         <title>Creating Multiple Row Headers with ExcelGen PL/SQL Spreadsheet Generator</title>
