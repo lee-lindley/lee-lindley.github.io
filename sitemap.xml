@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/sitemap.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 04 Dec 2022 08:21:22 -0500</pubDate>
-    <lastBuildDate>Sun, 04 Dec 2022 08:21:22 -0500</lastBuildDate>
+    <pubDate>Sun, 04 Dec 2022 16:57:49 -0500</pubDate>
+    <lastBuildDate>Sun, 04 Dec 2022 16:57:49 -0500</lastBuildDate>
     <generator>Jekyll v4.3.1</generator>
     
       <item>
@@ -299,7 +299,9 @@ creation with &lt;em&gt;ExcelGen&lt;/em&gt; and also now some bells and whistles
 headers.&lt;/p&gt;
 
 &lt;p&gt;It is a lot of code though. I intend to refactor into a reusable utility procedure for multi-row
-column headers. I’ll cover that in another article once I refine it.&lt;/p&gt;
+column headers. I was going to cover that utility in another article. I wound up doing the work
+for an employer on their dime, so it isn’t mine to share. If you have read this far, I’m sure
+you could create your own given the pattern shown here.&lt;/p&gt;
 
 &lt;h1 id=&quot;appendix---full-code-listing&quot;&gt;Appendix - Full Code Listing&lt;/h1&gt;
 &lt;div class=&quot;language-plsql highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;DECLARE&lt;/span&gt;
