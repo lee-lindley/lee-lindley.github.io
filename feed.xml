@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 04 Dec 2022 17:15:24 -0500</pubDate>
-    <lastBuildDate>Sun, 04 Dec 2022 17:15:24 -0500</lastBuildDate>
+    <pubDate>Thu, 12 Jan 2023 02:27:18 -0500</pubDate>
+    <lastBuildDate>Thu, 12 Jan 2023 02:27:18 -0500</lastBuildDate>
     <generator>Jekyll v4.3.1</generator>
     
       <item>
@@ -757,7 +757,7 @@ SQL&amp;gt;
 &lt;h1 id=&quot;refactoring-the-refactoring&quot;&gt;Refactoring the Refactoring&lt;/h1&gt;
 
 &lt;p&gt;I like this concept of opening a cursor from a two dimensional collection object enough that I added a
-function named &lt;em&gt;get_cursor_from_colletions&lt;/em&gt; to my PL/SQL utility package named &lt;em&gt;app_csv_pkg&lt;/em&gt;. You can
+function named &lt;em&gt;get_cursor_from_collections&lt;/em&gt; to my PL/SQL utility package named &lt;em&gt;app_csv_pkg&lt;/em&gt;. You can
 find this at on github at &lt;a href=&quot;https://github.com/lee-lindley/plsql_utilities&quot;&gt;plsql_utilities&lt;/a&gt;. There is
 a version of &lt;em&gt;get_cursor_from_collections&lt;/em&gt; in the package &lt;em&gt;perlish_util_pkg&lt;/em&gt; too if you are bent that way.&lt;/p&gt;
 
