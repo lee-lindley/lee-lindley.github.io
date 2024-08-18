@@ -5,8 +5,8 @@
     <description>Posts on Technical Subjects, mostly Oracle and Linux</description>
     <link>https://lee-lindley.github.io/</link>
     <atom:link href="https://lee-lindley.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 12 Jan 2023 02:27:18 -0500</pubDate>
-    <lastBuildDate>Thu, 12 Jan 2023 02:27:18 -0500</lastBuildDate>
+    <pubDate>Sun, 18 Aug 2024 12:50:00 -0400</pubDate>
+    <lastBuildDate>Sun, 18 Aug 2024 12:50:00 -0400</lastBuildDate>
     <generator>Jekyll v4.3.1</generator>
     
       <item>
@@ -1626,7 +1626,7 @@ to maintain a set of session specific context numbers allowing for multiple spre
 in a single session. The package also implements the call to &lt;em&gt;as_read_xlsx&lt;/em&gt; when it populates the GTT. You
 can look at your leisure.&lt;/p&gt;
 
-&lt;p&gt;In &lt;a href=&quot;@overview&quot;&gt;Overview&lt;/a&gt; we listed the tasks the function needed to perform in a bullet list. Most
+&lt;p&gt;In &lt;a href=&quot;#Overview&quot;&gt;Overview&lt;/a&gt; we listed the tasks the function needed to perform in a bullet list. Most
 of these tasks are handled in the static pipelined table function &lt;em&gt;app_read_xlsx_udt.get_data_rows&lt;/em&gt; via a cursor
 that uses a bind variable for the number of columns we have in our input (gathered during object
 constructor call).&lt;/p&gt;
